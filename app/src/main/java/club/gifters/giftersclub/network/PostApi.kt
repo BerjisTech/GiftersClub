@@ -10,10 +10,10 @@ import retrofit2.http.Query
 interface PostApi {
     @GET("posts")
     suspend fun getPosts(
-        @Query("select", encoded = true) select: String =
+        @Query("select", encoded = true)
+        select: String =
             "*,profile:profiles(id,user_id,username,image)," +
-            "media:post_media(id,media_type,url,\"order\",created_at)," +
-            "reaction_counts:post_reactions(type)"
+            "media:post_media(id,media_type,url,order,created_at)"
         ,
         @Query("order") order: String,
         @Query("limit") limit: Int,

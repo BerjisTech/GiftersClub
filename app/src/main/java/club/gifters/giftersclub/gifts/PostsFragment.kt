@@ -58,7 +58,6 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         isLoading = true
         lifecycleScope.launch {
             val items = api.getPosts(
-                select = "*",
                 order = "created_at.desc",
                 limit = limit,
                 offset = page * limit

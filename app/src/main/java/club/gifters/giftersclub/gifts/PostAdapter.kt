@@ -83,18 +83,19 @@ class PostAdapter(
     private fun formatRelativeTime(iso: String?): String {
         if (iso.isNullOrBlank()) return ""
         return try {
-            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+            // Trim fractional seconds to 3 digits and parse ISO offset
+            val trimmed = iso.replace(Regex("\\.(\\d{3})\\d*"), ".$1")
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).apply {
                 timeZone = TimeZone.getTimeZone("UTC")
             }
-            val then = sdf.parse(iso)?.time ?: return iso
-            val now = System.currentTimeMillis()
+            val then = sdf.parse(trimmed)?.time ?: return iso
             DateUtils.getRelativeTimeSpanString(
                 then,
-                now,
+                System.currentTimeMillis(),
                 DateUtils.MINUTE_IN_MILLIS,
                 DateUtils.FORMAT_ABBREV_RELATIVE
             ).toString()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             iso
         }
     }

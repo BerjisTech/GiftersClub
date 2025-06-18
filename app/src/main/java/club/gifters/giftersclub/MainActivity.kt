@@ -37,7 +37,13 @@ class MainActivity : AppCompatActivity() {
             override fun onTabReselected(tab: TabLayout.Tab) {}
         })
         // Show default tab
-        tabLayout.getTabAt(0)?.select()
+        if (savedInstanceState == null) {
+            tabLayout.getTabAt(0)?.select()
+            // Ensure Posts tab loads immediately
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, PostsFragment())
+                .commit()
+        }
 
         // Setup bottom navigation
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavView)

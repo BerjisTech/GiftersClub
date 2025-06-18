@@ -5,6 +5,8 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import club.gifters.giftersclub.network.LeaderboardApi
+import club.gifters.giftersclub.network.PostApi
+import club.gifters.giftersclub.network.ProfileApi
 
 /**
  * Singleton Retrofit client configured with Supabase REST URL and API key interceptor.
