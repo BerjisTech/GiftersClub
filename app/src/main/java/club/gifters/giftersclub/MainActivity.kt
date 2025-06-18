@@ -6,6 +6,7 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import club.gifters.giftersclub.gifts.GiftFragment
 import club.gifters.giftersclub.gifts.LeaderboardFragment
+import club.gifters.giftersclub.gifts.PostsFragment
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,6 +22,7 @@ class MainActivity : AppCompatActivity() {
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 val frag = when (tab.position) {
+                    0 -> PostsFragment()
                     1 -> GiftFragment()
                     2 -> LeaderboardFragment()
                     else -> null // TODO: implement other fragments

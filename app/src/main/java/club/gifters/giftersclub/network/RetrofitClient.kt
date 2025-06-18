@@ -29,4 +29,5 @@ object RetrofitClient {
     val giftApi: GiftApi = retrofit.create(GiftApi::class.java)
     val leaderboardApi: LeaderboardApi = retrofit.create(LeaderboardApi::class.java)
     val profileApi: ProfileApi = retrofit.create(ProfileApi::class.java)
+    val postApi:    PostApi    = retrofit.create(PostApi::class.java)
 }
