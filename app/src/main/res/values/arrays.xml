@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="gift_sort_options">
+        <item>Newest</item>
+        <item>Oldest</item>
+        <item>Most Popular</item>
+        <item>Price: Low to High</item>
+        <item>Price: High to Low</item>
+    </string-array>
+</resources>
