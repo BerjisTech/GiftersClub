@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">GiftersClub</string>
+    <string name="leaderboard">Leaderboard</string>
 </resources>
