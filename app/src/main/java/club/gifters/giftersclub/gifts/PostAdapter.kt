@@ -6,12 +6,14 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.viewpager2.widget.ViewPager2
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
+import club.gifters.giftersclub.gifts.PostMediaAdapter
 import java.text.NumberFormat
 import android.text.format.DateUtils
 import java.text.SimpleDateFormat
@@ -49,7 +51,8 @@ class PostAdapter(
         private val username: TextView = itemView.findViewById(R.id.usernameText)
         private val timestamp: TextView = itemView.findViewById(R.id.timestampText)
         private val content: TextView = itemView.findViewById(R.id.contentText)
-        private val media: ImageView = itemView.findViewById(R.id.mediaImage)
+        private val mediaPager: androidx.viewpager2.widget.ViewPager2 =
+            itemView.findViewById(R.id.mediaPager)
         private val btnLike: ImageButton = itemView.findViewById(R.id.btnLike)
         private val btnComment: ImageButton = itemView.findViewById(R.id.btnComment)
         private val btnShare: ImageButton = itemView.findViewById(R.id.btnShare)
@@ -65,10 +68,8 @@ class PostAdapter(
             }
             timestamp.text = formatRelativeTime(post.createdAt)
             content.text = post.content ?: ""
-            val mediaUrl = post.media?.firstOrNull()?.url
-            if (!mediaUrl.isNullOrBlank()) {
-                media.load(mediaUrl) { placeholder(android.R.color.darker_gray) }
-            }
+            // Setup media carousel (images/videos)
+            mediaPager.adapter = PostMediaAdapter(post.media ?: emptyList())
             btnLike.setOnClickListener    { current?.let(onLike) }
             btnComment.setOnClickListener { current?.let(onComment) }
             btnShare.setOnClickListener   { current?.let(onShare) }

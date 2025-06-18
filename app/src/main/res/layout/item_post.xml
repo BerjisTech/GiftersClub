@@ -39,13 +39,12 @@
         android:layout_height="wrap_content"
         android:padding="8dp" />
 
-    <ImageView
-        android:id="@+id/mediaImage"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/mediaPager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:scaleType="centerCrop"
-        android:contentDescription="Post media" />
+        android:orientation="horizontal" />
 
     <LinearLayout
         android:layout_width="match_parent"
