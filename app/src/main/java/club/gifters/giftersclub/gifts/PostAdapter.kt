@@ -6,15 +6,11 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.viewpager2.widget.ViewPager2
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
-import club.gifters.giftersclub.gifts.PostMediaAdapter
-import java.text.NumberFormat
 import android.text.format.DateUtils
 import java.text.SimpleDateFormat
 import java.util.Locale

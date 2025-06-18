@@ -1,3 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="TopTabsStyling" parent="TextAppearance.Design.Tab">
+        <item name="android:textSize">10sp</item> <!-- Change size here -->
+        <item name="textAllCaps">true</item> <!-- Optional -->
+    </style>
 </resources>
