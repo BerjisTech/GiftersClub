@@ -11,6 +11,7 @@ import club.gifters.giftersclub.gifts.LeaderboardFragment
 import club.gifters.giftersclub.gifts.PostsFragment
 import club.gifters.giftersclub.gifts.CreatePostFragment
 import club.gifters.giftersclub.gifts.AccountFragment
+import club.gifters.giftersclub.gifts.WishlistsFragment
 import club.gifters.giftersclub.chat.ConversationListFragment
 import club.gifters.giftersclub.chat.NotificationListFragment
 
@@ -32,7 +33,8 @@ class MainActivity : AppCompatActivity() {
                     0 -> PostsFragment()
                     1 -> GiftFragment()
                     2 -> LeaderboardFragment()
-                    else -> null // TODO: implement other fragments
+                    3 -> WishlistsFragment()
+                    else -> null
                 }
                 frag?.let {
                     supportFragmentManager.beginTransaction()

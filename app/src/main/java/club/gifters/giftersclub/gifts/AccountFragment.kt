@@ -144,7 +144,7 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
         // Load wishlist counts for this user
         lifecycleScope.launch {
             try {
-                val items = profileApi.listWishlistsByUser(
+                val items: List<WishlistItem> = profileApi.listWishlistsByUser(
                     select = "id,is_fulfilled",
                     userIdFilter = "eq.$userId"
                 )
@@ -152,8 +152,7 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                 val fulfilled = items.count { it.isFulfilled }
                 tvWishlistsOpen.text      = "Open: ${total - fulfilled}"
                 tvWishlistsFulfilled.text = "Fulfilled: $fulfilled"
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to load wishlist count", e)
+            } catch (_: Exception) {
             }
         }
     }
