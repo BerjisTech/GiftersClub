@@ -9,6 +9,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
 import android.text.format.DateUtils
@@ -61,6 +62,14 @@ class PostAdapter(
                 // navigate to profile
                 avatar.setOnClickListener { onProfileClick(p.username) }
                 username.setOnClickListener { onProfileClick(p.username) }
+                if (p.image.isNotBlank()) {
+                    avatar.load(p.image) {
+                        placeholder(android.R.color.darker_gray)
+                        error(android.R.color.darker_gray)
+                    }
+                } else {
+                    avatar.setImageResource(android.R.color.darker_gray)
+                }
             }
             timestamp.text = formatRelativeTime(post.createdAt)
             content.text = post.content ?: ""

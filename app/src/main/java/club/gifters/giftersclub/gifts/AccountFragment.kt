@@ -20,6 +20,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import coil.load
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.model.Profile
@@ -123,9 +124,14 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
     }
 
     private fun bindProfile(profile: Profile) {
-        // Load image (may require an image loader library)
+        // Load image
         if (profile.image.isNotBlank()) {
-            ivProfileImage.setImageURI(Uri.parse(profile.image))
+            ivProfileImage.load(profile.image) {
+                placeholder(android.R.color.darker_gray)
+                error(android.R.color.darker_gray)
+            }
+        } else {
+            ivProfileImage.setImageResource(android.R.color.darker_gray)
         }
         tvUsername.text = profile.username
         tvFullName.text = profile.name.orEmpty()

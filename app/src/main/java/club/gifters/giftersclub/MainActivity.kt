@@ -11,6 +11,7 @@ import club.gifters.giftersclub.gifts.LeaderboardFragment
 import club.gifters.giftersclub.gifts.PostsFragment
 import club.gifters.giftersclub.gifts.CreatePostFragment
 import club.gifters.giftersclub.gifts.AccountFragment
+import club.gifters.giftersclub.chat.ChatFragment
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,6 +65,13 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_account -> {
                     supportFragmentManager.beginTransaction()
                         .replace(R.id.mainContentContainer, AccountFragment())
+                        .addToBackStack(null)
+                        .commit()
+                    true
+                }
+                R.id.nav_chat -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.mainContentContainer, ChatFragment())
                         .addToBackStack(null)
                         .commit()
                     true
