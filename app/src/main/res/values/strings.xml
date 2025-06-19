@@ -1,4 +1,15 @@
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">GiftersClub</string>
     <string name="leaderboard">Leaderboard</string>
+    <string name="create_post">Create a Post</string>
+    <string name="select_photos_videos">Upload Photos &amp; Videos</string>
+    <string name="next">Next</string>
+    <string name="edit_media">Edit Media</string>
+    <string name="post">Post</string>
+    <string name="whats_on_your_mind">What is on your mind?</string>
+    <string name="close">Close</string>
+
+    <!-- Overrides to fix backslash-escaped apostrophes in material picker strings -->
+    <string name="material_hour_24h_suffix"><xliff:g id="number">%1$s</xliff:g><xliff:g id="suffix">%2$s</xliff:g></string>
+    <string name="material_hour_suffix"><xliff:g id="number">%1$s</xliff:g> o\'clock</string>
 </resources>

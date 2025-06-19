@@ -3,11 +3,15 @@ package club.gifters.giftersclub.gifts
 import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.Fragment
+import android.content.Context
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.gifts.GifterFragment
+import android.util.Log
+import android.widget.Toast
+import retrofit2.HttpException
 import club.gifters.giftersclub.gifts.PostAdapter
 import kotlinx.coroutines.launch
 
@@ -15,12 +19,16 @@ import kotlinx.coroutines.launch
  * Fragment for displaying posts in a vertical, swipeable view (one post per screen).
  */
 class PostsFragment : Fragment(R.layout.fragment_posts) {
+    companion object {
+        private const val TAG = "PostsFragment"
+    }
 
     private val api = RetrofitClient.postApi
     private lateinit var adapter: PostAdapter
     private var page = 0
     private val limit = 10
     private var isLoading = false
+    private var hasRetry401 = false
     private var isLastPage = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -57,15 +65,32 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         if (isLoading || isLastPage) return
         isLoading = true
         lifecycleScope.launch {
-            val items = api.getPosts(
-                order = "created_at.desc",
-                limit = limit,
-                offset = page * limit
-            )
-            if (clear) adapter.submitList(items)
-            else adapter.submitList(adapter.currentList + items)
-            if (items.size < limit) isLastPage = true else page++
-            isLoading = false
+            try {
+                val items = api.getPosts(
+                    order = "created_at.desc",
+                    limit = limit,
+                    offset = page * limit
+                )
+                if (clear) adapter.submitList(items)
+                else adapter.submitList(adapter.currentList + items)
+                if (items.size < limit) isLastPage = true else page++
+            } catch (e: retrofit2.HttpException) {
+                if (e.code() == 401 && !hasRetry401) {
+                    hasRetry401 = true
+                    // Clear invalid token to fall back to anon access and retry
+                    requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
+                        .edit().remove("access_token").remove("refresh_token").apply()
+                    loadPosts(clear)
+                    return@launch
+                }
+                Log.e(TAG, "Failed to load posts", e)
+                Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load posts", e)
+                Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
+            } finally {
+                isLoading = false
+            }
         }
     }
 }

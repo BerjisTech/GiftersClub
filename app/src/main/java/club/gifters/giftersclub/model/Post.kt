@@ -23,9 +23,11 @@ data class Post(
  */
 data class PostMedia(
     val id: String,
+    @SerializedName("post_id") val postId: String?,
     @SerializedName("media_type") val mediaType: String,
     val url: String,
-    @SerializedName("order") val order: Int
+    @SerializedName("order") val order: Int,
+    @SerializedName("created_at") val createdAt: String?
 )
 
 /**
@@ -42,5 +44,6 @@ data class ReactionCounts(
  */
 data class Tag(
     val id: String,
-    val name: String
+    val name: String,
+    @SerializedName("created_at") val createdAt: String?
 )
