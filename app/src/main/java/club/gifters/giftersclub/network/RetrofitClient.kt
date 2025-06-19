@@ -13,6 +13,7 @@ import club.gifters.giftersclub.network.ProfileApi
 import club.gifters.giftersclub.network.StorageApi
 import club.gifters.giftersclub.network.GiftApi
 import club.gifters.giftersclub.network.ChatApi
+import club.gifters.giftersclub.network.NotificationApi
 
 /**
  * Singleton Retrofit client configured with Supabase REST URL and API key interceptor.
@@ -64,4 +65,8 @@ object RetrofitClient {
      * Chat API for sending and retrieving messages and conversations.
      */
     val chatApi: ChatApi = retrofit.create(ChatApi::class.java)
+    /**
+     * Notifications API for fetching and marking read notifications.
+     */
+    val notificationApi: NotificationApi = retrofit.create(NotificationApi::class.java)
 }

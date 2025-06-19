@@ -69,6 +69,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             text = partnerName
         }
         val rvMessages = view.findViewById<RecyclerView>(R.id.rvMessages)
+        rvMessages.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
         val etMessage = view.findViewById<EditText>(R.id.etMessage)
         val btnAttach = view.findViewById<ImageButton>(R.id.btnAttach)
         val btnSend = view.findViewById<ImageButton>(R.id.btnSend)

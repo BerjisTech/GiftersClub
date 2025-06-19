@@ -39,6 +39,7 @@ class ConversationListFragment : Fragment(R.layout.fragment_conversation_list) {
             }
 
         val rv = view.findViewById<RecyclerView>(R.id.rvConversations)
+        rv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
         val adapter = ConversationAdapter { conv ->
             parentFragmentManager.beginTransaction()
                 .replace(R.id.mainContentContainer,
