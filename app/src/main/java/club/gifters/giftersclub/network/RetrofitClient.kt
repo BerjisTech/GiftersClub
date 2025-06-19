@@ -2,6 +2,7 @@ package club.gifters.giftersclub.network
 
 import club.gifters.giftersclub.SupabaseConfig
 import okhttp3.OkHttpClient
+import okhttp3.Interceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import club.gifters.giftersclub.network.LeaderboardApi
@@ -13,7 +14,7 @@ import club.gifters.giftersclub.network.ProfileApi
  */
 object RetrofitClient {
     private val client = OkHttpClient.Builder()
-        .addInterceptor { chain ->
+        .addInterceptor { chain: Interceptor.Chain ->
             val request = chain.request().newBuilder()
                 .addHeader("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
                 .addHeader("Authorization", "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}")
