@@ -1,17 +1,166 @@
 package club.gifters.giftersclub.chat
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.util.Base64
 import android.view.View
+import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
+import club.gifters.giftersclub.SupabaseConfig
+import club.gifters.giftersclub.chat.MessageAdapter
+import club.gifters.giftersclub.network.ChatApi
+import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.network.StorageApi
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.util.UUID
 
 /**
  * Fragment for displaying chat conversations and messages.
  * TODO: implement conversation list and message UI with media support.
  */
 class ChatFragment : Fragment(R.layout.fragment_chat) {
+    private val chatApi: ChatApi = RetrofitClient.chatApi
+    private val storageApi: StorageApi = RetrofitClient.storageApi
+
+    private var userId: String = ""
+    private var selectedAttachment: Uri? = null
+    private val REQUEST_ATTACHMENT = 3001
+
+    companion object {
+        private const val ARG_PARTNER_ID = "partner_id"
+        private const val ARG_PARTNER_NAME = "partner_name"
+
+        fun newInstance(partnerId: String, partnerName: String) = ChatFragment().apply {
+            arguments = Bundle().apply {
+                putString(ARG_PARTNER_ID, partnerId)
+                putString(ARG_PARTNER_NAME, partnerName)
+            }
+        }
+    }
+
+    private fun decodeCurrentUserId(): String {
+        val token = requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
+            .getString("access_token", "")
+            ?.takeIf { it.isNotBlank() } ?: return ""
+        return token.split('.').getOrNull(1)
+            ?.let { String(Base64.decode(it, Base64.URL_SAFE)) }
+            ?.let { JSONObject(it).optString("sub") } ?: ""
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // TODO: initialize chat UI and load data via ChatApi
+        // Display chat for the selected partner only
+        val partnerId = requireArguments().getString(ARG_PARTNER_ID) ?: return
+        val partnerName = requireArguments().getString(ARG_PARTNER_NAME) ?: partnerId
+        userId = decodeCurrentUserId()
+
+        val tvPartnerName = view.findViewById<TextView>(R.id.tvPartnerName).apply {
+            text = partnerName
+        }
+        val rvMessages = view.findViewById<RecyclerView>(R.id.rvMessages)
+        val etMessage = view.findViewById<EditText>(R.id.etMessage)
+        val btnAttach = view.findViewById<ImageButton>(R.id.btnAttach)
+        val btnSend = view.findViewById<ImageButton>(R.id.btnSend)
+
+        val msgAdapter = MessageAdapter(userId)
+        rvMessages.adapter = msgAdapter
+        btnAttach.setOnClickListener { pickAttachment() }
+        btnSend.setOnClickListener { sendMessage(msgAdapter, rvMessages, etMessage, partnerId) }
+
+        loadMessages(partnerId)
+    }
+
+    // No conversation list in message view
+
+    // No conversation selection here; handled in ConversationListFragment
+
+    private fun loadMessages(partnerId: String) {
+        val rvMessages = requireView().findViewById<RecyclerView>(R.id.rvMessages)
+        val msgAdapter = (rvMessages.adapter as MessageAdapter)
+        lifecycleScope.launch {
+            try {
+                val msgs = chatApi.getMessages(
+                    select = "*",
+                    orFilter = "and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId)",
+                    order = "created_at.asc"
+                )
+                msgAdapter.submitList(msgs)
+                rvMessages.scrollToPosition(msgs.size - 1)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun pickAttachment() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*"))
+        }
+        startActivityForResult(intent, REQUEST_ATTACHMENT)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_ATTACHMENT && resultCode == Activity.RESULT_OK) {
+            selectedAttachment = data?.data
+        }
+    }
+
+    private fun sendMessage(
+        msgAdapter: MessageAdapter,
+        rvMessages: RecyclerView,
+        etMessage: EditText,
+        partnerId: String
+    ) {
+        val content = etMessage.text.toString().trim()
+        lifecycleScope.launch {
+            val attachmentsPayload = mutableListOf<Map<String, Any>>()
+            selectedAttachment?.let { uri ->
+                try {
+                    val type = requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
+                    val ext = type.substringAfterLast('/', "bin")
+                    val filename = "${System.currentTimeMillis()}-${UUID.randomUUID()}.$ext"
+                    requireContext().contentResolver.openInputStream(uri)?.use { stream ->
+                        val bytes = stream.readBytes()
+                        val body = bytes.toRequestBody(type.toMediaTypeOrNull())
+                        val resp = storageApi.uploadChatMedia(filename, body, type)
+                        if (resp.isSuccessful) {
+                            val publicUrl = "${SupabaseConfig.SUPABASE_URL}/storage/v1/object/public/${SupabaseConfig.CHAT_MEDIA_BUCKET}/$filename"
+                            val mediaType = if (type.startsWith("image/")) "image" else "video"
+                            attachmentsPayload.add(mapOf("url" to publicUrl, "type" to mediaType))
+                        }
+                    }
+                } catch (_: Exception) { }
+                selectedAttachment = null
+            }
+            try {
+                val payload = mutableMapOf<String, Any>(
+                    "sender_id" to userId,
+                    "receiver_id" to partnerId,
+                    "content" to content
+                )
+                if (attachmentsPayload.isNotEmpty()) payload["attachments"] = attachmentsPayload
+                val resp = chatApi.sendMessage(payload)
+                if (resp.isSuccessful) {
+                    resp.body()?.firstOrNull()?.let { newMsg ->
+                        msgAdapter.addMessage(newMsg)
+                        rvMessages.scrollToPosition(msgAdapter.itemCount - 1)
+                    }
+                    etMessage.text.clear()
+                }
+            } catch (_: Exception) { }
+        }
     }
 }

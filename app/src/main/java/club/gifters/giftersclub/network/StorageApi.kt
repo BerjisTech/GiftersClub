@@ -25,4 +25,14 @@ interface StorageApi {
         @Body file: RequestBody,
         @Header("Content-Type") contentType: String
     ): Response<ResponseBody>
+
+    /**
+     * Upload a file to the chat-media bucket for chat attachments.
+     */
+    @POST("object/${SupabaseConfig.CHAT_MEDIA_BUCKET}/{filePath}")
+    suspend fun uploadChatMedia(
+        @Path(value = "filePath", encoded = true) filePath: String,
+        @Body file: RequestBody,
+        @Header("Content-Type") contentType: String
+    ): Response<ResponseBody>
 }

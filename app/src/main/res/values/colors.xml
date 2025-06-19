@@ -7,4 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- Chat bubble colors -->
+    <color name="message_sent_bg">#5EC4FF</color>
+    <color name="message_received_bg">#E5E5EA</color>
+    <!-- Unread badge background -->
+    <color name="unread_badge">#FF3B30</color>
 </resources>

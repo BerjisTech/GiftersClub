@@ -6,4 +6,6 @@ object SupabaseConfig {
     const val REDIRECT_URI = "gifterclub://login-callback"
     const val POSTS_BUCKET = "posts"
     const val AVATARS_BUCKET = "avatars"
+    /** Bucket for chat media attachments */
+    const val CHAT_MEDIA_BUCKET = "chat-media"
 }
