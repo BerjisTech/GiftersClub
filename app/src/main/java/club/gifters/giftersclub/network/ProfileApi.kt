@@ -1,7 +1,12 @@
 package club.gifters.giftersclub.network
 
 import club.gifters.giftersclub.model.Profile
+import club.gifters.giftersclub.model.WishlistItem
+import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Headers
+import retrofit2.http.PATCH
 import retrofit2.http.Query
 
 /**
@@ -13,4 +18,32 @@ interface ProfileApi {
         @Query("select") select: String = "*",
         @Query("username", encoded = true) usernameFilter: String
     ): List<Profile>
+
+    /**
+     * Fetch the profile for the current user by user_id
+     */
+    @GET("profiles")
+    suspend fun getProfileByUserId(
+        @Query("select", encoded = true) select: String = "*",
+        @Query("user_id", encoded = true) userIdFilter: String
+    ): List<Profile>
+
+    /**
+     * Update profile fields for the current user and return the updated record.
+     */
+    @Headers("Prefer: return=representation")
+    @PATCH("profiles?select=* ")
+    suspend fun updateProfile(
+        @Query("user_id", encoded = true) userIdFilter: String,
+        @Body updates: Map<String, @JvmSuppressWildcards Any>
+    ): Response<List<Profile>>
+
+    /**
+     * List wishlist items for a user (to count open vs fulfilled wishlists).
+     */
+    @GET("wishlists")
+    suspend fun listWishlistsByUser(
+        @Query("select", encoded = true) select: String = "id,is_fulfilled",
+        @Query("user_id", encoded = true) userIdFilter: String
+    ): List<WishlistItem>
 }

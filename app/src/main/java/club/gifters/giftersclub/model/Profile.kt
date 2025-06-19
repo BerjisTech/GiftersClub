@@ -13,10 +13,14 @@ data class Profile(
     val name: String?,
     val bio: String?,
     val image: String,
+    @SerializedName("token_balance") val tokenBalance: Int?,
+    @SerializedName("tokens_received") val tokensReceived: Int?,
+    @SerializedName("tokens_sent") val tokensSent: Int?,
     @SerializedName("followers_count") val followersCount: Int?,
     @SerializedName("following_count") val followingCount: Int?,
     @SerializedName("is_following") val isFollowing: Boolean?,
     @SerializedName("gifter_level") val gifterLevel: Int?,
     @SerializedName("gifter_level_name") val gifterLevelName: String?,
-    @SerializedName("gifts_sent") val giftsSent: Int?
+    @SerializedName("gifts_sent") val giftsSent: Int?,
+    @SerializedName("gifts_received") val giftsReceived: Int?
 )
