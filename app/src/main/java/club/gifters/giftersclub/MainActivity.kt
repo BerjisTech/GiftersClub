@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
 
         // Setup top tabs
         val tabLayout = findViewById<TabLayout>(R.id.topTabLayout)
-        listOf("Posts", "Gifts", "Leaderboard", "Wishlists").forEach { title ->
+        listOf("Posts", "Gifts", "Gifters", "Wishlists").forEach { title ->
             tabLayout.addTab(tabLayout.newTab().setText(title))
         }
         // Load fragment according to selected tab
