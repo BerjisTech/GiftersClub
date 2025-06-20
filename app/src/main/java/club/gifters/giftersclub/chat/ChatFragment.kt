@@ -16,8 +16,13 @@ import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.chat.MessageAdapter
+import club.gifters.giftersclub.chat.ConversationAdapter
+import club.gifters.giftersclub.chat.ConversationUi
 import club.gifters.giftersclub.network.ChatApi
 import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.network.ProfileApi
+import android.widget.LinearLayout
+import androidx.recyclerview.widget.LinearLayoutManager
 import club.gifters.giftersclub.network.StorageApi
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -60,31 +65,68 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // Display chat for the selected partner only
-        val partnerId = requireArguments().getString(ARG_PARTNER_ID) ?: return
-        val partnerName = requireArguments().getString(ARG_PARTNER_NAME) ?: partnerId
         userId = decodeCurrentUserId()
 
-        val tvPartnerName = view.findViewById<TextView>(R.id.tvPartnerName).apply {
-            text = partnerName
+        // Setup conversation list
+        val rvConvs = view.findViewById<RecyclerView>(R.id.rvConversations)
+        rvConvs.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
+        val convAdapter = ConversationAdapter(userId) { conv ->
+            // show chat pane and load messages
+            view.findViewById<RecyclerView>(R.id.rvConversations).visibility = View.GONE
+            view.findViewById<LinearLayout>(R.id.chatPane).visibility = View.VISIBLE
+            selectConversation(
+                conv.partner.userId,
+                conv.partner.name ?: conv.partner.username
+            )
         }
-        val rvMessages = view.findViewById<RecyclerView>(R.id.rvMessages)
-        rvMessages.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
-        val etMessage = view.findViewById<EditText>(R.id.etMessage)
-        val btnAttach = view.findViewById<ImageButton>(R.id.btnAttach)
-        val btnSend = view.findViewById<ImageButton>(R.id.btnSend)
-
-        val msgAdapter = MessageAdapter(userId)
-        rvMessages.adapter = msgAdapter
-        btnAttach.setOnClickListener { pickAttachment() }
-        btnSend.setOnClickListener { sendMessage(msgAdapter, rvMessages, etMessage, partnerId) }
-
-        loadMessages(partnerId)
+        rvConvs.adapter = convAdapter
+        loadConversations(convAdapter)
     }
 
-    // No conversation list in message view
 
-    // No conversation selection here; handled in ConversationListFragment
+    /**
+     * Load the list of conversation overviews and bind to adapter.
+     */
+    private fun loadConversations(adapter: ConversationAdapter) {
+        lifecycleScope.launch {
+            try {
+                val convs = chatApi.getConversations(
+                    select = "user_a,user_b,last_message_at",
+                    userIdFilter = "or(sender_id.eq.$userId,receiver_id.eq.$userId)"
+                )
+                val uiModels = convs.mapNotNull { overview ->
+                    val partnerId = if (overview.userA == userId) overview.userB else overview.userA
+                    val profile = RetrofitClient.profileApi.getProfileByUserId(
+                        select = "*",
+                        userIdFilter = "eq.$partnerId"
+                    ).firstOrNull() ?: return@mapNotNull null
+                    val lastMsg = chatApi.getLastMessage(
+                        select = "*",
+                        orFilter = "and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId)",
+                        order = "created_at.desc",
+                        limit = 1
+                    ).firstOrNull()
+                    val unreadResp = chatApi.getUnreadCount(
+                        select = "*",
+                        orFilter = "and(sender_id.eq.$partnerId,receiver_id.eq.$userId)",
+                        readFilter = "is.null"
+                    )
+                    val header = unreadResp.headers()["Content-Range"]
+                    val unreadCount = header?.substringAfterLast('/')?.toIntOrNull() ?: 0
+                    ConversationUi(overview, profile, lastMsg, unreadCount)
+                }
+                adapter.submitList(uiModels)
+            } catch (_: Exception) { }
+        }
+    }
+
+    /**
+     * Select a conversation to display messages and set up chat UI.
+     */
+    private fun selectConversation(partnerId: String, partnerName: String) {
+        view?.findViewById<TextView>(R.id.tvPartnerName)?.text = partnerName
+        loadMessages(partnerId)
+    }
 
     private fun loadMessages(partnerId: String) {
         val rvMessages = requireView().findViewById<RecyclerView>(R.id.rvMessages)

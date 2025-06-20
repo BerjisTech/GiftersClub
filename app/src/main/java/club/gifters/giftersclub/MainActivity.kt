@@ -12,7 +12,7 @@ import club.gifters.giftersclub.gifts.PostsFragment
 import club.gifters.giftersclub.gifts.CreatePostFragment
 import club.gifters.giftersclub.gifts.AccountFragment
 import club.gifters.giftersclub.gifts.WishlistsFragment
-import club.gifters.giftersclub.chat.ConversationListFragment
+import club.gifters.giftersclub.chat.ChatFragment
 import club.gifters.giftersclub.chat.NotificationListFragment
 
 class MainActivity : AppCompatActivity() {
@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 R.id.nav_chat -> {
                     supportFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, ConversationListFragment())
+                        .replace(R.id.mainContentContainer, ChatFragment())
                         .addToBackStack(null)
                         .commit()
                     true

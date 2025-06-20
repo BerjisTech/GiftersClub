@@ -20,17 +20,23 @@ WARNING: Restricted methods will be blocked in a future release unless native ac
 > Task :app:processDebugManifestForPackage UP-TO-DATE
 > Task :app:processDebugResources UP-TO-DATE
 
-> Task :app:compileDebugKotlin
-w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/chat/ChatFragment.kt:112:9 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
-w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/chat/ChatFragment.kt:115:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or suppress the diagnostic.
-w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/chat/ChatFragment.kt:116:15 'fun onActivityResult(p0: Int, p1: Int, p2: Intent?): Unit' is deprecated. Deprecated in Java.
-w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/AccountFragment.kt:165:9 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
-w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/AccountFragment.kt:168:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or suppress the diagnostic.
-w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/AccountFragment.kt:169:15 'fun onActivityResult(p0: Int, p1: Int, p2: Intent?): Unit' is deprecated. Deprecated in Java.
-w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:89:13 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
-w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:190:48 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'kotlin.String?'.
-w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:235:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or suppress the diagnostic.
-w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:236:15 'fun onActivityResult(p0: Int, p1: Int, p2: Intent?): Unit' is deprecated. Deprecated in Java.
+> Task :app:compileDebugKotlin FAILED
+e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/MainActivity.kt:15:38 Unresolved reference 'ConversationListFragment'.
+e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/MainActivity.kt:77:61 Unresolved reference 'ConversationListFragment'.
+e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/chat/ChatFragment.kt:77:53 Argument type mismatch: actual type is 'kotlin.String?', but 'kotlin.String' was expected.
 
-BUILD SUCCESSFUL in 1s
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1s
 14 actionable tasks: 1 executed, 13 up-to-date

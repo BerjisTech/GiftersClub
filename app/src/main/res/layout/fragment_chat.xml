@@ -1,14 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Message pane -->
-    <LinearLayout
+    <!-- Conversations header -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="Conversations"
+        android:textAppearance="?attr/textAppearanceHeadline6" />
+
+    <!-- Conversation list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvConversations"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="4dp" />
+
+    <!-- Chat pane: appears once a conversation is selected -->
+    <LinearLayout
+        android:id="@+id/chatPane"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/tvPartnerName"
@@ -25,7 +43,6 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:padding="4dp" />
-
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -55,4 +72,4 @@
                 android:contentDescription="Send" />
         </LinearLayout>
     </LinearLayout>
-</androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
