@@ -67,4 +67,18 @@ interface PostApi {
     suspend fun upsertPostTags(
         @Body mappings: List<PostTagUpsertRequest>
     )
+
+    /**
+     * Fetch posts created by a specific user.
+     */
+    @GET("posts")
+    suspend fun getUserPosts(
+        @Query("select", encoded = true) select: String =
+            "*,profile:profiles(id,user_id,username,image)," +
+            "media:post_media(id,media_type,url,order,created_at)",
+        @Query("order") order: String,
+        @Query("limit") limit: Int,
+        @Query("offset") offset: Int,
+        @Query("user_id", encoded = true) userIdFilter: String
+    ): List<Post>
 }

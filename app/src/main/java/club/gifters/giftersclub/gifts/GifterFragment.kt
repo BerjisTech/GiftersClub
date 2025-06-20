@@ -6,8 +6,15 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
 import coil.load
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 import club.gifters.giftersclub.R
+import club.gifters.giftersclub.gifts.GiftFragment
+import club.gifters.giftersclub.gifts.UserPostsFragment
+import club.gifters.giftersclub.gifts.UserWishlistsFragment
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.network.ProfileApi
 import club.gifters.giftersclub.network.RetrofitClient
@@ -37,11 +44,29 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
             username?.let { uname ->
                 val list = profileApi.getProfileByUsername("*", "eq.$uname")
                 val profile = list.firstOrNull()
-                profile?.let { bindProfile(it, imageAvatar, textName, textUser, textBio) }
-                // Embed gifts fragment
-                childFragmentManager.beginTransaction()
-                    .replace(R.id.gifterContentContainer, GiftFragment())
-                    .commit()
+                profile?.let { prof ->
+                    bindProfile(prof, imageAvatar, textName, textUser, textBio)
+                    // Setup tabs and viewpager for this user
+                    val tabLayout = view.findViewById<TabLayout>(R.id.tabLayout)
+                    val viewPager = view.findViewById<ViewPager2>(R.id.viewPager)
+                    viewPager.adapter = object : FragmentStateAdapter(this@GifterFragment) {
+                        override fun getItemCount() = 3
+                        override fun createFragment(position: Int) = when (position) {
+                            0 -> GiftFragment()
+                            1 -> UserWishlistsFragment.newInstance(prof.userId)
+                            2 -> UserPostsFragment.newInstance(prof.userId)
+                            else -> GiftFragment()
+                        }
+                    }
+                    TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
+                        tab.text = when (pos) {
+                            0 -> "Gifts"
+                            1 -> "Wishlists"
+                            2 -> "Posts"
+                            else -> ""
+                        }
+                    }.attach()
+                }
             }
         }
     }
