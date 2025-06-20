@@ -91,9 +91,12 @@ class GiftAdapter(
 
             // apply blur to gift image for glassmorphism (Android S+)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                imageGift.setRenderEffect(
-                    RenderEffect.createBlurEffect(0f, 0f, Shader.TileMode.CLAMP)
-                )
+                try {
+                    imageGift.setRenderEffect(
+                        RenderEffect.createBlurEffect(0f, 0f, Shader.TileMode.CLAMP)
+                    )
+                } catch (_: Throwable) {
+                }
             }
 
             textName.text = gift.name
