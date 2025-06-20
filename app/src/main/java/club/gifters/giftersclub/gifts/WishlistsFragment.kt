@@ -66,9 +66,9 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
                 )
                 adapter.submitList(items)
                 val empty = items.isEmpty()
-                tvEmpty.visibility = if (empty) View.VISIBLE else View.GONE
+                tvEmpty.setVisibility(if (empty) View.VISIBLE else View.GONE)
             } catch (_: Exception) {
-                tvEmpty.visibility = View.VISIBLE
+                tvEmpty.setVisibility(View.VISIBLE)
             }
         }
     }

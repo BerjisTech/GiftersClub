@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Circular shape for avatar images -->
+    <style name="ShapeAppearance.Circle" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+    <!-- Styling for top TabLayout text -->
     <style name="TopTabsStyling" parent="TextAppearance.Design.Tab">
-        <item name="android:textSize">10sp</item> <!-- Change size here -->
-        <item name="textAllCaps">true</item> <!-- Optional -->
+        <item name="android:textAllCaps">true</item>
     </style>
 </resources>
