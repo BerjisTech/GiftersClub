@@ -4,6 +4,8 @@ import club.gifters.giftersclub.network.RetrofitClient
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import android.view.View
+import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import club.gifters.giftersclub.gifts.GiftFragment
@@ -89,5 +91,21 @@ class MainActivity : AppCompatActivity() {
                 else -> true
             }
         }
+
+        // Handle back-stack changes: show tabs + bottom nav on root, else show toolbar back arrow
+        val toolbar = findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.topAppBar)
+        setSupportActionBar(toolbar)
+        toolbar.setNavigationOnClickListener { onBackPressed() }
+
+        fun updateBars() {
+            val isRoot = supportFragmentManager.backStackEntryCount == 0
+            tabLayout.visibility = if (isRoot) View.VISIBLE else View.GONE
+            bottomNav.visibility = if (isRoot) View.VISIBLE else View.GONE
+            toolbar.visibility = if (isRoot) View.GONE else View.VISIBLE
+            supportActionBar?.setDisplayHomeAsUpEnabled(!isRoot)
+        }
+
+        supportFragmentManager.addOnBackStackChangedListener { updateBars() }
+        updateBars()
     }
 }
