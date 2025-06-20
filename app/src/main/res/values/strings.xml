@@ -26,4 +26,10 @@
     <string name="like">Like</string>
     <string name="comment">Comment</string>
     <string name="share">Share</string>
+
+    <!-- Toolbar titles -->
+    <string name="account">Account</string>
+    <string name="conversations">Conversations</string>
+    <string name="notifications">Notifications</string>
+    <string name="wishlist">Wishlist</string>
 </resources>

@@ -26,6 +26,8 @@ class NotificationListFragment : Fragment(R.layout.fragment_notifications) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         userId = decodeCurrentUserId()
+        // Update toolbar title
+        requireActivity().title = getString(R.string.notifications)
 
         val rv = view.findViewById<RecyclerView>(R.id.rvNotifications)
         rv.layoutManager = LinearLayoutManager(requireContext())

@@ -62,6 +62,8 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // Update toolbar title
+        requireActivity().title = getString(R.string.account)
         ivProfileImage    = view.findViewById(R.id.ivProfileImage)
         btnEditImage      = view.findViewById(R.id.btnEditImage)
         tvUsername        = view.findViewById(R.id.tvUsername)

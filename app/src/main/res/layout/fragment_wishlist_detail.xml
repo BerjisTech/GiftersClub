@@ -21,15 +21,6 @@
                 android:scaleType="centerCrop"
                 android:visibility="gone" />
 
-            <ImageButton
-                android:id="@+id/btnBack"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@android:drawable/ic_menu_close_clear_cancel"
-                android:contentDescription="@string/close"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:layout_margin="8dp"
-                android:layout_gravity="top|start" />
 
             <ImageView
                 android:id="@+id/ivOwnerAvatar"

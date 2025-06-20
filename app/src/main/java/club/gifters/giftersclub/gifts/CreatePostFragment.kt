@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -41,7 +40,6 @@ import retrofit2.Response
 class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private val postApi = RetrofitClient.postApi
     private val storageApi = RetrofitClient.storageApi
-    private lateinit var btnClose: ImageButton
     private lateinit var btnSelectMedia: Button
     private lateinit var tvSelectedCount: TextView
     private lateinit var layoutPreviews: LinearLayout
@@ -64,7 +62,6 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        btnClose = view.findViewById(R.id.btnClose)
         btnSelectMedia = view.findViewById(R.id.btnSelectMedia)
         tvSelectedCount = view.findViewById(R.id.tvSelectedCount)
         layoutPreviews = view.findViewById(R.id.layoutPreviews)
@@ -76,9 +73,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnPost = view.findViewById(R.id.btnPost)
         progressBar = view.findViewById(R.id.progressBar)
 
-        btnClose.setOnClickListener {
-            parentFragmentManager.popBackStack()
-        }
+    // Remove fragment-level close button; use toolbar back arrow only
         btnSelectMedia.setOnClickListener {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
@@ -99,6 +94,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnPost.setOnClickListener {
             submitPost()
         }
+        // Update toolbar title
+        requireActivity().title = getString(R.string.create_post)
     }
 
     override fun onDestroyView() {

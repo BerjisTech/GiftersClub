@@ -6,7 +6,6 @@ import android.util.Base64
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.widget.doAfterTextChanged
@@ -26,7 +25,9 @@ import java.util.Locale
 class CreateWishlistFragment : Fragment(R.layout.fragment_create_wishlist) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val btnCancel = view.findViewById<ImageButton>(R.id.btnCancel)
+        // Update toolbar title
+        requireActivity().title = getString(R.string.create_wishlist)
+        // Remove fragment-level cancel button; use toolbar back arrow only
         val etName = view.findViewById<EditText>(R.id.etWishlistName)
         val etDescription = view.findViewById<EditText>(R.id.etWishlistDescription)
         val etLink = view.findViewById<EditText>(R.id.etWishlistLink)
@@ -36,9 +37,6 @@ class CreateWishlistFragment : Fragment(R.layout.fragment_create_wishlist) {
         val tvNote = view.findViewById<TextView>(R.id.tvWishlistNote)
         val btnCreate = view.findViewById<Button>(R.id.btnCreateWishlist)
 
-        btnCancel.setOnClickListener {
-            parentFragmentManager.popBackStack()
-        }
 
         // Decode current user ID from stored JWT
         var userId = ""

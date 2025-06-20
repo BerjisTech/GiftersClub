@@ -3,7 +3,6 @@ package club.gifters.giftersclub.gifts
 import android.os.Bundle
 import android.util.Base64
 import android.view.View
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -51,7 +50,7 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         wishlistId = arguments?.getString(ARG_WISHLIST_ID) ?: ""
-        val btnBack = view.findViewById<ImageButton>(R.id.btnBack)
+        // Remove fragment-level back button; use toolbar back arrow only
         val ivOwner = view.findViewById<ImageView>(R.id.ivOwnerAvatar)
         val tvOwner = view.findViewById<TextView>(R.id.tvOwnerName)
         val ivBanner = view.findViewById<ImageView>(R.id.ivWishlistBanner)
@@ -63,7 +62,7 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
         val progressBar = view.findViewById<ProgressBar>(R.id.progressBar)
         val rvContrib = view.findViewById<RecyclerView>(R.id.rvContributors)
 
-        btnBack.setOnClickListener { parentFragmentManager.popBackStack() }
+        // toolbar back arrow handles navigation
 
         rvContrib.layoutManager = LinearLayoutManager(requireContext())
         val contribAdapter = ContributorAdapter()
@@ -88,6 +87,8 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
 
                 // bind header
                 tvTitle.text = wish.name
+                // Update toolbar title to wishlist name (or generic)
+                requireActivity().title = wish.name.ifBlank { getString(R.string.wishlist) }
                 tvDesc.text = wish.description
                 // format creation date
                 val formattedDate = wish.createdAt?.let { raw ->

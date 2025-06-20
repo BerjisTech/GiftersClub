@@ -66,6 +66,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         userId = decodeCurrentUserId()
+        // Update toolbar title
+        requireActivity().title = getString(R.string.conversations)
 
         // Setup conversation list
         val rvConvs = view.findViewById<RecyclerView>(R.id.rvConversations)
