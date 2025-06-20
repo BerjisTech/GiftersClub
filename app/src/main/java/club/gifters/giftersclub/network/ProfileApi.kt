@@ -46,4 +46,13 @@ interface ProfileApi {
         @Query("select", encoded = true) select: String = "id,is_fulfilled",
         @Query("user_id", encoded = true) userIdFilter: String
     ): List<WishlistItem>
+
+    /**
+     * Fetch profiles for multiple user_ids (in filter).
+     */
+    @GET("profiles")
+    suspend fun getProfilesByUserIds(
+        @Query("select", encoded = true) select: String = "*",
+        @Query("user_id", encoded = true) userIdsFilter: String
+    ): List<Profile>
 }

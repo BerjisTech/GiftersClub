@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.gifts.CreateWishlistFragment
+import club.gifters.giftersclub.gifts.WishlistDetailFragment
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
@@ -38,7 +39,14 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
 
         val rv = view.findViewById<RecyclerView>(R.id.rvWishlists)
         rv.layoutManager = LinearLayoutManager(requireContext())
-        val adapter = WishlistAdapter()
+        val adapter = WishlistAdapter { wishlist ->
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer,
+                    WishlistDetailFragment.newInstance(wishlist.id)
+                )
+                .addToBackStack(null)
+                .commit()
+        }
         rv.adapter = adapter
 
         val tvEmpty = view.findViewById<TextView>(R.id.tvEmptyWishlists)

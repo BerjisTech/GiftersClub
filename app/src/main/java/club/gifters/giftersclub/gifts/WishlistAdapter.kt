@@ -15,23 +15,29 @@ import club.gifters.giftersclub.model.Wishlist
 /**
  * Adapter for displaying a user's wishlists.
  */
-class WishlistAdapter : ListAdapter<Wishlist, WishlistAdapter.WishlistViewHolder>(Diff) {
+class WishlistAdapter(
+    private val onClick: (Wishlist) -> Unit
+) : ListAdapter<Wishlist, WishlistAdapter.WishlistViewHolder>(Diff) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): WishlistViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_wishlist, parent, false)
-        return WishlistViewHolder(view)
+        return WishlistViewHolder(view, onClick)
     }
 
     override fun onBindViewHolder(holder: WishlistViewHolder, position: Int) {
         holder.bind(getItem(position))
     }
 
-    class WishlistViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class WishlistViewHolder(
+        itemView: View,
+        private val onClick: (Wishlist) -> Unit
+    ) : RecyclerView.ViewHolder(itemView) {
         private val ivImage: ImageView = itemView.findViewById(R.id.ivWishlistImage)
         private val tvName: TextView = itemView.findViewById(R.id.tvWishlistName)
         private val tvDesc: TextView = itemView.findViewById(R.id.tvWishlistDesc)
 
         fun bind(item: Wishlist) {
+            itemView.setOnClickListener { onClick(item) }
             tvName.text = item.name
             tvDesc.text = item.description
             if (item.image.isNotBlank()) {
