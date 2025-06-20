@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:textAppearance="?attr/textAppearanceBody1"
         android:textColor="@color/black"
-        android:text="Notification message" />
+        android:text="@string/notification_message" />
 
     <TextView
         android:id="@+id/tvCreatedAt"
@@ -19,7 +19,12 @@
         android:layout_height="wrap_content"
         android:textAppearance="?attr/textAppearanceCaption"
         android:textColor="@color/black"
-        android:text="2h ago"
+        android:text="@string/_2h_ago"
         android:layout_marginTop="4dp" />
+
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginVertical="8dp"/>
 
 </LinearLayout>

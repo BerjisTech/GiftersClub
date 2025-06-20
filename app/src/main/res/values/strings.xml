@@ -32,4 +32,9 @@
     <string name="conversations">Conversations</string>
     <string name="notifications">Notifications</string>
     <string name="wishlist">Wishlist</string>
+    <string name="send">Send</string>
+    <string name="type_a_message">Type a message...</string>
+    <string name="attach">Attach</string>
+    <string name="notification_message">Notification message</string>
+    <string name="_2h_ago">2h ago</string>
 </resources>

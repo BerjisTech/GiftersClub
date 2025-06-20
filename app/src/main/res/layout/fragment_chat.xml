@@ -3,15 +3,6 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
-    <!-- Conversations header -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:text="@string/conversations"
-        android:textAppearance="?attr/textAppearanceHeadline6" />
-
     <!-- Conversation list -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvConversations"
@@ -55,21 +46,21 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@android:drawable/ic_menu_camera"
-                android:contentDescription="Attach" />
+                android:contentDescription="@string/attach" />
 
             <EditText
                 android:id="@+id/etMessage"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="Type a message..." />
+                android:hint="@string/type_a_message" />
 
             <ImageButton
                 android:id="@+id/btnSend"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@android:drawable/ic_menu_send"
-                android:contentDescription="Send" />
+                android:contentDescription="@string/send" />
         </LinearLayout>
     </LinearLayout>
     </LinearLayout>
