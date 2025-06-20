@@ -7,13 +7,14 @@
         android:id="@+id/mediaImageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="centerCrop"
+        android:scaleType="fitCenter"
         android:contentDescription="Post image" />
 
     <VideoView
         android:id="@+id/mediaVideoView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_gravity="center"
         android:visibility="gone"
         android:contentDescription="Post video" />
 
