@@ -1,17 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/createWishlistRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:gravity="center">
+    android:padding="16dp">
 
-    <TextView
+    <ImageButton
+        android:id="@+id/btnCancel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Create Wishlist Form"
-        android:textAppearance="?attr/textAppearanceHeadline6" />
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:contentDescription="@string/close"
+        android:background="?android:attr/selectableItemBackgroundBorderless" />
 
-    <!-- TODO: Add form fields here -->
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/create_wishlist"
+        android:textAppearance="?attr/textAppearanceHeadline6"
+        android:gravity="center"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp" />
+
+    <EditText
+        android:id="@+id/etWishlistName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/wishlist_name_hint"
+        android:inputType="text" />
+
+    <EditText
+        android:id="@+id/etWishlistDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/wishlist_description_hint"
+        android:inputType="textMultiLine"
+        android:minLines="3"
+        android:gravity="top"
+        android:layout_marginTop="8dp" />
+
+    <EditText
+        android:id="@+id/etWishlistLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/wishlist_link_hint"
+        android:inputType="textUri"
+        android:layout_marginTop="8dp" />
+
+    <EditText
+        android:id="@+id/etWishlistImage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/wishlist_image_hint"
+        android:inputType="textUri"
+        android:layout_marginTop="8dp" />
+
+    <EditText
+        android:id="@+id/etWishlistTokens"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/wishlist_tokens_hint"
+        android:inputType="number"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/tvWishlistCost"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:textAppearance="?attr/textAppearanceBody2"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/tvWishlistNote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/good_to_know_message"
+        android:textAppearance="?attr/textAppearanceBody2"
+        android:layout_marginTop="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/btnCreateWishlist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/create_wishlist" />
+
+    </LinearLayout>
 
 </LinearLayout>

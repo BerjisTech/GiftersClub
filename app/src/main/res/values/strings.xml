@@ -8,6 +8,13 @@
     <string name="post">Post</string>
     <string name="whats_on_your_mind">What is on your mind?</string>
     <string name="close">Close</string>
+    <string name="create_wishlist">Create Wishlist</string>
+    <string name="wishlist_name_hint">Wishlist Name</string>
+    <string name="wishlist_description_hint">Description</string>
+    <string name="wishlist_link_hint">External Link (Optional)</string>
+    <string name="wishlist_image_hint">Cover Image URL (Optional)</string>
+    <string name="wishlist_tokens_hint">Tokens</string>
+    <string name="good_to_know_message">Good to know: you can add specific gift items to your wishlist after creating it.</string>
 
     <!-- Overrides to fix backslash-escaped apostrophes in material picker strings -->
     <string name="material_hour_24h_suffix"><xliff:g id="number">%1$s</xliff:g><xliff:g id="suffix">%2$s</xliff:g></string>

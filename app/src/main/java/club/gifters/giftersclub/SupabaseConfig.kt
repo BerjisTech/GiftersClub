@@ -8,4 +8,7 @@ object SupabaseConfig {
     const val AVATARS_BUCKET = "avatars"
     /** Bucket for chat media attachments */
     const val CHAT_MEDIA_BUCKET = "chat-media"
+
+    /** Approximate conversion rate from KES to USD */
+    const val KES_USD_RATE = 0.0078
 }
