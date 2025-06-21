@@ -52,10 +52,10 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
                     viewPager.adapter = object : FragmentStateAdapter(this@GifterFragment) {
                         override fun getItemCount() = 3
                         override fun createFragment(position: Int) = when (position) {
-                            0 -> GiftFragment()
+                            0 -> GiftFragment.newInstance(prof.userId, prof.username)
                             1 -> UserWishlistsFragment.newInstance(prof.userId)
                             2 -> UserPostsFragment.newInstance(prof.userId)
-                            else -> GiftFragment()
+                            else -> GiftFragment.newInstance(prof.userId, prof.username)
                         }
                     }
                     TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
