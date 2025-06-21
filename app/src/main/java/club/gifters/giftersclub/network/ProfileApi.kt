@@ -55,4 +55,14 @@ interface ProfileApi {
         @Query("select", encoded = true) select: String = "*",
         @Query("user_id", encoded = true) userIdsFilter: String
     ): List<Profile>
+
+    /**
+     * Search profiles by username or email (or exact user_id).
+     * Uses Supabase OR filter with ilike for partial matches.
+     */
+    @GET("profiles")
+    suspend fun searchProfiles(
+        @Query("select") select: String = "*",
+        @Query("or") orFilter: String
+    ): List<Profile>
 }

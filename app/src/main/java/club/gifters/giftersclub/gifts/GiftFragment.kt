@@ -10,16 +10,27 @@ import android.content.Context
 import android.util.Base64
 import android.util.Log
 import androidx.appcompat.app.AlertDialog
+import android.widget.EditText
 import android.widget.Toast
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
-import org.json.JSONObject
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
+import coil.load
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.GiftApi
 import club.gifters.giftersclub.model.Gift
+import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.network.RetrofitClient
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import org.json.JSONObject
 
 /**
  * Fragment displaying a grid of gifts with sorting options.
@@ -81,9 +92,7 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
 
         val recycler = view.findViewById<RecyclerView>(R.id.recyclerGifts)
         recycler.layoutManager = GridLayoutManager(context, 2)
-        adapter = GiftAdapter { gift ->
-            recipientUserId?.let { showSendGiftDialog(gift) }
-        }
+        adapter = GiftAdapter { gift -> handleGiftClick(gift) }
         recycler.adapter = adapter
         recycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
@@ -116,13 +125,14 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
         }
     }
 
-    private fun showSendGiftDialog(gift: Gift) {
+    private fun showConfirmDialog(gift: Gift) {
         AlertDialog.Builder(requireContext())
             .setTitle("Send Gift")
             .setMessage(
                 "Send ${gift.name} for ${gift.tokens} tokens to ${recipientUsername ?: "user"}?"
             )
             .setPositiveButton("Send") { _, _ -> sendGift(gift) }
+            .setNeutralButton("Change") { _, _ -> showRecipientSearchDialog(gift) }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
     }
@@ -160,5 +170,102 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
         if (parts.size < 2) return null
         val decoded = String(Base64.decode(parts[1], Base64.URL_SAFE))
         return JSONObject(decoded).optString("sub")
+    }
+    
+    private fun handleGiftClick(gift: Gift) {
+        if (recipientUserId != null) showConfirmDialog(gift)
+        else showRecipientSearchDialog(gift)
+    }
+
+    /**
+     * Prompt user to search and select a recipient dynamically.
+     */
+    private fun showRecipientSearchDialog(gift: Gift) {
+        val dialog = BottomSheetDialog(requireContext())
+        val view = layoutInflater.inflate(R.layout.dialog_search_user, null)
+        val et = view.findViewById<EditText>(R.id.etSearch)
+        val rv = view.findViewById<RecyclerView>(R.id.rvResults)
+        val adapter = SearchUserAdapter { prof ->
+            dialog.dismiss()
+            recipientUserId = prof.userId
+            recipientUsername = prof.username
+            showConfirmDialog(gift)
+        }
+        rv.layoutManager = LinearLayoutManager(requireContext())
+        rv.adapter = adapter
+        et.doAfterTextChanged { etxt ->
+            val q = etxt.toString().trim()
+            // Only search when input is at least 2 characters to avoid bad requests
+            if (q.length >= 2) {
+                lifecycleScope.launch {
+                    try {
+                        // Search by username or email (PostgREST OR syntax)
+                        val filter = "username.ilike.%$q%,email.ilike.%$q%"
+                        val list = RetrofitClient.profileApi.searchProfiles("*", filter)
+                        adapter.submitList(list)
+                    } catch (e: HttpException) {
+                        if (e.code() == 401) {
+                            Toast.makeText(requireContext(), "Please login to search users", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Log.w(TAG, "Search HTTP error", e)
+                        }
+                        adapter.submitList(emptyList())
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Search error", e)
+                        adapter.submitList(emptyList())
+                    }
+                }
+            } else {
+                adapter.submitList(emptyList())
+            }
+        }
+        dialog.setContentView(view)
+        dialog.show()
+        // Auto-focus search field and show keyboard
+        et.requestFocus()
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.showSoftInput(et, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+    }
+
+}
+
+/**
+ * Adapter for showing profile search results in GiftFragment.
+ */
+private class SearchUserAdapter(
+    private val onClick: (Profile) -> Unit
+) : RecyclerView.Adapter<SearchUserAdapter.VH>() {
+    private val items = mutableListOf<Profile>()
+    fun submitList(list: List<Profile>) {
+        items.clear()
+        items.addAll(list)
+        notifyDataSetChanged()
+    }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+        val v = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_search_user, parent, false)
+        return VH(v)
+    }
+    override fun getItemCount(): Int = items.size
+    override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(items[position])
+
+    inner class VH(view: View) : RecyclerView.ViewHolder(view) {
+        private val iv: ImageView = view.findViewById(R.id.ivAvatar)
+        private val tvName: TextView = view.findViewById(R.id.tvName)
+        private val tvUsername: TextView = view.findViewById(R.id.tvUsername)
+        init {
+            view.setOnClickListener {
+                val pos = adapterPosition
+                if (pos != RecyclerView.NO_POSITION) {
+                    onClick(items[pos])
+                }
+            }
+        }
+        fun bind(p: Profile) {
+            tvName.text = p.name.orEmpty()
+            tvUsername.text = "@${p.username}"
+            if (p.image.isNotBlank()) iv.load(p.image)
+            else iv.setImageResource(android.R.color.darker_gray)
+        }
     }
 }
