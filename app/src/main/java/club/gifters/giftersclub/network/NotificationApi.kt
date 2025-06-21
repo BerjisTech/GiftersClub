@@ -31,4 +31,12 @@ interface NotificationApi {
         @Query("id", encoded = true) idFilter: String,
         @Body updates: Map<String, @JvmSuppressWildcards Any>
     ): Response<List<Notification>>
+    /**
+     * Create a new notification record.
+     */
+    @Headers("Prefer: return=representation")
+    @POST("notifications")
+    suspend fun createNotification(
+        @Body notification: Notification
+    ): Response<List<Notification>>
 }

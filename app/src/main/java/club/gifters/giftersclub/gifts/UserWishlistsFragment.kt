@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Wishlist
+import club.gifters.giftersclub.gifts.WishlistWithOwner
 import club.gifters.giftersclub.network.RetrofitClient
 import kotlinx.coroutines.launch
 
@@ -44,10 +45,14 @@ class UserWishlistsFragment : Fragment(R.layout.fragment_wishlists) {
 
         lifecycleScope.launch {
             try {
-                val items: List<Wishlist> = wishlistApi.getWishlists(
-                    select = "*",
-                    userIdFilter = "eq.$userId"
+                val joined = wishlistApi.getWishlists(
+                    select = "*,profile:profiles(id,user_id,username,name)",
+                    userIdFilter = "eq.$userId",
+                    order = "created_at.desc",
+                    limit = Int.MAX_VALUE,
+                    offset = 0
                 )
+                val items: List<Wishlist> = joined.map { it.toWishlist() }
                 adapter.submitList(items)
                 tvEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
             } catch (_: Exception) {

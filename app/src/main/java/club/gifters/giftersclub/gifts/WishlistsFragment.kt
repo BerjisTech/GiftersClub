@@ -2,40 +2,48 @@ package club.gifters.giftersclub.gifts
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Base64
 import android.view.View
 import android.widget.TextView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import android.widget.EditText
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.gifts.CreateWishlistFragment
 import club.gifters.giftersclub.gifts.WishlistDetailFragment
+import club.gifters.giftersclub.gifts.WishlistAdapter
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import android.util.Log
+import retrofit2.HttpException
+import androidx.appcompat.app.AlertDialog
+import club.gifters.giftersclub.payments.PaymentWebViewActivity
 
 /**
  * Fragment showing the current user's wishlists.
  */
 class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
     private val wishlistApi = RetrofitClient.wishlistApi
-    private var userId: String = ""
+    private var page = 0
+    private val pageSize = 30
+    private var isLoading = false
+    private var isLastPage = false
+    private var searchQuery: String = ""
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // Decode current user ID from stored JWT
-        requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
-            .getString("access_token", "")
-            ?.takeIf { it.isNotBlank() }
-            ?.let { token ->
-                token.split('.').getOrNull(1)?.let { payload ->
-                    val json = String(Base64.decode(payload, Base64.URL_SAFE))
-                    userId = JSONObject(json).optString("sub")
-                }
-            }
+
+        val etSearch = view.findViewById<EditText>(R.id.etSearchWishlists)
+        etSearch.doAfterTextChanged { editable ->
+            searchQuery = editable?.toString().orEmpty().trim()
+            page = 0
+            isLastPage = false
+            loadWishlists(view, clear = true)
+        }
 
         val rv = view.findViewById<RecyclerView>(R.id.rvWishlists)
         rv.layoutManager = LinearLayoutManager(requireContext())
@@ -48,9 +56,26 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
                 .commit()
         }
         rv.adapter = adapter
+        // infinite scroll
+        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                val layout = recyclerView.layoutManager as LinearLayoutManager
+                val visible = layout.childCount
+                val total = layout.itemCount
+                val first = layout.findFirstVisibleItemPosition()
+                if (!isLoading && !isLastPage
+                    && visible + first >= total
+                    && first >= 0
+                    && total >= pageSize
+                ) {
+                    loadWishlists(view, clear = false)
+                }
+            }
+        })
 
         val tvEmpty = view.findViewById<TextView>(R.id.tvEmptyWishlists)
-        val fab = view.findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fabCreateWishlist)
+        val fab = view.findViewById<FloatingActionButton>(R.id.fabCreateWishlist)
         fab.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.mainContentContainer, CreateWishlistFragment())
@@ -58,17 +83,43 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
                 .commit()
         }
 
+        // initial load
+        loadWishlists(view, clear = true)
+    }
+
+    private fun loadWishlists(view: View, clear: Boolean) {
+        if (isLoading || isLastPage) return
+        isLoading = true
+        val rv = view.findViewById<RecyclerView>(R.id.rvWishlists)
+        val adapter = rv.adapter as WishlistAdapter
+        val tvEmpty = view.findViewById<TextView>(R.id.tvEmptyWishlists)
         lifecycleScope.launch {
             try {
-                val items = wishlistApi.getWishlists(
-                    select = "*",
-                    userIdFilter = "eq.$userId"
+                val orFilter = searchQuery.takeIf(String::isNotBlank)
+                    ?.let { term ->
+                        val wild = "*${term.trim()}*"
+                        "(name.ilike.$wild,description.ilike.$wild,link.ilike.$wild," +
+                        "profile.username.ilike.$wild,profile.name.ilike.$wild)"
+                    }
+                Log.i("WishlistsFragment", "Loading page=${'$'}{page} size=${'$'}{pageSize} orFilter=${orFilter ?: "<none>"}")
+                val joined = wishlistApi.getWishlists(
+                    select = "*,profile:profiles(id,user_id,username,name)",
+                    orFilter = orFilter,
+                    order = "created_at.desc",
+                    limit = pageSize,
+                    offset = page * pageSize
                 )
-                adapter.submitList(items)
-                val empty = items.isEmpty()
-                tvEmpty.setVisibility(if (empty) View.VISIBLE else View.GONE)
-            } catch (_: Exception) {
-                tvEmpty.setVisibility(View.VISIBLE)
+                Log.i("WishlistsFragment", "Fetched ${'$'}{joined.size} raw results")
+                val wishlists = joined.map { it.toWishlist() }
+                if (clear) adapter.submitList(wishlists)
+                else adapter.submitList(adapter.currentList + wishlists)
+                if (joined.size < pageSize) isLastPage = true else page++
+                tvEmpty.visibility = if (adapter.currentList.isEmpty()) View.VISIBLE else View.GONE
+            } catch (e: Exception) {
+                Log.e("WishlistsFragment", "Error loading wishlists", e)
+                tvEmpty.visibility = View.VISIBLE
+            } finally {
+                isLoading = false
             }
         }
     }

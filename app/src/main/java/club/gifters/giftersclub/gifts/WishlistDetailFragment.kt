@@ -1,28 +1,36 @@
 package club.gifters.giftersclub.gifts
 
+import android.content.Context
 import android.os.Bundle
+import android.text.InputType
 import android.util.Base64
+import android.util.Log.*
 import android.view.View
+import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.model.ContributorSummary
+import club.gifters.giftersclub.model.Notification
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.model.Wishlist
 import club.gifters.giftersclub.model.WishlistContribution
 import club.gifters.giftersclub.network.ProfileApi
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.network.WishlistApi
+import club.gifters.giftersclub.payments.PaymentWebViewActivity
+import coil.load
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import retrofit2.HttpException
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -149,9 +157,130 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
                 }
                 contribAdapter.submitList(summary)
                 tvCount.text = getString(R.string.contributors_title) + " (${summary.size})"
+                // Show contribute button
+                view.findViewById<Button>(R.id.btnContribute).apply {
+                    visibility = View.VISIBLE
+                    setOnClickListener { showContributeDialog(wish, total) }
+                }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Failed to load wishlist details", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun getCurrentUserId(): String? {
+        val prefs = requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
+        val token = prefs.getString("access_token", null) ?: return null
+        val parts = token.split('.')
+        if (parts.size < 2) return null
+        val decoded = String(Base64.decode(parts[1], Base64.URL_SAFE))
+        return JSONObject(decoded).optString("sub")
+    }
+
+    private fun showContributeDialog(wishlist: Wishlist, contributed: Int) {
+        val remaining = wishlist.tokens - contributed
+        val input = EditText(requireContext()).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            hint = "Enter amount (max $remaining)"
+        }
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Contribute tokens")
+            .setView(input)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton("Contribute", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val amount = input.text.toString().toIntOrNull() ?: 0
+                when {
+                    amount <= 0 -> Toast.makeText(requireContext(), "Enter a valid contribution amount.", Toast.LENGTH_SHORT).show()
+                    amount > remaining -> Toast.makeText(requireContext(), "Cannot contribute more than remaining $remaining tokens.", Toast.LENGTH_SHORT).show()
+                    else -> {
+                        dialog.dismiss()
+                        continueContributionFlow(wishlist, amount)
+                    }
+                }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun continueContributionFlow(wishlist: Wishlist, amount: Int) {
+        val contributorId = getCurrentUserId() ?: run {
+            Toast.makeText(requireContext(), "User not authenticated", Toast.LENGTH_SHORT).show()
+            return
+        }
+        lifecycleScope.launch {
+            try {
+                val profiles = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$contributorId")
+                val profile = profiles.firstOrNull()
+                val balance = profile?.tokenBalance ?: 0
+                if (balance < amount) {
+                    val needed = amount - balance
+                    showTopUpPrompt(contributorId, profile?.email.orEmpty(), needed)
+                    return@launch
+                }
+                // Contribute via Edge Function
+                RetrofitClient.functionsApi.processWishlistContributionRpc(
+                    mapOf(
+                        "wishlistId" to wishlist.id,
+                        "contributorId" to contributorId,
+                        "tokens" to amount
+                    )
+                )
+                // Notifications
+                val ownerId = wishlist.userId
+                val username = profile?.username.orEmpty()
+                if (username.isNotBlank()) {
+                    RetrofitClient.notificationApi.createNotification(
+                        Notification(
+                            id = "",
+                            userId = ownerId,
+                            type = "wishlist_contribution",
+                            referenceId = wishlist.id,
+                            message = "$username contributed $amount tokens to your ${wishlist.name}",
+                            isRead = false,
+                            createdAt = "",
+                            updatedAt = null,
+                            senderId = contributorId
+                        )
+                    )
+                    RetrofitClient.notificationApi.createNotification(
+                        Notification(
+                            id = "",
+                            userId = contributorId,
+                            type = "wishlist_contribution",
+                            referenceId = wishlist.id,
+                            message = "You contributed $amount tokens to ${wishlist.name}",
+                            isRead = false,
+                            createdAt = "",
+                            updatedAt = null,
+                            senderId = contributorId
+                        )
+                    )
+                }
+                Toast.makeText(requireContext(), "Contribution successful", Toast.LENGTH_SHORT).show()
+                // Refresh UI
+                onViewCreated(requireView(), null)
+            } catch (e: HttpException) {
+                e("WishlistDetail", "Error contributing to wishlist", e)
+                Toast.makeText(requireContext(), "Failed to contribute. Please try again later.", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                e("WishlistDetail", "Error contributing to wishlist", e)
+                Toast.makeText(requireContext(), "Failed to contribute. Please try again later.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun showTopUpPrompt(userId: String, email: String, needed: Int) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Insufficient tokens")
+            .setMessage("You have insufficient tokens. You need $needed more to contribute. Top up now?")
+            .setPositiveButton("Buy Tokens") { _, _ ->
+                val txRef = "topup_${userId}_${System.currentTimeMillis()}"
+                PaymentWebViewActivity.start(requireContext(), userId, email, needed, txRef, "")
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 }

@@ -14,6 +14,14 @@ interface FunctionsApi {
     ): Response<Unit>
 
     /**
+     * Securely contribute to a wishlist via Edge Function.
+     */
+    @POST("contribute-wishlist")
+    suspend fun processWishlistContributionRpc(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /**
      * Process purchase of tokens securely on backend via Edge Function.
      */
     @POST("purchase-tokens")

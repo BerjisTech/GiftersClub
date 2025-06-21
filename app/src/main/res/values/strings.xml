@@ -40,5 +40,7 @@
     <string name="buy_tokens">Buy Tokens</string>
     <string name="enter_token_amount">Enter token amount</string>
     <string name="invalid_amount">Please enter a valid amount</string>
+    <string name="search_wishlists">Search wishlists…</string>
+    <string name="no_wishlists_found">No wishlists found</string>
     <string name="buy">Buy</string>
 </resources>

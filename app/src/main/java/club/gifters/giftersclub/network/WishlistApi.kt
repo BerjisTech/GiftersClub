@@ -16,9 +16,13 @@ import club.gifters.giftersclub.model.WishlistContribution
 interface WishlistApi {
     @GET("wishlists")
     suspend fun getWishlists(
-        @Query("select", encoded = true) select: String = "*",
-        @Query("user_id", encoded = true) userIdFilter: String
-    ): List<Wishlist>
+        @Query("select",  encoded = true) select: String = "*,profile:profiles(id,user_id,username,name)",
+        @Query("user_id", encoded = true) userIdFilter: String? = null,
+        @Query("or",       encoded = true) orFilter: String? = null,
+        @Query("order",    encoded = true) order: String = "created_at.desc",
+        @Query("limit")   limit: Int,
+        @Query("offset")  offset: Int
+    ): List<club.gifters.giftersclub.gifts.WishlistWithOwner>
 
     /**
      * Create a new wishlist record. Returns the created Wishlist.
