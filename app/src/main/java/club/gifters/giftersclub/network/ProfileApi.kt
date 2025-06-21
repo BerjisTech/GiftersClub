@@ -62,7 +62,7 @@ interface ProfileApi {
      */
     @GET("profiles")
     suspend fun searchProfiles(
-        @Query("select") select: String = "*",
-        @Query("or") orFilter: String
+        @Query("select", encoded = true) select: String = "*",
+        @Query("or",      encoded = true) orFilter: String
     ): List<Profile>
 }

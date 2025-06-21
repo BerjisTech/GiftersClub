@@ -211,20 +211,20 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
             // Only search when input is at least 2 characters to avoid bad requests
             if (q.length >= 2) {
                 lifecycleScope.launch {
+                    val filter = "(username.ilike.*$q*,email.ilike.*$q*)"
+                    Log.i(TAG, "Searching profiles with filter: $filter")
                     try {
-                        // Search by username or email (PostgREST OR syntax)
-                        val filter = "username.ilike.%$q%,email.ilike.%$q%"
                         val list = RetrofitClient.profileApi.searchProfiles("*", filter)
+                        Log.i(TAG, "Search returned ${'$'}{list.size} profiles")
                         adapter.submitList(list)
                     } catch (e: HttpException) {
+                        Log.w(TAG, "Search HTTP error (filter=$filter)", e)
                         if (e.code() == 401) {
                             Toast.makeText(requireContext(), "Please login to search users", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Log.w(TAG, "Search HTTP error", e)
                         }
                         adapter.submitList(emptyList())
                     } catch (e: Exception) {
-                        Log.e(TAG, "Search error", e)
+                        Log.e(TAG, "Search error (filter=$filter)", e)
                         adapter.submitList(emptyList())
                     }
                 }
