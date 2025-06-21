@@ -30,6 +30,7 @@ import club.gifters.giftersclub.network.RetrofitClient
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import org.json.JSONObject
 
 /**
@@ -143,9 +144,18 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
             return
         }
         val recipientId = recipientUserId ?: return
-        val txRef = "gift_${gifterId}_${System.currentTimeMillis()}"
         lifecycleScope.launch {
             try {
+                // Fetch gifter profile to check token balance
+                val list = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$gifterId")
+                val profile = list.firstOrNull()
+                val balance = profile?.tokenBalance ?: 0
+                if (balance < gift.tokens) {
+                    showTopUpPrompt(gift, gifterId, profile?.email.orEmpty(), gift.tokens - balance)
+                    return@launch
+                }
+                // Sufficient balance: proceed to send gift
+                val txRef = "gift_${gifterId}_${System.currentTimeMillis()}"
                 RetrofitClient.functionsApi.processGiftSendRpc(
                     mapOf(
                         "giftId" to gift.id,
@@ -156,6 +166,9 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
                     )
                 )
                 Toast.makeText(requireContext(), "Gift sent successfully!", Toast.LENGTH_SHORT).show()
+            } catch (e: HttpException) {
+                Log.e(TAG, "Error sending gift", e)
+                Toast.makeText(requireContext(), "Failed to send gift", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Log.e(TAG, "Error sending gift", e)
                 Toast.makeText(requireContext(), "Failed to send gift", Toast.LENGTH_SHORT).show()
@@ -227,6 +240,27 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
         imm.showSoftInput(et, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
     }
 
+}
+
+/**
+ * Prompt user to top up tokens before gifting.
+ */
+private fun Fragment.showTopUpPrompt(
+    gift: Gift,
+    userId: String,
+    email: String,
+    needed: Int
+) {
+    AlertDialog.Builder(requireContext())
+        .setTitle("Insufficient tokens")
+        .setMessage("You have insufficient tokens. You need $needed more to send this gift. Top up now?")
+        .setPositiveButton("Buy Tokens") { _, _ ->
+            // Launch token purchase flow
+            val txRef = "topup_${userId}_${System.currentTimeMillis()}"
+            PaymentWebViewActivity.start(requireContext(), userId, email, needed, txRef, "")
+        }
+        .setNegativeButton(android.R.string.cancel, null)
+        .show()
 }
 
 /**
