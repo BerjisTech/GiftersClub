@@ -42,5 +42,6 @@
     <string name="invalid_amount">Please enter a valid amount</string>
     <string name="search_wishlists">Search wishlists…</string>
     <string name="no_wishlists_found">No wishlists found</string>
+    <string name="withdrawals">Withdrawals</string>
     <string name="buy">Buy</string>
 </resources>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Available Balance -->
+        <TextView
+            android:id="@+id/tvAvailableBalanceTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Available Balance"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:layout_marginBottom="8dp" />
+        <TextView
+            android:id="@+id/tvAvailableBalanceTokens"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 tokens"
+            android:textSize="24sp" />
+        <TextView
+            android:id="@+id/tvAvailableBalanceCurrency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="$0.00"
+            android:textSize="24sp" />
+        <TextView
+            android:id="@+id/tvAvailableBalanceSummary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:layout_marginBottom="16dp" />
+
+        <!-- Request Withdrawal -->
+        <TextView
+            android:id="@+id/tvRequestWithdrawalTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Request Withdrawal"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:layout_marginBottom="8dp" />
+        <TextView
+            android:id="@+id/tvRequestWithdrawalInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Withdraw your earnings to your preferred payment method"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Amount (KES)"
+            android:layout_marginTop="8dp" />
+        <EditText
+            android:id="@+id/etWithdrawAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:hint="0"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Payment Method"
+            android:layout_marginTop="8dp" />
+        <Spinner
+            android:id="@+id/spinnerPaymentMethod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvPaymentDetailsLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Details"
+            android:visibility="gone" />
+        <EditText
+            android:id="@+id/etPaymentDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:hint="Enter details"
+            android:inputType="text"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvWithdrawalSummary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnSubmitWithdrawal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Request Withdrawal" />
+
+        <!-- History -->
+        <TextView
+            android:id="@+id/tvHistoryTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Your recent withdrawal requests"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvWithdrawals"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/tvEmptyWithdrawals"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No withdrawal requests yet."
+            android:visibility="gone"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+</ScrollView>

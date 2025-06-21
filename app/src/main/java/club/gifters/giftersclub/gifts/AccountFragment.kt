@@ -27,6 +27,7 @@ import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.model.WishlistItem
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
+import club.gifters.giftersclub.gifts.WithdrawalsFragment
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -101,8 +102,10 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
         btnEditUsername.setOnClickListener { promptEdit("username") }
         btnEditFullName.setOnClickListener { promptEdit("name") }
         btnWithdrawals.setOnClickListener {
-            // TODO: navigate to withdrawals page
-            Toast.makeText(requireContext(), "Withdrawals page", Toast.LENGTH_SHORT).show()
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, WithdrawalsFragment())
+                .addToBackStack(null)
+                .commit()
         }
         btnShareProfile.setOnClickListener { shareProfile() }
         btnBuyTokens.setOnClickListener { showBuyTokensDialog() }

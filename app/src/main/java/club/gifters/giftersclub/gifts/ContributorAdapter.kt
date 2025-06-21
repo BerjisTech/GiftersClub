@@ -11,6 +11,11 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.ContributorSummary
+import java.text.NumberFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 /**
  * Adapter to display contributors to a wishlist.
@@ -38,8 +43,16 @@ class ContributorAdapter : ListAdapter<ContributorSummary, ContributorAdapter.Vi
                 error(android.R.color.darker_gray)
             }
             tvName.text = item.profile.name ?: item.profile.username
-            tvDate.text = item.contributedAt
-            tvTokens.text = item.tokens.toString()
+            // Format the contribution date
+            val rawDate = item.contributedAt
+            tvDate.text = try {
+                DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+                    .format(Instant.parse(rawDate).atZone(ZoneId.systemDefault()))
+            } catch (_: Exception) {
+                rawDate.substringBefore('T')
+            }
+            // Format token count with grouping separators
+            tvTokens.text = NumberFormat.getNumberInstance().format(item.tokens)
         }
     }
 

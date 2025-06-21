@@ -28,6 +28,7 @@ import club.gifters.giftersclub.payments.PaymentWebViewActivity
  */
 class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
     private val wishlistApi = RetrofitClient.wishlistApi
+    private val profileApi = RetrofitClient.profileApi
     private var page = 0
     private val pageSize = 30
     private var isLoading = false
@@ -94,29 +95,41 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
         val adapter = rv.adapter as WishlistAdapter
         val tvEmpty = view.findViewById<TextView>(R.id.tvEmptyWishlists)
         lifecycleScope.launch {
+            var orFilter: String? = null
             try {
-                val orFilter = searchQuery.takeIf(String::isNotBlank)
-                    ?.let { term ->
-                        val wild = "*${term.trim()}*"
-                        "(name.ilike.$wild,description.ilike.$wild,link.ilike.$wild," +
-                        "profile.username.ilike.$wild,profile.name.ilike.$wild)"
+                if (searchQuery.isNotBlank()) {
+                    val term = searchQuery.trim()
+                    val wild = "*$term*"
+                    val profiles = profileApi.searchProfiles(
+                        orFilter = "(username.ilike.$wild,name.ilike.$wild)"
+                    )
+                    val userIds = profiles.map { it.userId }
+                    val filters = mutableListOf(
+                        "name.ilike.$wild",
+                        "description.ilike.$wild",
+                        "link.ilike.$wild"
+                    )
+                    if (userIds.isNotEmpty()) {
+                        filters.add("user_id.in.(${userIds.joinToString(",")})")
                     }
-                Log.i("WishlistsFragment", "Loading page=${'$'}{page} size=${'$'}{pageSize} orFilter=${orFilter ?: "<none>"}")
+                    orFilter = "(${filters.joinToString(",")})"
+                }
+                Log.i("WishlistsFragment", "Loading page=$page size=$pageSize orFilter=${orFilter ?: "<none>"}")
                 val joined = wishlistApi.getWishlists(
-                    select = "*,profile:profiles(id,user_id,username,name)",
+                    select   = "*,profile:profiles(id,user_id,username,name)",
                     orFilter = orFilter,
-                    order = "created_at.desc",
-                    limit = pageSize,
-                    offset = page * pageSize
+                    order    = "created_at.desc",
+                    limit    = pageSize,
+                    offset   = page * pageSize
                 )
-                Log.i("WishlistsFragment", "Fetched ${'$'}{joined.size} raw results")
+                Log.i("WishlistsFragment", "Fetched ${joined.size} raw results")
                 val wishlists = joined.map { it.toWishlist() }
                 if (clear) adapter.submitList(wishlists)
                 else adapter.submitList(adapter.currentList + wishlists)
                 if (joined.size < pageSize) isLastPage = true else page++
                 tvEmpty.visibility = if (adapter.currentList.isEmpty()) View.VISIBLE else View.GONE
             } catch (e: Exception) {
-                Log.e("WishlistsFragment", "Error loading wishlists", e)
+                Log.e("WishlistsFragment", "Error loading wishlists (orFilter=$orFilter)", e)
                 tvEmpty.visibility = View.VISIBLE
             } finally {
                 isLoading = false

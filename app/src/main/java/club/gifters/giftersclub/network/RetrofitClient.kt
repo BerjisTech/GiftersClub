@@ -5,6 +5,7 @@ import club.gifters.giftersclub.SupabaseConfig
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import club.gifters.giftersclub.network.WithdrawalApi
 
 /**
  * Singleton Retrofit client configured with Supabase REST URL and API key interceptor.
@@ -17,12 +18,12 @@ object RetrofitClient {
     }
 
     private val client = OkHttpClient.Builder()
-        // Log all requests and responses for debugging conversation REST calls
+        // Log all REST requests and responses for debugging
         .addInterceptor { chain ->
             val request = chain.request()
-            println("ChatFragment → ${request.method} ${request.url}")
+            println("REST → ${request.method} ${request.url}")
             val response = chain.proceed(request)
-            println("ChatFragment ← ${response.code} ${response.request.url}")
+            println("REST ← ${response.code} ${response.request.url}")
             response
         }
         .addInterceptor { chain ->
@@ -77,6 +78,7 @@ object RetrofitClient {
      * API for fetching wishlists of a user.
      */
     val wishlistApi: WishlistApi = retrofit.create(WishlistApi::class.java)
+    val withdrawalApi: WithdrawalApi = retrofit.create(WithdrawalApi::class.java)
     val tokenApi: TokenApi = retrofit.create(TokenApi::class.java)
 
     private val functionsRetrofit = Retrofit.Builder()
