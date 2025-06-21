@@ -23,6 +23,9 @@ import club.gifters.giftersclub.network.ChatApi
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.network.StorageApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -39,6 +42,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     private var userId: String = ""
     private var selectedAttachment: Uri? = null
     private val REQUEST_ATTACHMENT = 3001
+    private var pollingJob: Job? = null
 
     companion object {
         private const val ARG_PARTNER_ID = "partner_id"
@@ -89,7 +93,9 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
 
             selectConversation(
                 conv.partner.userId,
-                conv.partner.name ?: conv.partner.username
+                conv.partner.name ?: conv.partner.username,
+                msgAdapter,
+                rvMessages
             )
         }
         rvConvs.adapter = convAdapter
@@ -139,24 +145,27 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     /**
      * Select a conversation to display messages and set up chat UI.
      */
-    private fun selectConversation(partnerId: String, partnerName: String) {
+    private fun selectConversation(
+        partnerId: String,
+        partnerName: String,
+        msgAdapter: MessageAdapter,
+        rvMessages: RecyclerView
+    ) {
         view?.findViewById<TextView>(R.id.tvPartnerName)?.text = partnerName
-        loadMessages(partnerId)
-    }
-
-    private fun loadMessages(partnerId: String) {
-        val rvMessages = requireView().findViewById<RecyclerView>(R.id.rvMessages)
-        val msgAdapter = (rvMessages.adapter as MessageAdapter)
-        lifecycleScope.launch {
-            try {
-                val msgs = chatApi.getMessages(
-                    select = "*",
-                    orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
-                    order = "created_at.asc"
-                )
-                msgAdapter.submitList(msgs)
-                rvMessages.scrollToPosition(msgs.size - 1)
-            } catch (_: Exception) {
+        pollingJob?.cancel()
+        pollingJob = lifecycleScope.launch {
+            while (isActive) {
+                try {
+                    val msgs = chatApi.getMessages(
+                        select = "*",
+                        orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
+                        order = "created_at.asc"
+                    )
+                    msgAdapter.submitList(msgs)
+                    rvMessages.scrollToPosition(msgs.size - 1)
+                } catch (_: Exception) {
+                }
+                delay(2000)
             }
         }
     }
