@@ -19,6 +19,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import coil.load
+import coil.transform.CircleCropTransformation
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -72,9 +73,10 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
         }
         val spinner = view.findViewById<Spinner>(R.id.spinnerSort)
         val options = resources.getStringArray(R.array.gift_sort_options)
-        spinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, options).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
+        spinner.adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, options).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, v: View?, pos: Int, id: Long) {
                 sortKey = when (pos) {
@@ -88,6 +90,7 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
                 isLastPage = false
                 loadGifts(clear = true)
             }
+
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
@@ -165,7 +168,8 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
                         "txRef" to txRef
                     )
                 )
-                Toast.makeText(requireContext(), "Gift sent successfully!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Gift sent successfully!", Toast.LENGTH_SHORT)
+                    .show()
             } catch (e: HttpException) {
                 Log.e(TAG, "Error sending gift", e)
                 Toast.makeText(requireContext(), "Failed to send gift", Toast.LENGTH_SHORT).show()
@@ -184,7 +188,7 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
         val decoded = String(Base64.decode(parts[1], Base64.URL_SAFE))
         return JSONObject(decoded).optString("sub")
     }
-    
+
     private fun handleGiftClick(gift: Gift) {
         if (recipientUserId != null) showConfirmDialog(gift)
         else showRecipientSearchDialog(gift)
@@ -220,7 +224,11 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
                     } catch (e: HttpException) {
                         Log.w(TAG, "Search HTTP error (filter=$filter)", e)
                         if (e.code() == 401) {
-                            Toast.makeText(requireContext(), "Please login to search users", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                requireContext(),
+                                "Please login to search users",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                         adapter.submitList(emptyList())
                     } catch (e: Exception) {
@@ -236,7 +244,8 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
         dialog.show()
         // Auto-focus search field and show keyboard
         et.requestFocus()
-        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        val imm =
+            requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         imm.showSoftInput(et, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
     }
 
@@ -275,11 +284,13 @@ private class SearchUserAdapter(
         items.addAll(list)
         notifyDataSetChanged()
     }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val v = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_search_user, parent, false)
         return VH(v)
     }
+
     override fun getItemCount(): Int = items.size
     override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(items[position])
 
@@ -287,6 +298,7 @@ private class SearchUserAdapter(
         private val iv: ImageView = view.findViewById(R.id.ivAvatar)
         private val tvName: TextView = view.findViewById(R.id.tvName)
         private val tvUsername: TextView = view.findViewById(R.id.tvUsername)
+
         init {
             view.setOnClickListener {
                 val pos = adapterPosition
@@ -295,11 +307,18 @@ private class SearchUserAdapter(
                 }
             }
         }
+
         fun bind(p: Profile) {
             tvName.text = p.name.orEmpty()
             tvUsername.text = "@${p.username}"
-            if (p.image.isNotBlank()) iv.load(p.image)
-            else iv.setImageResource(android.R.color.darker_gray)
+            if (p.image.isNotBlank()) {
+                iv.load(p.image) {
+                    transformations(CircleCropTransformation())
+                    placeholder(android.R.color.darker_gray)
+                }
+            } else {
+                iv.setImageResource(android.R.color.darker_gray)
+            }
         }
     }
 }
