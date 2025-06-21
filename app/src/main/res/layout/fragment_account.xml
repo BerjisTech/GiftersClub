@@ -127,6 +127,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Sent: 0" />
+        <Button
+            android:id="@+id/btnBuyTokens"
+            android:layout_marginTop="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/buy_tokens" />
 
         <!-- Gifts and wishlists -->
         <TextView

@@ -11,4 +11,7 @@ object SupabaseConfig {
 
     /** Approximate conversion rate from KES to USD */
     const val KES_USD_RATE = 0.0078
+
+    /** Flutterwave public key for inline payments */
+    const val FLUTTERWAVE_PUBLIC_KEY = "FLWPUBK-23f4ab7e7dfd648de9c957acd063b30d-X"
 }

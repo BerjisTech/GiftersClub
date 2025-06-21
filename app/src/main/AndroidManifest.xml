@@ -31,6 +31,7 @@
 
         <activity android:name=".MainActivity"/>
         <activity android:name=".PostsActivity"/>
+        <activity android:name=".payments.PaymentWebViewActivity"/>
 
     </application>
 

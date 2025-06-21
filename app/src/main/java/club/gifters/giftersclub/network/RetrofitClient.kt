@@ -15,6 +15,8 @@ import club.gifters.giftersclub.network.GiftApi
 import club.gifters.giftersclub.network.ChatApi
 import club.gifters.giftersclub.network.NotificationApi
 import club.gifters.giftersclub.network.WishlistApi
+import club.gifters.giftersclub.network.TokenApi
+import club.gifters.giftersclub.network.FunctionsApi
 
 /**
  * Singleton Retrofit client configured with Supabase REST URL and API key interceptor.
@@ -75,4 +77,12 @@ object RetrofitClient {
      * API for fetching wishlists of a user.
      */
     val wishlistApi: WishlistApi = retrofit.create(WishlistApi::class.java)
+    val tokenApi: TokenApi = retrofit.create(TokenApi::class.java)
+
+    private val functionsRetrofit = Retrofit.Builder()
+        .baseUrl("${SupabaseConfig.SUPABASE_URL}/functions/v1/")
+        .client(client)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+    val functionsApi: FunctionsApi = functionsRetrofit.create(FunctionsApi::class.java)
 }

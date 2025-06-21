@@ -26,6 +26,7 @@ import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.model.WishlistItem
 import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -51,6 +52,8 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
     private lateinit var tvWishlistsFulfilled: TextView
     private lateinit var btnWithdrawals: Button
     private lateinit var btnShareProfile: Button
+    private lateinit var btnBuyTokens: Button
+    private var profile: Profile? = null
 
     private var userId: String = ""
     private var hasRetry = false
@@ -62,23 +65,23 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // Update toolbar title
         requireActivity().title = getString(R.string.account)
-        ivProfileImage    = view.findViewById(R.id.ivProfileImage)
-        btnEditImage      = view.findViewById(R.id.btnEditImage)
-        tvUsername        = view.findViewById(R.id.tvUsername)
-        btnEditUsername   = view.findViewById(R.id.btnEditUsername)
-        tvFullName        = view.findViewById(R.id.tvFullName)
-        btnEditFullName   = view.findViewById(R.id.btnEditFullName)
-        tvTokenBalance    = view.findViewById(R.id.tvTokenBalance)
-        tvTokensReceived  = view.findViewById(R.id.tvTokensReceived)
-        tvTokensSent      = view.findViewById(R.id.tvTokensSent)
-        tvGiftsReceived   = view.findViewById(R.id.tvGiftsReceived)
-        tvGiftsSent       = view.findViewById(R.id.tvGiftsSent)
-        tvWishlistsOpen   = view.findViewById(R.id.tvWishlistsOpen)
+        ivProfileImage = view.findViewById(R.id.ivProfileImage)
+        btnEditImage = view.findViewById(R.id.btnEditImage)
+        tvUsername = view.findViewById(R.id.tvUsername)
+        btnEditUsername = view.findViewById(R.id.btnEditUsername)
+        tvFullName = view.findViewById(R.id.tvFullName)
+        btnEditFullName = view.findViewById(R.id.btnEditFullName)
+        tvTokenBalance = view.findViewById(R.id.tvTokenBalance)
+        tvTokensReceived = view.findViewById(R.id.tvTokensReceived)
+        tvTokensSent = view.findViewById(R.id.tvTokensSent)
+        tvGiftsReceived = view.findViewById(R.id.tvGiftsReceived)
+        tvGiftsSent = view.findViewById(R.id.tvGiftsSent)
+        tvWishlistsOpen = view.findViewById(R.id.tvWishlistsOpen)
         tvWishlistsFulfilled = view.findViewById(R.id.tvWishlistsFulfilled)
-        btnWithdrawals    = view.findViewById(R.id.btnWithdrawals)
-        btnShareProfile   = view.findViewById(R.id.btnShareProfile)
+        btnWithdrawals = view.findViewById(R.id.btnWithdrawals)
+        btnShareProfile = view.findViewById(R.id.btnShareProfile)
+        btnBuyTokens = view.findViewById(R.id.btnBuyTokens)
 
         // Extract user_id from stored access token
         requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
@@ -102,6 +105,7 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
             Toast.makeText(requireContext(), "Withdrawals page", Toast.LENGTH_SHORT).show()
         }
         btnShareProfile.setOnClickListener { shareProfile() }
+        btnBuyTokens.setOnClickListener { showBuyTokensDialog() }
     }
 
     private fun loadProfile() {
@@ -126,6 +130,7 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
     }
 
     private fun bindProfile(profile: Profile) {
+        this.profile = profile
         // Load image
         if (profile.image.isNotBlank()) {
             ivProfileImage.load(profile.image) {
@@ -155,6 +160,65 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                 tvWishlistsOpen.text      = "Open: ${total - fulfilled}"
                 tvWishlistsFulfilled.text = "Fulfilled: $fulfilled"
             } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun showBuyTokensDialog() {
+        val input = EditText(requireContext()).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            hint = getString(R.string.enter_token_amount)
+        }
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.buy_tokens)
+            .setView(input)
+            .setPositiveButton(R.string.buy) { _, _ ->
+                val amount = input.text.toString().toIntOrNull()
+                if (amount == null || amount <= 0) {
+                    Toast.makeText(requireContext(), R.string.invalid_amount, Toast.LENGTH_SHORT).show()
+                } else {
+                    initiateTopup(amount)
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun initiateTopup(amount: Int) {
+        val userId = this.userId
+        val email = profile?.email.orEmpty()
+        val txRef = "topup_${userId}_${System.currentTimeMillis()}"
+        lifecycleScope.launch {
+            var lastTxId: String? = null
+            try {
+                val resp = RetrofitClient.tokenApi.recordTokenTransaction(
+                    mapOf(
+                        "user_id" to userId,
+                        "transaction_type" to "purchase",
+                        "tokens" to amount,
+                        "kes_amount" to amount,
+                        "flutterwave_transaction_id" to txRef,
+                        "flutterwave_transaction_status" to "initiated"
+                    )
+                )
+                if (resp.isSuccessful) {
+                    lastTxId = resp.body()?.firstOrNull()?.id
+                } else {
+                    val errorBody = resp.errorBody()?.string().orEmpty()
+                    Log.e(TAG, "Failed to record token transaction: HTTP ${resp.code()} body=$errorBody")
+                    Toast.makeText(
+                        requireContext(),
+                        "Failed to record transaction (${resp.code()}): $errorBody",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error recording initial token transaction", e)
+            }
+            if (!lastTxId.isNullOrBlank()) {
+                PaymentWebViewActivity.start(requireContext(), userId, email, amount, txRef, lastTxId)
+            } else {
+                Toast.makeText(requireContext(), "Failed to initiate token purchase", Toast.LENGTH_SHORT).show()
             }
         }
     }
