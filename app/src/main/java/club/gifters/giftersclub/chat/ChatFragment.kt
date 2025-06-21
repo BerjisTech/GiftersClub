@@ -6,23 +6,21 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.SupabaseConfig
-import club.gifters.giftersclub.chat.MessageAdapter
-import club.gifters.giftersclub.chat.ConversationAdapter
-import club.gifters.giftersclub.chat.ConversationUi
 import club.gifters.giftersclub.network.ChatApi
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.network.ProfileApi
-import android.widget.LinearLayout
-import androidx.recyclerview.widget.LinearLayoutManager
 import club.gifters.giftersclub.network.StorageApi
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -66,6 +64,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         userId = decodeCurrentUserId()
+        Log.w("ChatFragment", "Current userId = $userId")
+        Log.w("ChatFragment", "Current userId = $userId")
         // Update toolbar title
         requireActivity().title = getString(R.string.conversations)
 
@@ -73,9 +73,20 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         val rvConvs = view.findViewById<RecyclerView>(R.id.rvConversations)
         rvConvs.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
         val convAdapter = ConversationAdapter(userId) { conv ->
-            // show chat pane and load messages
             view.findViewById<RecyclerView>(R.id.rvConversations).visibility = View.GONE
-            view.findViewById<LinearLayout>(R.id.chatPane).visibility = View.VISIBLE
+            val chatPane = view.findViewById<ConstraintLayout>(R.id.chatPane).also { it.visibility = View.VISIBLE }
+
+            val rvMessages = chatPane.findViewById<RecyclerView>(R.id.rvMessages)
+            rvMessages.layoutManager = LinearLayoutManager(requireContext())
+            val msgAdapter = MessageAdapter(userId)
+            rvMessages.adapter = msgAdapter
+
+            val etMessage = chatPane.findViewById<EditText>(R.id.etMessage)
+            chatPane.findViewById<ImageButton>(R.id.btnAttach).setOnClickListener { pickAttachment() }
+            chatPane.findViewById<ImageButton>(R.id.btnSend).setOnClickListener {
+                sendMessage(msgAdapter, rvMessages, etMessage, conv.partner.userId)
+            }
+
             selectConversation(
                 conv.partner.userId,
                 conv.partner.name ?: conv.partner.username
@@ -94,8 +105,9 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             try {
                 val convs = chatApi.getConversations(
                     select = "user_a,user_b,last_message_at",
-                    userIdFilter = "or(sender_id.eq.$userId,receiver_id.eq.$userId)"
+                    userIdFilter = "(user_a.eq.$userId,user_b.eq.$userId)"
                 )
+                Log.w("ChatFragment", "Fetched conversations: ${convs.size}")
                 val uiModels = convs.mapNotNull { overview ->
                     val partnerId = if (overview.userA == userId) overview.userB else overview.userA
                     val profile = RetrofitClient.profileApi.getProfileByUserId(
@@ -104,13 +116,13 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     ).firstOrNull() ?: return@mapNotNull null
                     val lastMsg = chatApi.getLastMessage(
                         select = "*",
-                        orFilter = "and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId)",
+                        orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
                         order = "created_at.desc",
                         limit = 1
                     ).firstOrNull()
                     val unreadResp = chatApi.getUnreadCount(
                         select = "*",
-                        orFilter = "and(sender_id.eq.$partnerId,receiver_id.eq.$userId)",
+                        orFilter = "(and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
                         readFilter = "is.null"
                     )
                     val header = unreadResp.headers()["Content-Range"]
@@ -118,7 +130,9 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     ConversationUi(overview, profile, lastMsg, unreadCount)
                 }
                 adapter.submitList(uiModels)
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                Log.w("ChatFragment", "Error loading conversations", e)
+            }
         }
     }
 
@@ -137,7 +151,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             try {
                 val msgs = chatApi.getMessages(
                     select = "*",
-                    orFilter = "and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId)",
+                    orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
                     order = "created_at.asc"
                 )
                 msgAdapter.submitList(msgs)
@@ -205,7 +219,9 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     }
                     etMessage.text.clear()
                 }
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                Log.w("ChatFragment", "Error loading conversations", e)
+            }
         }
     }
 }

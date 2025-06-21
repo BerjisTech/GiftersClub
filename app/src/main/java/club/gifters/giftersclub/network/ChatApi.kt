@@ -21,7 +21,7 @@ interface ChatApi {
     @GET("conversation_overview")
     suspend fun getConversations(
         @Query("select", encoded = true) select: String = "user_a,user_b,last_message_at",
-        @Query("or", encoded = true) userIdFilter: String
+        @Query("or",      encoded = true) userIdFilter: String
     ): List<ConversationOverview>
 
     /**
@@ -30,8 +30,8 @@ interface ChatApi {
     @GET("messages")
     suspend fun getMessages(
         @Query("select", encoded = true) select: String = "*",
-        @Query("or", encoded = true) orFilter: String,
-        @Query("order", encoded = true) order: String = "created_at.asc"
+        @Query("or",      encoded = true) orFilter: String,
+        @Query("order",   encoded = true) order: String = "created_at.asc"
     ): List<Message>
 
     /**
@@ -40,9 +40,9 @@ interface ChatApi {
     @GET("messages")
     suspend fun getLastMessage(
         @Query("select", encoded = true) select: String = "*",
-        @Query("or", encoded = true) orFilter: String,
-        @Query("order", encoded = true) order: String = "created_at.desc",
-        @Query("limit") limit: Int = 1
+        @Query("or",      encoded = true) orFilter: String,
+        @Query("order",   encoded = true) order: String = "created_at.desc",
+        @Query("limit")  limit: Int = 1
     ): List<Message>
 
     /**
@@ -53,7 +53,7 @@ interface ChatApi {
     @Headers("Prefer: count=exact", "Range-Unit: items")
     suspend fun getUnreadCount(
         @Query("select", encoded = true) select: String = "*",
-        @Query("or", encoded = true) orFilter: String,
+        @Query("or",      encoded = true) orFilter: String,
         @Query("read_at", encoded = true) readFilter: String = "is.null"
     ): Response<Void>
 
