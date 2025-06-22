@@ -84,8 +84,18 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
     private fun loadComments() {
         lifecycleScope.launch {
             rvComments.isVisible = false
-            val list = CommentApiHolder.getCommentsByPost(postId)
-            adapter.submitList(list)
+            val list = try {
+                CommentApiHolder.getCommentsByPost(postId)
+            } catch (e: Exception) {
+                // avoid crash on malformed GET
+                emptyList()
+            }
+            val sorted = list.sortedWith(
+                compareByDescending<Comment> { it.reactionCounts?.like ?: 0 }
+                    .thenByDescending { it.createdAt }
+                    .thenBy { it.reactionCounts?.dislike ?: 0 }
+            )
+            adapter.submitList(sorted)
             rvComments.isVisible = true
         }
     }

@@ -13,14 +13,9 @@ import retrofit2.http.Query
 interface CommentApi {
     @GET("comments")
     suspend fun getCommentsByPost(
-        @Query("select", encoded = true)
-        select: String =
-            "*,profile:profiles(id,user_id,username,image)," +
-            "reaction_counts:comment_reactions(type,count)," +
-            "replies:comments(*,profile:profiles(id,user_id,username,image),reaction_counts:comment_reactions(type,count))",
         @Query("post_id", encoded = true) postIdFilter: String,
-        @Query("order", encoded = true)
-        order: String = "reaction_counts.like.desc,created_at.desc,reaction_counts.dislike.asc"
+        @Query("order", encoded = true) order: String = "created_at.desc",
+        @Query("select", encoded = true) select: String = "*"
     ): List<Comment>
 
     @Headers("Prefer: return=representation")
