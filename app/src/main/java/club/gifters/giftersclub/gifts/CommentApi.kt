@@ -15,7 +15,8 @@ interface CommentApi {
     suspend fun getCommentsByPost(
         @Query("post_id", encoded = true) postIdFilter: String,
         @Query("order", encoded = true) order: String = "created_at.desc",
-        @Query("select", encoded = true) select: String = "*"
+        @Query("select", encoded = true) select: String =
+            "*,profile:profiles(id,user_id,username,image)"
     ): List<Comment>
 
     @Headers("Prefer: return=representation")

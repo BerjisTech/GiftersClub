@@ -16,6 +16,7 @@ import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.gifts.Comment
 import club.gifters.giftersclub.gifts.CommentAdapter
+import club.gifters.giftersclub.gifts.GifterFragment
 import kotlinx.coroutines.launch
 
 /**
@@ -62,6 +63,12 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             },
             onDislike = { comment ->
                 lifecycleScope.launch { CommentApiHolder.reactToComment(comment.id, "dislike") }
+            },
+            onProfileClick = { username ->
+                parentFragmentManager.beginTransaction()
+                    .replace(R.id.mainContentContainer, GifterFragment.newInstance(username))
+                    .addToBackStack(null)
+                    .commit()
             }
         )
         rvComments.layoutManager = LinearLayoutManager(context)

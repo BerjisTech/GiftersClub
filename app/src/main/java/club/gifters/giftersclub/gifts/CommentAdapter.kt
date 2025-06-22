@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
+import coil.transform.CircleCropTransformation
 import club.gifters.giftersclub.R
 import android.text.format.DateUtils
 import java.text.SimpleDateFormat
@@ -23,13 +24,14 @@ import club.gifters.giftersclub.gifts.Comment as Cmt
 class CommentAdapter(
     private val onReply: (Cmt) -> Unit,
     private val onLike: (Cmt) -> Unit,
-    private val onDislike: (Cmt) -> Unit
+    private val onDislike: (Cmt) -> Unit,
+    private val onProfileClick: (String) -> Unit
 ) : ListAdapter<Cmt, CommentAdapter.CommentViewHolder>(DiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CommentViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_comment, parent, false)
-        return CommentViewHolder(view, onReply, onLike, onDislike)
+        return CommentViewHolder(view, onReply, onLike, onDislike, onProfileClick)
     }
 
     override fun onBindViewHolder(holder: CommentViewHolder, position: Int) {
@@ -40,8 +42,11 @@ class CommentAdapter(
         itemView: View,
         private val onReply: (Cmt) -> Unit,
         private val onLike: (Cmt) -> Unit,
-        private val onDislike: (Cmt) -> Unit
+        private val onDislike: (Cmt) -> Unit,
+        private val onProfileClick: (String) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
+        private val ivAvatar: com.google.android.material.imageview.ShapeableImageView =
+            itemView.findViewById(R.id.ivCommentAvatar)
         private val tvAuthor: TextView = itemView.findViewById(R.id.tvCommentAuthor)
         private val tvTime: TextView = itemView.findViewById(R.id.tvCommentTime)
         private val tvContent: TextView = itemView.findViewById(R.id.tvCommentContent)
@@ -57,7 +62,20 @@ class CommentAdapter(
             params.marginStart = if (c.parentCommentId != null) 48 else 0
             itemView.layoutParams = params
 
-            tvAuthor.text = c.profile?.username ?: ""
+            c.profile?.let { p ->
+                tvAuthor.text = p.username
+                if (p.image.isNotBlank()) {
+                    ivAvatar.load(p.image) {
+                        transformations(CircleCropTransformation())
+                        placeholder(android.R.color.darker_gray)
+                        error(android.R.color.darker_gray)
+                    }
+                } else {
+                    ivAvatar.setImageResource(android.R.color.darker_gray)
+                }
+                ivAvatar.setOnClickListener { onProfileClick(p.username) }
+                tvAuthor.setOnClickListener { onProfileClick(p.username) }
+            }
             tvTime.text = formatRelativeTime(c.createdAt)
             tvContent.text = c.content
             tvLikeCount.text = c.reactionCounts?.like?.toString() ?: "0"
