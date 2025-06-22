@@ -1,27 +1,19 @@
 package club.gifters.giftersclub.gifts
 
-import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.View
+import android.widget.EditText
 import android.widget.TextView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import android.widget.EditText
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.gifts.CreateWishlistFragment
-import club.gifters.giftersclub.gifts.WishlistDetailFragment
-import club.gifters.giftersclub.gifts.WishlistAdapter
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
-import org.json.JSONObject
-import android.util.Log
-import retrofit2.HttpException
-import androidx.appcompat.app.AlertDialog
-import club.gifters.giftersclub.payments.PaymentWebViewActivity
 
 /**
  * Fragment showing the current user's wishlists.
