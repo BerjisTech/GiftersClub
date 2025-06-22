@@ -53,8 +53,10 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         etComment = view.findViewById(R.id.etComment)
         btnSendComment = view.findViewById(R.id.btnSendComment)
 
+        var replyingTo: Comment? = null
         adapter = CommentAdapter(
             onReply = { comment ->
+                replyingTo = comment
                 etComment.setText("@${comment.profile?.username.orEmpty()} ")
                 etComment.requestFocus()
             },
@@ -69,7 +71,8 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                     .replace(R.id.mainContentContainer, GifterFragment.newInstance(username))
                     .addToBackStack(null)
                     .commit()
-            }
+            },
+            scope = viewLifecycleOwner.lifecycleScope
         )
         rvComments.layoutManager = LinearLayoutManager(context)
         rvComments.adapter = adapter
@@ -78,7 +81,12 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             val content = etComment.text.toString().trim()
             if (content.isNotBlank()) {
                 lifecycleScope.launch {
-                    CommentApiHolder.createComment(postId, content)
+                    CommentApiHolder.createComment(
+                        postId,
+                        content,
+                        replyingTo?.id
+                    )
+                    replyingTo = null
                     etComment.text.clear()
                     loadComments()
                 }
@@ -111,13 +119,38 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 /**
  * Simple object to hold the CommentApi for convenience.
  */
-private object CommentApiHolder {
+object CommentApiHolder {
     private val api = RetrofitClient.commentApi
     suspend fun getCommentsByPost(postId: String) = api.getCommentsByPost(
         postIdFilter = "eq.$postId"
     )
-    suspend fun createComment(postId: String, content: String) =
-        api.createComment(mapOf("post_id" to postId, "content" to content))
+    suspend fun createComment(
+        postId: String,
+        content: String,
+        parentCommentId: String? = null
+    ) {
+        val body = mutableMapOf(
+            "post_id" to postId,
+            "content" to content
+        )
+        parentCommentId?.let { body["parent_comment_id"] = it }
+        api.createComment(select = "*", comment = body)
+    }
     suspend fun reactToComment(commentId: String, type: String) =
         api.reactToComment(mapOf("comment_id" to commentId, "type" to type))
+
+    suspend fun getCommentReactionCountValue(commentId: String, type: String): Int {
+        val resp = api.getCommentReactionCount(
+            commentIdFilter = "eq.$commentId",
+            type = type
+        )
+        val contentRange = resp.headers()["Content-Range"] ?: return 0
+        return contentRange.substringAfterLast('/')?.toIntOrNull() ?: 0
+    }
+
+    suspend fun getCommentReplyCountValue(commentId: String): Int {
+        val resp = api.getCommentReplyCount(parentIdFilter = "eq.$commentId")
+        val contentRange = resp.headers()["Content-Range"] ?: return 0
+        return contentRange.substringAfterLast('/')?.toIntOrNull() ?: 0
+    }
 }

@@ -14,6 +14,9 @@ import android.text.format.DateUtils
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import club.gifters.giftersclub.gifts.CommentApiHolder
 import club.gifters.giftersclub.gifts.CommentReactionCounts
 import club.gifters.giftersclub.gifts.Comment as Cmt
 
@@ -24,13 +27,14 @@ class CommentAdapter(
     private val onReply: (Cmt) -> Unit,
     private val onLike: (Cmt) -> Unit,
     private val onDislike: (Cmt) -> Unit,
-    private val onProfileClick: (String) -> Unit
+    private val onProfileClick: (String) -> Unit,
+    private val scope: CoroutineScope
 ) : ListAdapter<Cmt, CommentAdapter.CommentViewHolder>(DiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CommentViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_comment, parent, false)
-        return CommentViewHolder(view, onReply, onLike, onDislike, onProfileClick)
+        return CommentViewHolder(view, onReply, onLike, onDislike, onProfileClick, scope)
     }
 
     override fun onBindViewHolder(holder: CommentViewHolder, position: Int) {
@@ -42,7 +46,8 @@ class CommentAdapter(
         private val onReply: (Cmt) -> Unit,
         private val onLike: (Cmt) -> Unit,
         private val onDislike: (Cmt) -> Unit,
-        private val onProfileClick: (String) -> Unit
+        private val onProfileClick: (String) -> Unit,
+        private val scope: CoroutineScope
     ) : RecyclerView.ViewHolder(itemView) {
         private val ivAvatar: com.google.android.material.imageview.ShapeableImageView =
             itemView.findViewById(R.id.ivCommentAvatar)
@@ -54,6 +59,7 @@ class CommentAdapter(
         private val btnReply: TextView = itemView.findViewById(R.id.btnCommentReply)
         private val tvLikeCount: TextView = itemView.findViewById(R.id.tvCommentLikeCount)
         private val tvDislikeCount: TextView = itemView.findViewById(R.id.tvCommentDislikeCount)
+        private val tvReplyCount: TextView = itemView.findViewById(R.id.tvCommentReplyCount)
 
         fun bind(c: Cmt) {
             // indent replies
@@ -83,6 +89,20 @@ class CommentAdapter(
             btnLike.setOnClickListener { onLike(c) }
             btnDislike.setOnClickListener { onDislike(c) }
             btnReply.setOnClickListener { onReply(c) }
+
+            // Load up-to-date counts for likes, dislikes and replies
+            scope.launch {
+                val likes = CommentApiHolder.getCommentReactionCountValue(c.id, "like")
+                tvLikeCount.text = likes.toString()
+            }
+            scope.launch {
+                val dislikes = CommentApiHolder.getCommentReactionCountValue(c.id, "dislike")
+                tvDislikeCount.text = dislikes.toString()
+            }
+            scope.launch {
+                val replies = CommentApiHolder.getCommentReplyCountValue(c.id)
+                tvReplyCount.text = replies.toString()
+            }
         }
     }
 

@@ -22,6 +22,7 @@ interface CommentApi {
     @Headers("Prefer: return=representation")
     @POST("comments")
     suspend fun createComment(
+        @Query("select", encoded = true) select: String = "*",
         @Body comment: Map<String, @JvmSuppressWildcards Any>
     ): Response<List<Comment>>
 
@@ -29,7 +30,9 @@ interface CommentApi {
     @GET("comment_reactions")
     suspend fun getCommentReactionCount(
         @Query("comment_id", encoded = true) commentIdFilter: String,
-        @Query("type", encoded = true) type: String
+        @Query("type", encoded = true) type: String,
+        @Query("select", encoded = true) select: String = "id",
+        @Query("limit") limit: Int = 0
     ): Response<Void>
 
     @Headers("Prefer: return=representation")
@@ -42,5 +45,11 @@ interface CommentApi {
     @GET("comments")
     suspend fun getPostCommentCount(
         @Query("post_id", encoded = true) postIdFilter: String
+    ): Response<Void>
+
+    @Headers("Prefer: count=exact")
+    @GET("comments")
+    suspend fun getCommentReplyCount(
+        @Query("parent_comment_id", encoded = true) parentIdFilter: String
     ): Response<Void>
 }
