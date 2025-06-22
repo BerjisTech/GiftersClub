@@ -3,7 +3,6 @@ package club.gifters.giftersclub.gifts
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -50,9 +49,9 @@ class CommentAdapter(
         private val tvAuthor: TextView = itemView.findViewById(R.id.tvCommentAuthor)
         private val tvTime: TextView = itemView.findViewById(R.id.tvCommentTime)
         private val tvContent: TextView = itemView.findViewById(R.id.tvCommentContent)
-        private val btnLike: ImageButton = itemView.findViewById(R.id.btnCommentLike)
-        private val btnDislike: ImageButton = itemView.findViewById(R.id.btnCommentDislike)
-        private val btnReply: ImageButton = itemView.findViewById(R.id.btnCommentReply)
+        private val btnLike: TextView = itemView.findViewById(R.id.btnCommentLike)
+        private val btnDislike: TextView = itemView.findViewById(R.id.btnCommentDislike)
+        private val btnReply: TextView = itemView.findViewById(R.id.btnCommentReply)
         private val tvLikeCount: TextView = itemView.findViewById(R.id.tvCommentLikeCount)
         private val tvDislikeCount: TextView = itemView.findViewById(R.id.tvCommentDislikeCount)
 
