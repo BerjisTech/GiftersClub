@@ -10,6 +10,10 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import club.gifters.giftersclub.R
+import android.text.format.DateUtils
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 import club.gifters.giftersclub.gifts.CommentReactionCounts
 import club.gifters.giftersclub.gifts.Comment as Cmt
 
@@ -32,7 +36,7 @@ class CommentAdapter(
         holder.bind(getItem(position))
     }
 
-    class CommentViewHolder(
+    inner class CommentViewHolder(
         itemView: View,
         private val onReply: (Cmt) -> Unit,
         private val onLike: (Cmt) -> Unit,
@@ -54,7 +58,7 @@ class CommentAdapter(
             itemView.layoutParams = params
 
             tvAuthor.text = c.profile?.username ?: ""
-            tvTime.text = c.createdAt
+            tvTime.text = formatRelativeTime(c.createdAt)
             tvContent.text = c.content
             tvLikeCount.text = c.reactionCounts?.like?.toString() ?: "0"
             tvDislikeCount.text = c.reactionCounts?.dislike?.toString() ?: "0"
@@ -68,5 +72,24 @@ class CommentAdapter(
     private class DiffCallback : DiffUtil.ItemCallback<Cmt>() {
         override fun areItemsTheSame(old: Cmt, new: Cmt) = old.id == new.id
         override fun areContentsTheSame(old: Cmt, new: Cmt) = old == new
+    }
+
+    private fun formatRelativeTime(iso: String?): String {
+        if (iso.isNullOrBlank()) return ""
+        return try {
+            val trimmed = iso.replace(Regex("\\.(\\d{3})\\d*"), ".$1")
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+            val then = sdf.parse(trimmed)?.time ?: return iso
+            DateUtils.getRelativeTimeSpanString(
+                then,
+                System.currentTimeMillis(),
+                DateUtils.MINUTE_IN_MILLIS,
+                DateUtils.FORMAT_ABBREV_RELATIVE
+            ).toString()
+        } catch (_: Exception) {
+            iso
+        }
     }
 }
