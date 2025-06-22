@@ -149,6 +149,7 @@ object RetrofitClient {
     val wishlistApi: WishlistApi = retrofit.create(WishlistApi::class.java)
     val withdrawalApi: WithdrawalApi = retrofit.create(WithdrawalApi::class.java)
     val tokenApi: TokenApi = retrofit.create(TokenApi::class.java)
+    val followsApi: FollowsApi = retrofit.create(FollowsApi::class.java)
 
     private val functionsRetrofit = Retrofit.Builder()
         .baseUrl("${SupabaseConfig.SUPABASE_URL}/functions/v1/")

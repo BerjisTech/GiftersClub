@@ -12,12 +12,19 @@ import coil.load
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import club.gifters.giftersclub.R
+import android.util.Log
 import club.gifters.giftersclub.gifts.GiftFragment
 import club.gifters.giftersclub.gifts.UserPostsFragment
 import club.gifters.giftersclub.gifts.UserWishlistsFragment
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.network.ProfileApi
 import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.gifts.FollowApiHolder
+import com.google.android.material.button.MaterialButton
+import android.graphics.Color
+import android.content.res.ColorStateList
+import androidx.core.view.isVisible
 import kotlinx.coroutines.launch
 
 /**
@@ -33,40 +40,83 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
         username = arguments?.getString(ARG_USERNAME)
     }
 
+    private var isFollowing = false
+    private var isFollowedBy = false
+    private var isFriend     = false
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val imageAvatar = view.findViewById<ImageView>(R.id.imageAvatar)
         val textName    = view.findViewById<TextView>(R.id.textName)
         val textUser    = view.findViewById<TextView>(R.id.textUsername)
+        val textFollowers = view.findViewById<TextView>(R.id.textFollowers)
+        val textFollowing = view.findViewById<TextView>(R.id.textFollowing)
         val textBio     = view.findViewById<TextView>(R.id.textBio)
+        val btnFollow   = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnFollow)
 
         lifecycleScope.launch {
             username?.let { uname ->
-                val list = profileApi.getProfileByUsername("*", "eq.$uname")
-                val profile = list.firstOrNull()
-                profile?.let { prof ->
-                    bindProfile(prof, imageAvatar, textName, textUser, textBio)
-                    // Setup tabs and viewpager for this user
-                    val tabLayout = view.findViewById<TabLayout>(R.id.tabLayout)
-                    val viewPager = view.findViewById<ViewPager2>(R.id.viewPager)
-                    viewPager.adapter = object : FragmentStateAdapter(this@GifterFragment) {
-                        override fun getItemCount() = 3
-                        override fun createFragment(position: Int) = when (position) {
-                            0 -> GiftFragment.newInstance(prof.userId, prof.username)
-                            1 -> UserWishlistsFragment.newInstance(prof.userId)
-                            2 -> UserPostsFragment.newInstance(prof.userId)
-                            else -> GiftFragment.newInstance(prof.userId, prof.username)
+                val profiles = profileApi.getProfileByUsername("*", "eq.$uname")
+                val prof = profiles.firstOrNull() ?: return@launch
+                Log.d(TAG, "Fetched profile: $prof")
+                bindProfile(prof, imageAvatar, textName, textUser, textFollowers, textFollowing, textBio)
+
+                // follow/friend button state
+                val currentUserId = AuthUtils.getCurrentUserId(requireContext())
+                if (currentUserId != null && currentUserId != prof.userId) {
+                    isFollowing  = FollowApiHolder.isFollowingUser(prof.userId)
+                    isFollowedBy = FollowApiHolder.isFollowedByUser(prof.userId)
+                    isFriend     = isFollowing && isFollowedBy
+                    Log.d(TAG, "Follow state: isFollowing=$isFollowing isFollowedBy=$isFollowedBy isFriend=$isFriend")
+                    btnFollow.isVisible = true
+                    updateFollowButton(btnFollow)
+                    btnFollow.setOnClickListener {
+                        lifecycleScope.launch {
+                        // perform follow/unfollow in follows table via trigger-backed API
+                        if (isFollowing) {
+                            FollowApiHolder.unfollowUser(prof.userId)
+                        } else {
+                            FollowApiHolder.followUser(prof.userId)
+                        }
+                        // flip local state and update the follow button text
+                        isFollowing = !isFollowing
+                        isFriend    = isFollowing && isFollowedBy
+                        updateFollowButton(btnFollow)
+                        // reload profile counts (followers/following) from server, using trigger-driven fields
+                        val updated = profileApi.getProfileByUserId(
+                            "*",
+                            "eq.${prof.userId}"
+                        ).firstOrNull()
+                        updated?.let { p ->
+                            bindProfile(
+                                p, imageAvatar, textName,
+                                textUser, textFollowers, textFollowing, textBio
+                            )
+                        }
                         }
                     }
-                    TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
-                        tab.text = when (pos) {
-                            0 -> "Gifts"
-                            1 -> "Wishlists"
-                            2 -> "Posts"
-                            else -> ""
-                        }
-                    }.attach()
                 }
+
+                // Setup tabs and viewpager
+                val tabLayout = view.findViewById<TabLayout>(R.id.tabLayout)
+                val viewPager = view.findViewById<ViewPager2>(R.id.viewPager)
+                viewPager.adapter = object : FragmentStateAdapter(this@GifterFragment) {
+                    override fun getItemCount() = 3
+                    override fun createFragment(position: Int) = when (position) {
+                        0 -> GiftFragment.newInstance(prof.userId, prof.username)
+                        1 -> UserWishlistsFragment.newInstance(prof.userId)
+                        2 -> UserPostsFragment.newInstance(prof.userId)
+                        else -> GiftFragment.newInstance(prof.userId, prof.username)
+                    }
+                }
+                TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
+                    tab.text = when (pos) {
+                        0 -> "Gifts"
+                        1 -> "Wishlists"
+                        2 -> "Posts"
+                        else -> ""
+                    }
+                }.attach()
             }
         }
     }
@@ -76,11 +126,16 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
         imageAvatar: ImageView,
         textName: TextView,
         textUser: TextView,
+        textFollowers: TextView,
+        textFollowing: TextView,
         textBio: TextView
     ) {
-        textName.text     = p.name
-        textUser.text     = "@${p.username}"
-        textBio.text      = p.bio
+        Log.d(TAG, "bindProfile counts: followers=${p.followersCount} following=${p.followingCount}")
+        textName.text      = p.name
+        textUser.text      = "@${p.username}"
+        textFollowers.text = "${p.followersCount ?: 0} follower${if ((p.followersCount ?: 0) == 1) "" else "s"}"
+        textFollowing.text = "${p.followingCount ?: 0} following"
+        textBio.text       = p.bio
         if (p.image.isNotBlank()) {
             imageAvatar.load(p.image) { placeholder(android.R.color.darker_gray) }
         }
@@ -88,8 +143,30 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
 
     companion object {
         private const val ARG_USERNAME = "username"
+        private const val TAG = "GifterFragment"
         fun newInstance(username: String) = GifterFragment().apply {
             arguments = Bundle().apply { putString(ARG_USERNAME, username) }
         }
+    }
+
+    private fun updateFollowButton(btn: MaterialButton) {
+        val green = Color.parseColor("#22c55e")
+        val indigo = Color.parseColor("#6366f1")
+        val pink = Color.parseColor("#ec4899")
+        when {
+            isFriend -> {
+                btn.text = "Friend"
+                btn.backgroundTintList = ColorStateList.valueOf(green)
+            }
+            isFollowing -> {
+                btn.text = "Following"
+                btn.backgroundTintList = ColorStateList.valueOf(indigo)
+            }
+            else -> {
+                btn.text = "Follow"
+                btn.backgroundTintList = ColorStateList.valueOf(pink)
+            }
+        }
+        btn.setTextColor(Color.WHITE)
     }
 }

@@ -15,7 +15,9 @@ import retrofit2.http.Query
 interface ProfileApi {
     @GET("profiles")
     suspend fun getProfileByUsername(
-        @Query("select") select: String = "*",
+        @Query("select", encoded = true) select: String =
+            "*,followers_count:follows!follows_followed_id(count)," +
+            "following_count:follows!follows_follower_id(count)",
         @Query("username", encoded = true) usernameFilter: String
     ): List<Profile>
 
@@ -24,7 +26,9 @@ interface ProfileApi {
      */
     @GET("profiles")
     suspend fun getProfileByUserId(
-        @Query("select", encoded = true) select: String = "*",
+        @Query("select", encoded = true) select: String =
+            "*,followers_count:follows!follows_followed_id(count)," +
+            "following_count:follows!follows_follower_id(count)",
         @Query("user_id", encoded = true) userIdFilter: String
     ): List<Profile>
 
@@ -32,8 +36,9 @@ interface ProfileApi {
      * Update profile fields for the current user and return the updated record.
      */
     @Headers("Prefer: return=representation")
-    @PATCH("profiles?select=* ")
+    @PATCH("profiles")
     suspend fun updateProfile(
+        @Query("select", encoded = true) select: String = "*",
         @Query("user_id", encoded = true) userIdFilter: String,
         @Body updates: Map<String, @JvmSuppressWildcards Any>
     ): Response<List<Profile>>
