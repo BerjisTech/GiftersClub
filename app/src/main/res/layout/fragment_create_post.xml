@@ -66,6 +66,59 @@
 
         </LinearLayout>
 
+        <!-- Edit media step -->
+        <LinearLayout
+            android:id="@+id/layoutEdit"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/imageEditView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scaleType="centerCrop" />
+
+            <LinearLayout
+                android:id="@+id/filterButtonsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <Button
+                    android:id="@+id/btnFilterNone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/filter_none" />
+
+                <Button
+                    android:id="@+id/btnFilterGray"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/filter_gray" />
+
+                <Button
+                    android:id="@+id/btnFilterSepia"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/filter_sepia" />
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnApplyFilter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/apply_filter" />
+
+        </LinearLayout>
+
         <!-- Details step -->
         <LinearLayout
             android:id="@+id/layoutDetails"

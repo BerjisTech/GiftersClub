@@ -38,6 +38,10 @@
     <string name="notification_message">Notification message</string>
     <string name="_2h_ago">2h ago</string>
     <string name="buy_tokens">Buy Tokens</string>
+    <string name="filter_none">None</string>
+    <string name="filter_gray">Gray</string>
+    <string name="filter_sepia">Sepia</string>
+    <string name="apply_filter">Apply filter</string>
     <string name="enter_token_amount">Enter token amount</string>
     <string name="invalid_amount">Please enter a valid amount</string>
     <string name="search_wishlists">Search wishlists…</string>

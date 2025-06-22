@@ -12,6 +12,10 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.VideoView
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.widget.Toast
 import android.content.Context
 import android.util.Base64
@@ -31,6 +35,9 @@ import club.gifters.giftersclub.model.TagUpsertRequest
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.regex.Pattern
+import java.io.ByteArrayOutputStream
+import android.graphics.Canvas
+import android.graphics.Paint
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
@@ -45,11 +52,19 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var layoutPreviews: LinearLayout
     private lateinit var btnNext: Button
     private lateinit var layoutMedia: LinearLayout
+    private lateinit var layoutEdit: LinearLayout
     private lateinit var layoutDetails: LinearLayout
+    private lateinit var imageEditView: ImageView
+    private lateinit var btnFilterNone: Button
+    private lateinit var btnFilterGray: Button
+    private lateinit var btnFilterSepia: Button
+    private lateinit var btnApplyFilter: Button
     private lateinit var etContent: EditText
     private lateinit var btnEditMedia: Button
     private lateinit var btnPost: Button
     private lateinit var progressBar: ProgressBar
+    private var originalBitmap: Bitmap? = null
+    private var editedBitmap: Bitmap? = null
     private val selectedUris = mutableListOf<Uri>()
     private var isVideoSelected = false
     private val REQUEST_PICK_MEDIA = 1001
@@ -67,7 +82,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         layoutPreviews = view.findViewById(R.id.layoutPreviews)
         btnNext = view.findViewById(R.id.btnNext)
         layoutMedia = view.findViewById(R.id.layoutMedia)
+        layoutEdit = view.findViewById(R.id.layoutEdit)
         layoutDetails = view.findViewById(R.id.layoutDetails)
+        imageEditView = view.findViewById(R.id.imageEditView)
+        btnFilterNone = view.findViewById(R.id.btnFilterNone)
+        btnFilterGray = view.findViewById(R.id.btnFilterGray)
+        btnFilterSepia = view.findViewById(R.id.btnFilterSepia)
+        btnApplyFilter = view.findViewById(R.id.btnApplyFilter)
         etContent = view.findViewById(R.id.etContent)
         btnEditMedia = view.findViewById(R.id.btnEditMedia)
         btnPost = view.findViewById(R.id.btnPost)
@@ -85,7 +106,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
         btnNext.setOnClickListener {
             layoutMedia.isVisible = false
-            layoutDetails.isVisible = true
+            if (isVideoSelected || selectedUris.isEmpty()) {
+                layoutDetails.isVisible = true
+            } else {
+                // proceed to edit first image
+                layoutEdit.isVisible = true
+                loadImageForEditing()
+            }
         }
         btnEditMedia.setOnClickListener {
             layoutDetails.isVisible = false
@@ -96,6 +123,16 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
         // Update toolbar title
         requireActivity().title = getString(R.string.create_post)
+
+        // Filter buttons
+        btnFilterNone.setOnClickListener { applyFilterNone() }
+        btnFilterGray.setOnClickListener { applyFilterGray() }
+        btnFilterSepia.setOnClickListener { applyFilterSepia() }
+        btnApplyFilter.setOnClickListener {
+            // use editedBitmap for upload
+            layoutEdit.isVisible = false
+            layoutDetails.isVisible = true
+        }
     }
 
     override fun onDestroyView() {
@@ -119,6 +156,48 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
         updatePreviews()
         btnNext.isEnabled = selectedUris.isNotEmpty()
+    }
+
+    private fun loadImageForEditing() {
+        val uri = selectedUris.firstOrNull() ?: return
+        requireContext().contentResolver.openInputStream(uri)?.use { stream ->
+            originalBitmap = BitmapFactory.decodeStream(stream)
+            editedBitmap = originalBitmap
+            imageEditView.setImageBitmap(editedBitmap)
+        }
+    }
+
+    private fun applyFilterNone() {
+        editedBitmap = originalBitmap
+        imageEditView.setImageBitmap(editedBitmap)
+    }
+
+    private fun applyFilterGray() {
+        originalBitmap?.let { bmp ->
+            val cm = ColorMatrix().apply { setSaturation(0f) }
+            val config = bmp.config ?: Bitmap.Config.ARGB_8888
+            val filtered = Bitmap.createBitmap(bmp.width, bmp.height, config)
+            val canvas = android.graphics.Canvas(filtered)
+            val paint = android.graphics.Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
+            canvas.drawBitmap(bmp, 0f, 0f, paint)
+            editedBitmap = filtered
+            imageEditView.setImageBitmap(filtered)
+        }
+    }
+
+    private fun applyFilterSepia() {
+        originalBitmap?.let { bmp ->
+            val cm = ColorMatrix().apply {
+                setScale(1f, .95f, .82f, 1f)
+            }
+            val config = bmp.config ?: Bitmap.Config.ARGB_8888
+            val filtered = Bitmap.createBitmap(bmp.width, bmp.height, config)
+            val canvas = android.graphics.Canvas(filtered)
+            val paint = android.graphics.Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
+            canvas.drawBitmap(bmp, 0f, 0f, paint)
+            editedBitmap = filtered
+            imageEditView.setImageBitmap(filtered)
+        }
     }
 
     private fun updatePreviews() {
@@ -201,7 +280,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     val ts = System.currentTimeMillis()
                     val filename = "${post.id}-$ts-$index.$ext"
                     requireContext().contentResolver.openInputStream(uri)?.use { stream ->
-                        val bytes = stream.readBytes()
+                        val bytes = if (index == 0 && editedBitmap != null) {
+                            java.io.ByteArrayOutputStream().apply {
+                                editedBitmap!!.compress(Bitmap.CompressFormat.JPEG, 90, this)
+                            }.toByteArray()
+                        } else {
+                            stream.readBytes()
+                        }
                         val body = bytes.toRequestBody(type.toMediaTypeOrNull())
                         storageApi.uploadPostMedia(filename, body, type)
                     }
