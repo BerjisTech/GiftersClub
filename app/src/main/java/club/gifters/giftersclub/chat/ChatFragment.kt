@@ -72,12 +72,13 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         // Update toolbar title
         requireActivity().title = getString(R.string.conversations)
 
-        // Setup conversation list
-        val rvConvs = view.findViewById<RecyclerView>(R.id.rvConversations)
-        rvConvs.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
-        val convAdapter = ConversationAdapter(userId) { conv ->
+        // If opened with a partnerId arg, go straight to that chat (skip conv list)
+        val partnerIdArg = arguments?.getString(ARG_PARTNER_ID)
+        val partnerNameArg = arguments?.getString(ARG_PARTNER_NAME)
+        if (!partnerIdArg.isNullOrBlank() && !partnerNameArg.isNullOrBlank()) {
             view.findViewById<RecyclerView>(R.id.rvConversations).visibility = View.GONE
-            val chatPane = view.findViewById<ConstraintLayout>(R.id.chatPane).also { it.visibility = View.VISIBLE }
+            val chatPane = view.findViewById<ConstraintLayout>(R.id.chatPane)
+            chatPane.visibility = View.VISIBLE
 
             val rvMessages = chatPane.findViewById<RecyclerView>(R.id.rvMessages)
             rvMessages.layoutManager = LinearLayoutManager(requireContext())
@@ -87,14 +88,42 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             val etMessage = chatPane.findViewById<EditText>(R.id.etMessage)
             chatPane.findViewById<ImageButton>(R.id.btnAttach).setOnClickListener { pickAttachment() }
             chatPane.findViewById<ImageButton>(R.id.btnSend).setOnClickListener {
-                sendMessage(msgAdapter, rvMessages, etMessage, conv.partner.userId)
+                sendMessage(msgAdapter, rvMessages, etMessage, partnerIdArg)
+            }
+
+            selectConversation(
+                partnerIdArg,
+                partnerNameArg,
+                msgAdapter,
+                rvMessages
+            )
+            return
+        }
+        // Otherwise show conversation list as usual
+        val rvConvs = view.findViewById<RecyclerView>(R.id.rvConversations)
+        rvConvs.layoutManager = LinearLayoutManager(requireContext())
+        val convAdapter = ConversationAdapter(userId) { conv ->
+            // user tapped a conversation: show its chat pane
+            view.findViewById<RecyclerView>(R.id.rvConversations).visibility = View.GONE
+            val chatPane = view.findViewById<ConstraintLayout>(R.id.chatPane)
+            chatPane.visibility = View.VISIBLE
+
+            val rvMsgs = chatPane.findViewById<RecyclerView>(R.id.rvMessages)
+            rvMsgs.layoutManager = LinearLayoutManager(requireContext())
+            val innerMsgAdapter = MessageAdapter(userId)
+            rvMsgs.adapter = innerMsgAdapter
+
+            val etMsg = chatPane.findViewById<EditText>(R.id.etMessage)
+            chatPane.findViewById<ImageButton>(R.id.btnAttach).setOnClickListener { pickAttachment() }
+            chatPane.findViewById<ImageButton>(R.id.btnSend).setOnClickListener {
+                sendMessage(innerMsgAdapter, rvMsgs, etMsg, conv.partner.userId)
             }
 
             selectConversation(
                 conv.partner.userId,
                 conv.partner.name ?: conv.partner.username,
-                msgAdapter,
-                rvMessages
+                innerMsgAdapter,
+                rvMsgs
             )
         }
         rvConvs.adapter = convAdapter

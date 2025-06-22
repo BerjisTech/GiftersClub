@@ -22,6 +22,8 @@ import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.gifts.FollowApiHolder
 import com.google.android.material.button.MaterialButton
+import android.widget.ImageButton
+import club.gifters.giftersclub.chat.ChatFragment
 import android.graphics.Color
 import android.content.res.ColorStateList
 import androidx.core.view.isVisible
@@ -69,31 +71,30 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
                     isFriend     = isFollowing && isFollowedBy
                     Log.d(TAG, "Follow state: isFollowing=$isFollowing isFollowedBy=$isFollowedBy isFriend=$isFriend")
                     btnFollow.isVisible = true
-                    updateFollowButton(btnFollow)
                     btnFollow.setOnClickListener {
                         lifecycleScope.launch {
-                        // perform follow/unfollow in follows table via trigger-backed API
-                        if (isFollowing) {
-                            FollowApiHolder.unfollowUser(prof.userId)
-                        } else {
-                            FollowApiHolder.followUser(prof.userId)
+                            if (isFollowing) FollowApiHolder.unfollowUser(prof.userId)
+                            else              FollowApiHolder.followUser(prof.userId)
+                            isFollowing = !isFollowing
+                            isFriend    = isFollowing && isFollowedBy
+                            updateFollowButton(btnFollow)
+                            profileApi.getProfileByUserId("*", "eq.${prof.userId}")
+                                .firstOrNull()?.let { p ->
+                                    bindProfile(p, imageAvatar, textName,
+                                        textUser, textFollowers, textFollowing, textBio)
+                                }
                         }
-                        // flip local state and update the follow button text
-                        isFollowing = !isFollowing
-                        isFriend    = isFollowing && isFollowedBy
-                        updateFollowButton(btnFollow)
-                        // reload profile counts (followers/following) from server, using trigger-driven fields
-                        val updated = profileApi.getProfileByUserId(
-                            "*",
-                            "eq.${prof.userId}"
-                        ).firstOrNull()
-                        updated?.let { p ->
-                            bindProfile(
-                                p, imageAvatar, textName,
-                                textUser, textFollowers, textFollowing, textBio
+                    }
+                    // chat button for direct messaging
+                    val btnChat = view.findViewById<ImageButton>(R.id.btnChat)
+                    btnChat.isVisible = true
+                    btnChat.setOnClickListener {
+                        parentFragmentManager.beginTransaction()
+                            .replace(R.id.mainContentContainer,
+                                ChatFragment.newInstance(prof.userId, prof.username)
                             )
-                        }
-                        }
+                            .addToBackStack(null)
+                            .commit()
                     }
                 }
 
