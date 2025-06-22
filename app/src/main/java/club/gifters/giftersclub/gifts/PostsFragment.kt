@@ -9,6 +9,7 @@ import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.gifts.GifterFragment
+import club.gifters.giftersclub.gifts.CommentsBottomSheetFragment
 import android.util.Log
 import android.widget.Toast
 import retrofit2.HttpException
@@ -36,7 +37,10 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         val pager = view.findViewById<ViewPager2>(R.id.viewPagerPosts)
         adapter = PostAdapter(
             onLike = { /* TODO: handle like */ },
-            onComment = { /* TODO: handle comment */ },
+            onComment = { post ->
+                CommentsBottomSheetFragment.newInstance(post.id)
+                    .show(parentFragmentManager, "comments")
+            },
             onShare = { /* TODO: handle share */ },
             onProfileClick = { uname ->
                 parentFragmentManager.beginTransaction()

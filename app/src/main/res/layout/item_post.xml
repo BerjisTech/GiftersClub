@@ -55,6 +55,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
+                        android:textColor="@color/white"
                         android:textStyle="bold" />
 
                     <TextView
@@ -62,6 +63,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
+                        android:textColor="@color/white"
                         android:textAppearance="?attr/textAppearanceCaption" />
                 </LinearLayout>
 
@@ -72,6 +74,7 @@
                 android:id="@+id/contentText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:textColor="@color/white"
                 android:padding="8dp" />
 
         </LinearLayout>
@@ -87,19 +90,45 @@
             app:layout_constraintBottom_toBottomOf="@id/postDetails"
             app:layout_constraintEnd_toEndOf="@id/postDetails">
 
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
             <ImageButton
                 android:id="@+id/btnLike"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/like"
                 android:src="@android:drawable/btn_star" />
+            <TextView
+                android:id="@+id/tvLikeCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="0"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
             <ImageButton
                 android:id="@+id/btnComment"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/comment"
                 android:src="@android:drawable/ic_menu_edit" />
+            <TextView
+                android:id="@+id/tvCommentCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="0"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
 
             <ImageButton
                 android:id="@+id/btnShare"

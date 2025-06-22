@@ -156,4 +156,5 @@ object RetrofitClient {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
     val functionsApi: FunctionsApi = functionsRetrofit.create(FunctionsApi::class.java)
+    val commentApi: club.gifters.giftersclub.gifts.CommentApi = retrofit.create(club.gifters.giftersclub.gifts.CommentApi::class.java)
 }

@@ -53,7 +53,9 @@ class PostAdapter(
         private val mediaPager: androidx.viewpager2.widget.ViewPager2 =
             itemView.findViewById(R.id.mediaPager)
         private val btnLike: ImageButton = itemView.findViewById(R.id.btnLike)
+        private val tvLikeCount: TextView = itemView.findViewById(R.id.tvLikeCount)
         private val btnComment: ImageButton = itemView.findViewById(R.id.btnComment)
+        private val tvCommentCount: TextView = itemView.findViewById(R.id.tvCommentCount)
         private val btnShare: ImageButton = itemView.findViewById(R.id.btnShare)
         private var current: Post? = null
         private val gestureDetector = GestureDetector(itemView.context,
@@ -114,6 +116,8 @@ class PostAdapter(
             mediaPager.adapter = PostMediaAdapter(post.media ?: emptyList())
             btnLike.setOnClickListener    { current?.let(onLike) }
             btnComment.setOnClickListener { current?.let(onComment) }
+            // display like & comment counts
+            tvLikeCount.text = post.reactionCounts?.like?.toString() ?: "0"
             btnShare.setOnClickListener   { current?.let(onShare) }
         }
     }
