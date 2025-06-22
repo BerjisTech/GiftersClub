@@ -12,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.text.format.DateUtils
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -54,6 +56,41 @@ class PostAdapter(
         private val btnComment: ImageButton = itemView.findViewById(R.id.btnComment)
         private val btnShare: ImageButton = itemView.findViewById(R.id.btnShare)
         private var current: Post? = null
+        private val gestureDetector = GestureDetector(itemView.context,
+            object : GestureDetector.SimpleOnGestureListener() {
+                override fun onDoubleTap(e: MotionEvent): Boolean {
+                    current?.let(onLike)
+                    showHeart(e.x, e.y)
+                    return true
+                }
+            }
+        )
+        init {
+            itemView.setOnTouchListener { _, ev ->
+                gestureDetector.onTouchEvent(ev)
+                false
+            }
+        }
+
+        private fun showHeart(xPos: Float, yPos: Float) {
+            val size = (100 * itemView.context.resources.displayMetrics.density).toInt()
+            val heart = ImageView(itemView.context).apply {
+                setImageResource(R.drawable.ic_heart_red)
+                layoutParams = ViewGroup.LayoutParams(size, size)
+                scaleX = 0.3f
+                scaleY = 0.3f
+                alpha = 1f
+                x = xPos - size / 2
+                y = yPos - size / 2
+            }
+            (itemView as ViewGroup).addView(heart)
+            heart.animate()
+                .scaleX(1.5f).scaleY(1.5f)
+                .alpha(0f)
+                .setDuration(600)
+                .withEndAction { (itemView as ViewGroup).removeView(heart) }
+                .start()
+        }
 
         fun bind(post: Post) {
             current = post
