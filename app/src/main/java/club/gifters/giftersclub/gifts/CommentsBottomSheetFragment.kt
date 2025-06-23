@@ -171,10 +171,10 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             val bottomSheet = dlg.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
             bottomSheet?.let { sheet ->
                 val behavior = BottomSheetBehavior.from(sheet)
-                // fix to 70% of screen and keep that height
-                behavior.isFitToContents = false
+                // Always stick to the bottom and expand fully
+                behavior.isFitToContents = true
                 behavior.halfExpandedRatio = 0.7f
-                behavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
+                behavior.state = BottomSheetBehavior.STATE_EXPANDED
             }
         }
     }
