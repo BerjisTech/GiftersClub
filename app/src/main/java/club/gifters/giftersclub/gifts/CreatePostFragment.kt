@@ -1,9 +1,16 @@
 package club.gifters.giftersclub.gifts
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.net.Uri
 import android.os.Bundle
+import android.util.Base64
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -11,35 +18,24 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.VideoView
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
 import android.widget.Toast
-import android.content.Context
-import android.util.Base64
-import android.util.Log
-import org.json.JSONObject
+import android.widget.VideoView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import club.gifters.giftersclub.MainActivity
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.model.CreatePostMediaRequest
 import club.gifters.giftersclub.model.CreatePostRequest
 import club.gifters.giftersclub.model.PostTagUpsertRequest
 import club.gifters.giftersclub.model.TagUpsertRequest
+import club.gifters.giftersclub.network.RetrofitClient
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.util.regex.Pattern
-import java.io.ByteArrayOutputStream
-import android.graphics.Canvas
-import android.graphics.Paint
-import kotlinx.coroutines.launch
-import retrofit2.Response
 
 /**
  * Fragment for creating a new post in two steps: select media, then add details.
@@ -51,8 +47,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var tvSelectedCount: TextView
     private lateinit var layoutPreviews: LinearLayout
     private lateinit var btnNext: Button
-    private lateinit var layoutMedia: LinearLayout
-    private lateinit var layoutEdit: LinearLayout
+    private lateinit var layoutMedia: ConstraintLayout
+    private lateinit var layoutEdit: ConstraintLayout
     private lateinit var layoutDetails: LinearLayout
     private lateinit var imageEditView: ImageView
     private lateinit var btnFilterNone: Button

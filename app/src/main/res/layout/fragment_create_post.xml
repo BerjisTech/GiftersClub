@@ -1,21 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/createPostRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp">
-
-
-    <TextView
-        android:id="@+id/tvTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/create_post"
-        android:textAppearance="?attr/textAppearanceHeadline6"
-        android:gravity="center"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="16dp" />
 
     <FrameLayout
         android:id="@+id/flStepContainer"
@@ -24,17 +14,12 @@
         android:layout_weight="1">
 
         <!-- Media selection step -->
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layoutMedia"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:gravity="bottom"
             android:orientation="vertical">
-
-            <Button
-                android:id="@+id/btnSelectMedia"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/select_photos_videos" />
 
             <TextView
                 android:id="@+id/tvSelectedCount"
@@ -42,19 +27,39 @@
                 android:layout_height="wrap_content"
                 android:text=""
                 android:gravity="center"
-                android:layout_marginTop="8dp" />
+                android:layout_marginTop="28dp"
+                app:layout_constraintTop_toTopOf="@id/layoutMedia"
+                app:layout_constraintStart_toStartOf="@id/layoutMedia"
+                app:layout_constraintEnd_toEndOf="@id/layoutMedia"/>
 
             <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp">
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginTop="8dp"
+                android:foregroundGravity="center_vertical"
+                app:layout_constraintStart_toStartOf="@id/layoutMedia"
+                app:layout_constraintEnd_toEndOf="@id/layoutMedia"
+                app:layout_constraintTop_toBottomOf="@id/tvSelectedCount"
+                app:layout_constraintBottom_toTopOf="@id/btnSelectMedia">
 
                 <LinearLayout
                     android:id="@+id/layoutPreviews"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:layout_gravity="center_vertical"
+                    android:foregroundGravity="center_vertical"
                     android:orientation="horizontal" />
             </HorizontalScrollView>
+
+            <Button
+                android:id="@+id/btnSelectMedia"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/select_photos_videos"
+                app:layout_constraintStart_toStartOf="@id/layoutMedia"
+                app:layout_constraintEnd_toEndOf="@id/layoutMedia"
+                app:layout_constraintBottom_toTopOf="@id/btnNext"/>
 
             <Button
                 android:id="@+id/btnNext"
@@ -62,31 +67,41 @@
                 android:layout_height="wrap_content"
                 android:text="@string/next"
                 android:layout_marginTop="16dp"
-                android:enabled="false" />
+                android:enabled="false"
+                app:layout_constraintStart_toStartOf="@id/layoutMedia"
+                app:layout_constraintEnd_toEndOf="@id/layoutMedia"
+                app:layout_constraintBottom_toBottomOf="@id/layoutMedia"/>
 
-        </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <!-- Edit media step -->
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layoutEdit"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:visibility="gone"
+            >
 
             <ImageView
                 android:id="@+id/imageEditView"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:scaleType="centerCrop" />
+                android:scaleType="centerCrop"
+                app:layout_constraintTop_toTopOf="@id/layoutEdit"
+                app:layout_constraintStart_toStartOf="@id/layoutEdit"
+                app:layout_constraintEnd_toEndOf="@id/layoutEdit"
+                app:layout_constraintBottom_toBottomOf="@id/layoutEdit"/>
 
             <LinearLayout
                 android:id="@+id/filterButtonsContainer"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center">
+                android:orientation="vertical"
+                android:gravity="center"
+                app:layout_constraintEnd_toEndOf="@id/layoutEdit"
+                app:layout_constraintBottom_toTopOf="@id/btnApplyFilter">
 
                 <Button
                     android:id="@+id/btnFilterNone"
@@ -115,9 +130,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="@string/apply_filter" />
+                android:text="@string/apply_filter"
+                app:layout_constraintStart_toStartOf="@id/layoutEdit"
+                app:layout_constraintEnd_toEndOf="@id/layoutEdit"
+                app:layout_constraintBottom_toBottomOf="@id/layoutEdit" />
 
-        </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <!-- Details step -->
         <LinearLayout
@@ -125,6 +143,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
+            android:layout_marginTop="30dp"
             android:visibility="gone">
 
             <EditText
