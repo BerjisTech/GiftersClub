@@ -1,105 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:layout_height="match_parent">
 
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/imageAvatar"
-            android:layout_width="96dp"
-            android:layout_height="96dp"
-            android:layout_gravity="center"
-            android:scaleType="centerCrop"
-            android:contentDescription="@null"
-            android:layout_marginBottom="8dp"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent">
 
-        <TextView
-            android:id="@+id/textName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceHeadline5"
-            android:layout_gravity="center"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/textUsername"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginBottom="4dp"
-            android:textAppearance="?attr/textAppearanceHeadline6"
-            android:textColor="?android:attr/textColorSecondary" />
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="center">
-                <TextView
-                    android:id="@+id/textFollowers"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_margin="8dp"
-                    android:textAppearance="?attr/textAppearanceCaption" />
-
-                <TextView
-                    android:id="@+id/textFollowing"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_margin="8dp"
-                    android:textAppearance="?attr/textAppearanceCaption" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/textBio"
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:layout_marginBottom="16dp" />
+            android:fillViewport="true"
+            android:background="@android:color/transparent"
+            android:padding="16dp"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="center">
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnFollow"
-                    style="@style/Widget.MaterialComponents.Button"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/imageAvatar"
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:layout_gravity="center"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@null"
+                    android:layout_marginBottom="8dp"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
+
+                <TextView
+                    android:id="@+id/textName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceHeadline5"
+                    android:layout_gravity="center"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/textUsername"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="@string/follow"
-                    android:textAllCaps="false"
-                    android:visibility="gone"
+                    android:layout_marginBottom="4dp"
+                    android:textAppearance="?attr/textAppearanceHeadline6"
+                    android:textColor="?android:attr/textColorSecondary" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_gravity="center">
+                    <TextView
+                        android:id="@+id/textFollowers"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="8dp"
+                        android:textAppearance="?attr/textAppearanceCaption" />
+                    <TextView
+                        android:id="@+id/textFollowing"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="8dp"
+                        android:textAppearance="?attr/textAppearanceCaption" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/textBio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:layout_marginBottom="16dp" />
 
-                <ImageButton
-                    android:id="@+id/btnChat"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_marginBottom="16dp"
-                    android:visibility="gone"
-                    android:src="@android:drawable/ic_menu_send"
-                    android:contentDescription="@string/chat_with_user" />
-        </LinearLayout>
+                    android:orientation="horizontal"
+                    android:layout_gravity="center">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnFollow"
+                        style="@style/Widget.MaterialComponents.Button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/follow"
+                        android:textAllCaps="false"
+                        android:visibility="gone"
+                        android:layout_marginBottom="16dp" />
 
-        <!-- Tabs for Gifts, Wishlists, Posts -->
+                    <ImageButton
+                        android:id="@+id/btnChat"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        android:layout_marginBottom="16dp"
+                        android:src="@android:drawable/ic_menu_send"
+                        android:contentDescription="@string/chat_with_user" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabLayout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            app:tabMode="fixed"
+            app:tabGravity="fill" />
+    </com.google.android.material.appbar.AppBarLayout>
 
-        <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/viewPager"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:nestedScrollingEnabled="false" />
-
-    </LinearLayout>
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

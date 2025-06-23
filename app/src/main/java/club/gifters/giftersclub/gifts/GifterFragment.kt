@@ -156,7 +156,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
         val pink = Color.parseColor("#ec4899")
         when {
             isFriend -> {
-                btn.text = "Friend"
+                btn.text = "Friends"
                 btn.backgroundTintList = ColorStateList.valueOf(green)
             }
             isFollowing -> {
