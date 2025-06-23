@@ -45,15 +45,14 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             override fun onTabUnselected(tab: TabLayout.Tab) {}
-            override fun onTabReselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {
+                // Reload the fragment when tapping the current tab again (e.g. refresh Posts)
+                onTabSelected(tab)
+            }
         })
         // Show default tab
         if (savedInstanceState == null) {
             tabLayout.getTabAt(0)?.select()
-            // Ensure Posts tab loads immediately
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.mainContentContainer, PostsFragment())
-                .commit()
         }
 
         // Setup bottom navigation
