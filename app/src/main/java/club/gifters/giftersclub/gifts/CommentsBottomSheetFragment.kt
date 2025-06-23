@@ -15,8 +15,12 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.gifts.Comment
+import club.gifters.giftersclub.gifts.CommentReactionCounts
 import club.gifters.giftersclub.gifts.CommentAdapter
 import club.gifters.giftersclub.gifts.GifterFragment
+import android.content.Context
+import android.util.Base64
+import org.json.JSONObject
 import kotlinx.coroutines.launch
 
 /**
@@ -81,11 +85,24 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             val content = etComment.text.toString().trim()
             if (content.isNotBlank()) {
                 lifecycleScope.launch {
-                    CommentApiHolder.createComment(
-                        postId,
-                        content,
-                        replyingTo?.id
+                    // build comment payload including user_id (for RLS)
+                    val prefs = requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
+                    val token = prefs.getString("access_token", "") ?: ""
+                    var userId = ""
+                    try {
+                        val parts = token.split('.')
+                        if (parts.size >= 2) {
+                            val decoded = String(Base64.decode(parts[1], Base64.URL_SAFE), Charsets.UTF_8)
+                            userId = JSONObject(decoded).optString("sub")
+                        }
+                    } catch (_: Exception) {}
+                    val body = mutableMapOf<String, Any>(
+                        "post_id" to postId,
+                        "user_id" to userId,
+                        "content" to content
                     )
+                    replyingTo?.id?.let { body["parent_comment_id"] = it }
+                    CommentApiHolder.createComment(body)
                     replyingTo = null
                     etComment.text.clear()
                     loadComments()
@@ -104,6 +121,12 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             } catch (e: Exception) {
                 // avoid crash on malformed GET
                 emptyList()
+            }
+            // fetch like/dislike counts for each comment before sorting
+            list.forEach { c ->
+                val likes = CommentApiHolder.getCommentReactionCountValue(c.id, "like")
+                val dislikes = CommentApiHolder.getCommentReactionCountValue(c.id, "dislike")
+                c.reactionCounts = CommentReactionCounts(likes, dislikes)
             }
             val sorted = list.sortedWith(
                 compareByDescending<Comment> { it.reactionCounts?.like ?: 0 }
@@ -124,25 +147,19 @@ object CommentApiHolder {
     suspend fun getCommentsByPost(postId: String) = api.getCommentsByPost(
         postIdFilter = "eq.$postId"
     )
+    /**
+     * Insert a new comment (user_id must be provided in body for RLS).
+     */
     suspend fun createComment(
-        postId: String,
-        content: String,
-        parentCommentId: String? = null
-    ) {
-        val body = mutableMapOf(
-            "post_id" to postId,
-            "content" to content
-        )
-        parentCommentId?.let { body["parent_comment_id"] = it }
-        api.createComment(select = "*", comment = body)
-    }
+        comment: Map<String, @JvmSuppressWildcards Any>
+    ) = api.createComment(select = "*", comment = comment)
     suspend fun reactToComment(commentId: String, type: String) =
         api.reactToComment(mapOf("comment_id" to commentId, "type" to type))
 
     suspend fun getCommentReactionCountValue(commentId: String, type: String): Int {
         val resp = api.getCommentReactionCount(
             commentIdFilter = "eq.$commentId",
-            type = type
+            type = "eq.$type"
         )
         val contentRange = resp.headers()["Content-Range"] ?: return 0
         return contentRange.substringAfterLast('/')?.toIntOrNull() ?: 0

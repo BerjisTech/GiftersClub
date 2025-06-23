@@ -15,6 +15,6 @@ data class Comment(
     val content: String,
     @SerializedName("created_at") val createdAt: String,
     val profile: Profile?,
-    @SerializedName("reaction_counts") val reactionCounts: CommentReactionCounts?,
-    val replies: List<Comment>?
+    @SerializedName("reaction_counts") var reactionCounts: CommentReactionCounts?,
+    var replies: List<Comment>?
 )
