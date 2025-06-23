@@ -21,7 +21,9 @@ WARNING: Restricted methods will be blocked in a future release unless native ac
 > Task :app:processDebugResources UP-TO-DATE
 
 > Task :app:compileDebugKotlin FAILED
-e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/MainActivity.kt:58:17 'onFling' overrides nothing.
+e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/MainActivity.kt:57:31 Class '<anonymous>' is not abstract and does not implement abstract member 'onScroll'.
+e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/MainActivity.kt:61:13 'onScroll' overrides nothing.
+e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/MainActivity.kt:63:13 'onFling' overrides nothing.
 
 FAILURE: Build failed with an exception.
 

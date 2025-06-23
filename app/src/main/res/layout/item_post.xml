@@ -15,6 +15,16 @@
         app:layout_constraintBottom_toBottomOf="parent"
         android:orientation="horizontal"/>
 
+    <LinearLayout
+        android:id="@+id/mediaIndicatorLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@id/postDetails"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/postDetails"
         android:layout_width="match_parent"

@@ -1,30 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:id="@+id/rootLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/topAppBar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:visibility="gone"
-        app:titleTextAppearance="?attr/textAppearanceHeadline6" />
-
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/topTabLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:tabTextAppearance="@style/TopTabsStyling"
-        app:tabMode="fixed"
-        app:tabGravity="fill" />
-
-    <FrameLayout
-        android:id="@+id/mainContentContainer"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPagerMain"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavView" />
+
+    <FrameLayout
+    android:id="@+id/mainContentContainer"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavView" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/topTabLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="10dp"
+            android:background="@android:color/transparent"
+            app:tabMode="scrollable"
+            app:tabGravity="center"
+            app:tabTextColor="@color/white"
+            app:tabTextAppearance="@style/TopTabsStyling"
+            app:tabIndicatorFullWidth="false"
+            app:tabIndicatorHeight="2dp"
+            app:tabIndicatorColor="@android:color/white" />
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topAppBar"
+            android:layout_width="wrap_content"
+            android:layout_height="?attr/actionBarSize"
+            android:visibility="gone"
+            app:titleTextAppearance="?attr/textAppearanceHeadline6"/>
+    </LinearLayout>
+
+
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavView"
@@ -32,6 +65,9 @@
         android:layout_height="wrap_content"
         app:menu="@menu/bottom_nav_menu"
         app:itemIconTint="@null"
-        app:itemTextColor="@null" />
+        app:itemTextColor="@null"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

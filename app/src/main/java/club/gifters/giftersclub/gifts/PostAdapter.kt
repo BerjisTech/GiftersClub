@@ -6,11 +6,13 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.LinearLayout
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import club.gifters.giftersclub.R
+import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.model.Post
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -57,6 +59,7 @@ class PostAdapter(
         private val btnComment: ImageButton = itemView.findViewById(R.id.btnComment)
         private val tvCommentCount: TextView = itemView.findViewById(R.id.tvCommentCount)
         private val btnShare: ImageButton = itemView.findViewById(R.id.btnShare)
+        private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private var current: Post? = null
         private val gestureDetector = GestureDetector(itemView.context,
             object : GestureDetector.SimpleOnGestureListener() {
@@ -113,7 +116,40 @@ class PostAdapter(
             timestamp.text = formatRelativeTime(post.createdAt)
             content.text = post.content ?: ""
             // Setup media carousel (images/videos)
-            mediaPager.adapter = PostMediaAdapter(post.media ?: emptyList())
+            val mediaList = post.media ?: emptyList()
+            mediaPager.adapter = PostMediaAdapter(mediaList)
+            val indicatorLayout = itemView.findViewById<LinearLayout>(R.id.mediaIndicatorLayout)
+            indicatorLayout.removeAllViews()
+            if (mediaList.size <= 1) {
+                indicatorLayout.visibility = View.GONE
+            } else {
+                indicatorLayout.visibility = View.VISIBLE
+                pageChangeCallback?.let { mediaPager.unregisterOnPageChangeCallback(it) }
+                mediaList.forEachIndexed { idx, _ ->
+                    val dot = ImageView(itemView.context).apply {
+                        setImageResource(if (idx == 0) R.drawable.dot_active else R.drawable.dot_inactive)
+                        val size = (6 * context.resources.displayMetrics.density).toInt()
+                        val params = LinearLayout.LayoutParams(size, size).apply {
+                            val margin = (4 * context.resources.displayMetrics.density).toInt()
+                            marginStart = margin; marginEnd = margin
+                        }
+                        layoutParams = params
+                    }
+                    indicatorLayout.addView(dot)
+                }
+                val callback = object : ViewPager2.OnPageChangeCallback() {
+                    override fun onPageSelected(position: Int) {
+                        for (i in 0 until indicatorLayout.childCount) {
+                            val iv = indicatorLayout.getChildAt(i) as ImageView
+                            iv.setImageResource(
+                                if (i == position) R.drawable.dot_active else R.drawable.dot_inactive
+                            )
+                        }
+                    }
+                }
+                mediaPager.registerOnPageChangeCallback(callback)
+                pageChangeCallback = callback
+            }
             btnLike.setOnClickListener    { current?.let(onLike) }
             btnComment.setOnClickListener { current?.let(onComment) }
             // display like & comment counts

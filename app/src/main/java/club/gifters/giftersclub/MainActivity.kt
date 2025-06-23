@@ -8,6 +8,10 @@ import android.view.View
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import android.widget.FrameLayout
+import androidx.viewpager2.widget.ViewPager2
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import com.google.android.material.tabs.TabLayoutMediator
 import club.gifters.giftersclub.gifts.GiftFragment
 import club.gifters.giftersclub.gifts.LeaderboardFragment
 import club.gifters.giftersclub.gifts.PostsFragment
@@ -18,42 +22,31 @@ import club.gifters.giftersclub.chat.ChatFragment
 import club.gifters.giftersclub.chat.NotificationListFragment
 
 class MainActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         RetrofitClient.init(this)
         setContentView(R.layout.activity_main)
 
-        // Setup top tabs
+        // Setup ViewPager + top tabs (swipeable like TikTok)
+        val tabTitles = listOf("Posts", "Gifts", "Gifters", "Wishlists")
         val tabLayout = findViewById<TabLayout>(R.id.topTabLayout)
-        listOf("Posts", "Gifts", "Gifters", "Wishlists").forEach { title ->
-            tabLayout.addTab(tabLayout.newTab().setText(title))
-        }
-        // Load fragment according to selected tab
-        tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab) {
-                val frag = when (tab.position) {
-                    0 -> PostsFragment()
-                    1 -> GiftFragment()
-                    2 -> LeaderboardFragment()
-                    3 -> WishlistsFragment()
-                    else -> null
-                }
-                frag?.let {
-                    supportFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, it)
-                        .commit()
-                }
+        val viewPager = findViewById<ViewPager2>(R.id.viewPagerMain)
+        viewPager.adapter = object : FragmentStateAdapter(this) {
+            override fun getItemCount() = tabTitles.size
+            override fun createFragment(position: Int) = when (position) {
+                0 -> PostsFragment()
+                1 -> GiftFragment()
+                2 -> LeaderboardFragment()
+                3 -> WishlistsFragment()
+                else -> PostsFragment()
             }
-            override fun onTabUnselected(tab: TabLayout.Tab) {}
-            override fun onTabReselected(tab: TabLayout.Tab) {
-                // Reload the fragment when tapping the current tab again (e.g. refresh Posts)
-                onTabSelected(tab)
-            }
-        })
-        // Show default tab
-        if (savedInstanceState == null) {
-            tabLayout.getTabAt(0)?.select()
         }
+        // Link TabLayout and ViewPager2
+        TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
+            tab.text = tabTitles[pos]
+        }.attach()
+
 
         // Setup bottom navigation
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavView)
@@ -101,6 +94,8 @@ class MainActivity : AppCompatActivity() {
             tabLayout.visibility = if (isRoot) View.VISIBLE else View.GONE
             bottomNav.visibility = if (isRoot) View.VISIBLE else View.GONE
             toolbar.visibility = if (isRoot) View.GONE else View.VISIBLE
+            // overlay container for bottom-nav screens
+            findViewById<FrameLayout>(R.id.mainContentContainer).visibility = if (isRoot) View.GONE else View.VISIBLE
             supportActionBar?.setDisplayHomeAsUpEnabled(!isRoot)
         }
 
