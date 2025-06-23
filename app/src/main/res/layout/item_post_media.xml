@@ -18,4 +18,11 @@
         android:visibility="gone"
         android:contentDescription="Post video" />
 
+    <ProgressBar
+        android:id="@+id/mediaLoadingSpinner"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:indeterminate="true" />
+
 </FrameLayout>
