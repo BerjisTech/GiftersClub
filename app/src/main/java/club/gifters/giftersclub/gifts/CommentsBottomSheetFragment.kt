@@ -22,6 +22,11 @@ import android.content.Context
 import android.util.Base64
 import org.json.JSONObject
 import kotlinx.coroutines.launch
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import android.app.Dialog
+import android.view.WindowManager
+import android.widget.ProgressBar
 
 /**
  * Bottom sheet fragment to display and post comments for a given post.
@@ -30,6 +35,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
     private lateinit var rvComments: RecyclerView
     private lateinit var etComment: EditText
     private lateinit var btnSendComment: Button
+    private lateinit var progressComments: ProgressBar
     private lateinit var adapter: CommentAdapter
     private var postId: String = ""
 
@@ -56,6 +62,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         rvComments = view.findViewById(R.id.rvComments)
         etComment = view.findViewById(R.id.etComment)
         btnSendComment = view.findViewById(R.id.btnSendComment)
+        progressComments = view.findViewById(R.id.progressComments)
 
         var replyingTo: Comment? = null
         adapter = CommentAdapter(
@@ -65,10 +72,52 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                 etComment.requestFocus()
             },
             onLike = { comment ->
-                lifecycleScope.launch { CommentApiHolder.reactToComment(comment.id, "like") }
+                lifecycleScope.launch {
+                    // include user_id so RLS allows reacting
+                    val prefs = requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
+                    val token = prefs.getString("access_token", "") ?: ""
+                    var userId = ""
+                    try {
+                        val parts = token.split('.')
+                        if (parts.size >= 2) {
+                            val decoded = String(Base64.decode(parts[1], Base64.URL_SAFE), Charsets.UTF_8)
+                            userId = JSONObject(decoded).optString("sub")
+                        }
+                    } catch (_: Exception) {}
+                    val body = mapOf(
+                        "comment_id" to comment.id,
+                        "user_id" to userId,
+                        "type" to "like"
+                    )
+                    CommentApiHolder.reactToComment(body)
+                    adapter.currentList.indexOf(comment).takeIf { it >= 0 }?.let { idx ->
+                        adapter.notifyItemChanged(idx)
+                    }
+                }
             },
             onDislike = { comment ->
-                lifecycleScope.launch { CommentApiHolder.reactToComment(comment.id, "dislike") }
+                lifecycleScope.launch {
+                    // include user_id so RLS allows reacting
+                    val prefs = requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
+                    val token = prefs.getString("access_token", "") ?: ""
+                    var userId = ""
+                    try {
+                        val parts = token.split('.')
+                        if (parts.size >= 2) {
+                            val decoded = String(Base64.decode(parts[1], Base64.URL_SAFE), Charsets.UTF_8)
+                            userId = JSONObject(decoded).optString("sub")
+                        }
+                    } catch (_: Exception) {}
+                    val body = mapOf(
+                        "comment_id" to comment.id,
+                        "user_id" to userId,
+                        "type" to "dislike"
+                    )
+                    CommentApiHolder.reactToComment(body)
+                    adapter.currentList.indexOf(comment).takeIf { it >= 0 }?.let { idx ->
+                        adapter.notifyItemChanged(idx)
+                    }
+                }
             },
             onProfileClick = { username ->
                 parentFragmentManager.beginTransaction()
@@ -113,28 +162,57 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         loadComments()
     }
 
+    override fun onStart() {
+        super.onStart()
+        dialog?.let { dlg ->
+            val bottomSheet = dlg.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            bottomSheet?.let { sheet ->
+                val behavior = BottomSheetBehavior.from(sheet)
+                // fix to 70% of screen and keep that height
+                behavior.isFitToContents = false
+                behavior.halfExpandedRatio = 0.7f
+                behavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
+            }
+        }
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+        return dialog
+    }
+
     private fun loadComments() {
         lifecycleScope.launch {
             rvComments.isVisible = false
+            progressComments.isVisible = true
             val list = try {
                 CommentApiHolder.getCommentsByPost(postId)
             } catch (e: Exception) {
                 // avoid crash on malformed GET
                 emptyList()
             }
-            // fetch like/dislike counts for each comment before sorting
+            // fetch like/dislike counts for each comment before grouping
             list.forEach { c ->
                 val likes = CommentApiHolder.getCommentReactionCountValue(c.id, "like")
                 val dislikes = CommentApiHolder.getCommentReactionCountValue(c.id, "dislike")
                 c.reactionCounts = CommentReactionCounts(likes, dislikes)
+                // attach nested replies
+                c.replies = list.filter { it.parentCommentId == c.id }
             }
-            val sorted = list.sortedWith(
-                compareByDescending<Comment> { it.reactionCounts?.like ?: 0 }
-                    .thenByDescending { it.createdAt }
-                    .thenBy { it.reactionCounts?.dislike ?: 0 }
-            )
-            adapter.submitList(sorted)
+            // group top-level comments, sort them, then append their replies (sorted too)
+            val comparator = compareByDescending<Comment> { it.reactionCounts?.like ?: 0 }
+                .thenByDescending { it.createdAt }
+                .thenBy { it.reactionCounts?.dislike ?: 0 }
+            val grouped = list.filter { it.parentCommentId == null }
+                .sortedWith(comparator)
+                .flatMap { parent ->
+                    val children = parent.replies.orEmpty().sortedWith(comparator)
+                    listOf(parent) + children
+                }
+            adapter.submitList(grouped)
             rvComments.isVisible = true
+            progressComments.isVisible = false
         }
     }
 }
@@ -153,8 +231,11 @@ object CommentApiHolder {
     suspend fun createComment(
         comment: Map<String, @JvmSuppressWildcards Any>
     ) = api.createComment(select = "*", comment = comment)
-    suspend fun reactToComment(commentId: String, type: String) =
-        api.reactToComment(mapOf("comment_id" to commentId, "type" to type))
+    /** React to a comment (like/dislike), user_id must be provided in body for RLS. */
+    /** React to a comment (like/dislike); user_id must be included for RLS. */
+    suspend fun reactToComment(
+        reaction: Map<String, @JvmSuppressWildcards Any>
+    ) = api.reactToComment(reaction)
 
     suspend fun getCommentReactionCountValue(commentId: String, type: String): Int {
         val resp = api.getCommentReactionCount(

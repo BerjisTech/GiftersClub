@@ -1,22 +1,21 @@
 package club.gifters.giftersclub.gifts
 
+import android.text.format.DateUtils
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.ImageView
-import android.widget.TextView
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
-import club.gifters.giftersclub.R
 import androidx.viewpager2.widget.ViewPager2
+import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
-import android.view.GestureDetector
-import android.view.MotionEvent
-import android.text.format.DateUtils
+import coil.load
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -54,11 +53,11 @@ class PostAdapter(
         private val content: TextView = itemView.findViewById(R.id.contentText)
         private val mediaPager: androidx.viewpager2.widget.ViewPager2 =
             itemView.findViewById(R.id.mediaPager)
-        private val btnLike: ImageButton = itemView.findViewById(R.id.btnLike)
+        private val btnLike: TextView = itemView.findViewById(R.id.btnLike)
         private val tvLikeCount: TextView = itemView.findViewById(R.id.tvLikeCount)
-        private val btnComment: ImageButton = itemView.findViewById(R.id.btnComment)
+        private val btnComment: TextView = itemView.findViewById(R.id.btnComment)
         private val tvCommentCount: TextView = itemView.findViewById(R.id.tvCommentCount)
-        private val btnShare: ImageButton = itemView.findViewById(R.id.btnShare)
+        private val btnShare: TextView = itemView.findViewById(R.id.btnShare)
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private var current: Post? = null
         private val gestureDetector = GestureDetector(itemView.context,
