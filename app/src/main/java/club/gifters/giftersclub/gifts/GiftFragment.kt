@@ -147,6 +147,8 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
             return
         }
         val recipientId = recipientUserId ?: return
+        val overlay = requireView().findViewById<View>(R.id.flLoadingOverlay)
+        overlay.visibility = View.VISIBLE
         lifecycleScope.launch {
             try {
                 // Fetch gifter profile to check token balance
@@ -176,6 +178,8 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
             } catch (e: Exception) {
                 Log.e(TAG, "Error sending gift", e)
                 Toast.makeText(requireContext(), "Failed to send gift", Toast.LENGTH_SHORT).show()
+            } finally {
+                overlay.visibility = View.GONE
             }
         }
     }

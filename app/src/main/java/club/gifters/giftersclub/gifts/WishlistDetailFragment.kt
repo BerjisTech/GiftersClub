@@ -210,6 +210,8 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
             Toast.makeText(requireContext(), "User not authenticated", Toast.LENGTH_SHORT).show()
             return
         }
+        val overlay = requireView().findViewById<View>(R.id.flLoadingOverlay)
+        overlay.visibility = View.VISIBLE
         lifecycleScope.launch {
             try {
                 val profiles = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$contributorId")
@@ -268,6 +270,8 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
             } catch (e: Exception) {
                 e("WishlistDetail", "Error contributing to wishlist", e)
                 Toast.makeText(requireContext(), "Failed to contribute. Please try again later.", Toast.LENGTH_SHORT).show()
+            } finally {
+                overlay.visibility = View.GONE
             }
         }
     }
