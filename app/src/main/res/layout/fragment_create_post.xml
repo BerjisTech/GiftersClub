@@ -83,7 +83,7 @@
             android:visibility="gone"
             >
 
-            <ImageView
+            <jp.co.cyberagent.android.gpuimage.GPUImageView
                 android:id="@+id/imageEditView"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
@@ -94,36 +94,26 @@
                 app:layout_constraintEnd_toEndOf="@id/layoutEdit"
                 app:layout_constraintBottom_toBottomOf="@id/layoutEdit"/>
 
-            <LinearLayout
-                android:id="@+id/filterButtonsContainer"
-                android:layout_width="wrap_content"
+            <!-- Filter picker -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvFilters"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
+                android:layout_marginBottom="8dp"
+                android:orientation="horizontal"
+                android:overScrollMode="never"
+                android:clipToPadding="false"
                 app:layout_constraintEnd_toEndOf="@id/layoutEdit"
-                app:layout_constraintBottom_toTopOf="@id/btnApplyFilter">
+                app:layout_constraintBottom_toTopOf="@id/btnApplyFilter" />
 
-                <Button
-                    android:id="@+id/btnFilterNone"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/filter_none" />
-
-                <Button
-                    android:id="@+id/btnFilterGray"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="@string/filter_gray" />
-
-                <Button
-                    android:id="@+id/btnFilterSepia"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="@string/filter_sepia" />
-
-            </LinearLayout>
+            <SeekBar
+                android:id="@+id/sbFilterLevel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="50"
+                app:layout_constraintEnd_toEndOf="@id/layoutEdit"
+                app:layout_constraintBottom_toTopOf="@id/btnApplyFilter" />
 
             <Button
                 android:id="@+id/btnApplyFilter"

@@ -47,6 +47,9 @@ dependencies {
     implementation(libs.androidx.viewpager2)
     // Pull-to-refresh support for post feed
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    // GPUImage for real-time image filters
+    // GPUImage for real-time image filters in the post editor
+    implementation("jp.co.cyberagent.android:gpuimage:2.1.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
 import android.net.Uri
 import android.os.Bundle
 import android.util.Base64
@@ -14,12 +12,12 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.VideoView
+import android.widget.ImageView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -32,9 +30,21 @@ import club.gifters.giftersclub.model.PostTagUpsertRequest
 import club.gifters.giftersclub.model.TagUpsertRequest
 import club.gifters.giftersclub.network.RetrofitClient
 import kotlinx.coroutines.launch
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import android.widget.SeekBar
+import jp.co.cyberagent.android.gpuimage.GPUImageView
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageGrayscaleFilter
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageColorInvertFilter
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageContrastFilter
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageBrightnessFilter
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import club.gifters.giftersclub.gifts.FilterAdapter
+import club.gifters.giftersclub.gifts.FilterItem
 import java.util.regex.Pattern
 
 /**
@@ -50,13 +60,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var layoutMedia: ConstraintLayout
     private lateinit var layoutEdit: ConstraintLayout
     private lateinit var layoutDetails: LinearLayout
-    private lateinit var imageEditView: ImageView
-    private lateinit var btnFilterNone: Button
-    private lateinit var btnFilterGray: Button
-    private lateinit var btnFilterSepia: Button
-    private lateinit var btnApplyFilter: Button
+    private lateinit var rvFilters: RecyclerView
+    private lateinit var sbFilterLevel: SeekBar
+    private lateinit var gpuImageView: jp.co.cyberagent.android.gpuimage.GPUImageView
     private lateinit var etContent: EditText
     private lateinit var btnEditMedia: Button
+    private lateinit var btnApplyFilter: Button
     private lateinit var btnPost: Button
     private lateinit var progressBar: ProgressBar
     private var originalBitmap: Bitmap? = null
@@ -80,13 +89,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         layoutMedia = view.findViewById(R.id.layoutMedia)
         layoutEdit = view.findViewById(R.id.layoutEdit)
         layoutDetails = view.findViewById(R.id.layoutDetails)
-        imageEditView = view.findViewById(R.id.imageEditView)
-        btnFilterNone = view.findViewById(R.id.btnFilterNone)
-        btnFilterGray = view.findViewById(R.id.btnFilterGray)
-        btnFilterSepia = view.findViewById(R.id.btnFilterSepia)
-        btnApplyFilter = view.findViewById(R.id.btnApplyFilter)
         etContent = view.findViewById(R.id.etContent)
         btnEditMedia = view.findViewById(R.id.btnEditMedia)
+        btnApplyFilter = view.findViewById(R.id.btnApplyFilter)
         btnPost = view.findViewById(R.id.btnPost)
         progressBar = view.findViewById(R.id.progressBar)
 
@@ -121,11 +126,54 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         requireActivity().title = getString(R.string.create_post)
 
         // Filter buttons
-        btnFilterNone.setOnClickListener { applyFilterNone() }
-        btnFilterGray.setOnClickListener { applyFilterGray() }
-        btnFilterSepia.setOnClickListener { applyFilterSepia() }
+        // Initialize GPUImageView for filter preview
+        gpuImageView = view.findViewById(R.id.imageEditView)
+
+        // Setup filter selector
+        rvFilters = view.findViewById(R.id.rvFilters)
+        rvFilters.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        val filters = listOf(
+            FilterItem("Normal", GPUImageFilter(), false),
+            FilterItem("Gray", GPUImageGrayscaleFilter()),
+            FilterItem("Sepia", GPUImageSepiaToneFilter()),
+            FilterItem("Invert", GPUImageColorInvertFilter()),
+            FilterItem("Contrast+", GPUImageContrastFilter(2.0f), true),
+            FilterItem("Bright+", GPUImageBrightnessFilter(0.5f), true)
+        )
+        val filterAdapter = FilterAdapter { item ->
+            gpuImageView.filter = item.filter
+            // reset slider
+            sbFilterLevel.progress = if (item.adjustable) 50 else 0
+        }
+        filterAdapter.submitList(filters)
+        rvFilters.adapter = filterAdapter
+        // default to Normal filter
+        gpuImageView.filter = filters.first().filter
+
+        // SeekBar for adjustable filters
+        sbFilterLevel = view.findViewById(R.id.sbFilterLevel)
+        sbFilterLevel.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar, progress: Int, fromUser: Boolean) {
+                val fi = filters[filterAdapter.currentList.indexOfFirst { gpuImageView.filter == it.filter }]
+                if (fi.adjustable) {
+                    when (val f = gpuImageView.filter) {
+                        is GPUImageContrastFilter -> f.setContrast(1f + (progress - 50) / 50f)
+                        is GPUImageBrightnessFilter -> f.setBrightness((progress - 50) / 50f)
+                    }
+                    gpuImageView.requestRender()
+                }
+            }
+            override fun onStartTrackingTouch(sb: SeekBar) {}
+            override fun onStopTrackingTouch(sb: SeekBar) {}
+        })
         btnApplyFilter.setOnClickListener {
-            // use editedBitmap for upload
+            // Capture the filtered image and proceed to details
+            editedBitmap = try {
+                gpuImageView.capture()
+            } catch (e: InterruptedException) {
+                Log.e(TAG, "Error capturing filtered image", e)
+                originalBitmap
+            }
             layoutEdit.isVisible = false
             layoutDetails.isVisible = true
         }
@@ -159,42 +207,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         requireContext().contentResolver.openInputStream(uri)?.use { stream ->
             originalBitmap = BitmapFactory.decodeStream(stream)
             editedBitmap = originalBitmap
-            imageEditView.setImageBitmap(editedBitmap)
+            gpuImageView.setImage(editedBitmap)
         }
     }
 
-    private fun applyFilterNone() {
-        editedBitmap = originalBitmap
-        imageEditView.setImageBitmap(editedBitmap)
-    }
-
-    private fun applyFilterGray() {
-        originalBitmap?.let { bmp ->
-            val cm = ColorMatrix().apply { setSaturation(0f) }
-            val config = bmp.config ?: Bitmap.Config.ARGB_8888
-            val filtered = Bitmap.createBitmap(bmp.width, bmp.height, config)
-            val canvas = android.graphics.Canvas(filtered)
-            val paint = android.graphics.Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
-            canvas.drawBitmap(bmp, 0f, 0f, paint)
-            editedBitmap = filtered
-            imageEditView.setImageBitmap(filtered)
-        }
-    }
-
-    private fun applyFilterSepia() {
-        originalBitmap?.let { bmp ->
-            val cm = ColorMatrix().apply {
-                setScale(1f, .95f, .82f, 1f)
-            }
-            val config = bmp.config ?: Bitmap.Config.ARGB_8888
-            val filtered = Bitmap.createBitmap(bmp.width, bmp.height, config)
-            val canvas = android.graphics.Canvas(filtered)
-            val paint = android.graphics.Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
-            canvas.drawBitmap(bmp, 0f, 0f, paint)
-            editedBitmap = filtered
-            imageEditView.setImageBitmap(filtered)
-        }
-    }
 
     private fun updatePreviews() {
         layoutPreviews.removeAllViews()
