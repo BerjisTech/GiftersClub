@@ -26,6 +26,7 @@
     <string name="like">Like</string>
     <string name="comment">Comment</string>
     <string name="share">Share</string>
+    <string name="no_comments_yet">No comments yet. Be the first to comment!</string>
 
     <!-- Toolbar titles -->
     <string name="account">Account</string>

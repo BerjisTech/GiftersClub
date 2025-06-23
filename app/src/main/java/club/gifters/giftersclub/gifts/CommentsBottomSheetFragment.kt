@@ -27,6 +27,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.app.Dialog
 import android.view.WindowManager
 import android.widget.ProgressBar
+import android.widget.TextView
 
 /**
  * Bottom sheet fragment to display and post comments for a given post.
@@ -37,6 +38,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
     private lateinit var btnSendComment: Button
     private lateinit var progressComments: ProgressBar
     private lateinit var adapter: CommentAdapter
+    private lateinit var tvEmptyComments: TextView
     private var postId: String = ""
 
     companion object {
@@ -63,6 +65,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         etComment = view.findViewById(R.id.etComment)
         btnSendComment = view.findViewById(R.id.btnSendComment)
         progressComments = view.findViewById(R.id.progressComments)
+        tvEmptyComments = view.findViewById(R.id.tvEmptyComments)
 
         var replyingTo: Comment? = null
         adapter = CommentAdapter(
@@ -200,6 +203,10 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                 // attach nested replies
                 c.replies = list.filter { it.parentCommentId == c.id }
             }
+            // show empty state if no comments
+            tvEmptyComments.isVisible = list.isEmpty()
+            // show empty state if no comments
+            tvEmptyComments.isVisible = list.isEmpty()
             // group top-level comments, sort them, then append their replies (sorted too)
             val comparator = compareByDescending<Comment> { it.reactionCounts?.like ?: 0 }
                 .thenByDescending { it.createdAt }
