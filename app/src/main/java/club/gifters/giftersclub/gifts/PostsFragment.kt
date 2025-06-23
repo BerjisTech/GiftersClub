@@ -7,6 +7,7 @@ import android.content.Context
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.R
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.gifts.CommentsBottomSheetFragment
@@ -25,6 +26,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     }
 
     private val api = RetrofitClient.postApi
+    private lateinit var swipeRefresh: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
     private lateinit var adapter: PostAdapter
     private var page = 0
     private val limit = 10
@@ -34,6 +36,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        swipeRefresh = view.findViewById(R.id.swipeRefresh)
         val pager = view.findViewById<ViewPager2>(R.id.viewPagerPosts)
         adapter = PostAdapter(
             onLike = { /* TODO: handle like */ },
@@ -51,7 +54,17 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         )
         pager.adapter = adapter
 
+        // Enable pull-to-refresh only when at top (first post)
+        swipeRefresh.setOnChildScrollUpCallback { _, _ -> pager.currentItem != 0 }
+        swipeRefresh.setOnRefreshListener {
+            // reset pagination and reload newest posts
+            page = 0
+            isLastPage = false
+            hasRetry401 = false
+            loadPosts(clear = true)
+        }
         // Load initial posts
+        swipeRefresh.isRefreshing = true
         loadPosts(clear = true)
 
         // Listen for scroll to end to load more
@@ -94,6 +107,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
             } finally {
                 isLoading = false
+                swipeRefresh.isRefreshing = false
             }
         }
     }

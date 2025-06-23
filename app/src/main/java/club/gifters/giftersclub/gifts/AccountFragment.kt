@@ -39,11 +39,11 @@ import retrofit2.HttpException
 class AccountFragment : Fragment(R.layout.fragment_account) {
     private val profileApi = RetrofitClient.profileApi
     private lateinit var ivProfileImage: ImageView
-    private lateinit var btnEditImage: ImageButton
+    private lateinit var btnEditImage: TextView
     private lateinit var tvUsername: TextView
-    private lateinit var btnEditUsername: ImageButton
+    private lateinit var btnEditUsername: TextView
     private lateinit var tvFullName: TextView
-    private lateinit var btnEditFullName: ImageButton
+    private lateinit var btnEditFullName: TextView
     private lateinit var tvTokenBalance: TextView
     private lateinit var tvTokensReceived: TextView
     private lateinit var tvTokensSent: TextView

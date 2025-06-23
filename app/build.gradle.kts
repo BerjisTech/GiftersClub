@@ -45,6 +45,8 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.viewpager2)
+    // Pull-to-refresh support for post feed
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
