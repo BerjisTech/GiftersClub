@@ -66,6 +66,8 @@ class PostAdapter(
         private val tvShareCount: TextView = itemView.findViewById(R.id.tvShareCount)
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private var current: Post? = null
+        private var startX = 0f
+        private var startY = 0f
         private val gestureDetector = GestureDetector(itemView.context,
             object : GestureDetector.SimpleOnGestureListener() {
                 override fun onDoubleTap(e: MotionEvent): Boolean {
@@ -76,6 +78,40 @@ class PostAdapter(
             }
         )
         init {
+            // Intercept only horizontal scrolls in the carousel; allow vertical swipes to bubble up
+            mediaPager.post {
+                (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { v, ev ->
+                    when (ev.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            startX = ev.x
+                            startY = ev.y
+                            var parent = v.parent
+                            while (parent is ViewGroup) {
+                                parent.requestDisallowInterceptTouchEvent(true)
+                                parent = parent.parent
+                            }
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            val dx = ev.x - startX
+                            val dy = ev.y - startY
+                            val disallow = kotlin.math.abs(dx) > kotlin.math.abs(dy)
+                            var parent = v.parent
+                            while (parent is ViewGroup) {
+                                parent.requestDisallowInterceptTouchEvent(disallow)
+                                parent = parent.parent
+                            }
+                        }
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            var parent = v.parent
+                            while (parent is ViewGroup) {
+                                parent.requestDisallowInterceptTouchEvent(false)
+                                parent = parent.parent
+                            }
+                        }
+                    }
+                    false
+                }
+            }
             itemView.setOnTouchListener { _, ev ->
                 gestureDetector.onTouchEvent(ev)
                 false
