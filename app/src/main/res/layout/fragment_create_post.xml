@@ -134,6 +134,8 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent">
 
+
+                <!-- Camera filter list and record spinner -->
                 <HorizontalScrollView
                     android:id="@+id/hsvFilters"
                     android:layout_width="0dp"
@@ -141,7 +143,8 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@id/btnCapture">
+                    app:layout_constraintEnd_toStartOf="@id/btnCapture"
+                    android:visibility="gone">
 
                     <LinearLayout
                         android:id="@+id/layoutFilterOptions"
@@ -150,17 +153,29 @@
                         android:orientation="horizontal"/>
                 </HorizontalScrollView>
 
-                <ImageView
-                    android:id="@+id/btnCapture"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    android:contentDescription="@string/capture"
-                    android:src="@drawable/record"
-                    android:layout_marginHorizontal="10dp"
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     app:layout_constraintStart_toEndOf="@id/hsvFilters"
                     app:layout_constraintEnd_toStartOf="@id/btnSelectDevice"
                     app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"/>
+                    app:layout_constraintBottom_toBottomOf="parent">
+
+                    <ProgressBar
+                        android:id="@+id/pbRecordProgress"
+                        style="?android:attr/progressBarStyleLarge"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:id="@+id/btnCapture"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
+                        android:contentDescription="@string/capture"
+                        android:src="@drawable/record"
+                        android:layout_gravity="center" />
+                </FrameLayout>
 
                 <ImageView
                     android:id="@+id/btnSelectDevice"

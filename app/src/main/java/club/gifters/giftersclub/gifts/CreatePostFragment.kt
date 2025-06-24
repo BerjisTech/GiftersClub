@@ -10,12 +10,21 @@ import android.os.Bundle
 import android.util.Base64
 import android.util.Log
 import android.view.View
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.os.CountDownTimer
+import android.widget.Button
 import android.widget.EditText
+import android.widget.HorizontalScrollView
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import android.widget.ImageView
+import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -43,20 +52,18 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import club.gifters.giftersclub.gifts.FilterAdapter
 import club.gifters.giftersclub.gifts.FilterItem
-import java.util.regex.Pattern
-import android.Manifest
-import android.content.pm.PackageManager
-import android.widget.Button
+import java.io.File
+import java.io.FileOutputStream
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.VideoCapture
 import androidx.camera.core.Camera
-import java.io.File
 import androidx.camera.view.PreviewView
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import java.util.regex.Pattern
 
 /**
  * Fragment for creating a new post in two steps: select media, then add details.
@@ -97,6 +104,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var btnCapture: ImageView
     private lateinit var btnSelectDevice: ImageView
     private lateinit var layoutFilterOptions: LinearLayout
+    private lateinit var hsvFilters: HorizontalScrollView
+    private lateinit var pbRecordProgress: ProgressBar
 
     private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
     private var imageCapture: ImageCapture? = null
@@ -106,8 +115,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var isVideoMode = false
     private var isRecording = false
     private var camera: Camera? = null
-    private val recordingHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private var recordingRunnable: Runnable? = null
+    private var recordTimer: CountDownTimer? = null
 
     companion object {
         private const val TAG = "CreatePostFragment"
@@ -174,6 +182,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnCapture = view.findViewById(R.id.btnCapture)
         btnSelectDevice = view.findViewById(R.id.btnSelectDevice)
         layoutFilterOptions = view.findViewById(R.id.layoutFilterOptions)
+        hsvFilters = view.findViewById(R.id.hsvFilters)
+        pbRecordProgress = view.findViewById(R.id.pbRecordProgress)
 
         btnSelectDevice.setOnClickListener {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -207,7 +217,19 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             camera?.cameraControl?.enableTorch(torchEnabled)
         }
         btnShowFilters.setOnClickListener {
-            layoutFilterOptions.isVisible = !layoutFilterOptions.isVisible
+            hsvFilters.isVisible = !hsvFilters.isVisible
+        }
+
+        // Populate camera filter options (stub labels)
+        listOf("Normal", "Gray", "Sepia", "Invert").forEach { name ->
+            val tv = TextView(requireContext()).apply {
+                text = name
+                setPadding(16, 8, 16, 8)
+                setOnClickListener {
+                    Toast.makeText(requireContext(), "Filter: $name", Toast.LENGTH_SHORT).show()
+                }
+            }
+            layoutFilterOptions.addView(tv)
         }
 
         // Mode toggle and capture
@@ -215,8 +237,30 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             isVideoMode = !isVideoMode
         }
         btnTextMode.setOnClickListener {
-            layoutMedia.isVisible = false
-            layoutDetails.isVisible = true
+            // Convert typed text into an image media
+            val edit = EditText(requireContext())
+            AlertDialog.Builder(requireContext())
+                .setTitle(R.string.enter_text)
+                .setView(edit)
+                .setPositiveButton(R.string.ok) { _, _ ->
+                    val text = edit.text.toString().trim()
+                    if (text.isNotEmpty()) {
+                        val bmp = Bitmap.createBitmap(1080, 1080, Bitmap.Config.ARGB_8888)
+                        val canvas = Canvas(bmp)
+                        canvas.drawColor(Color.WHITE)
+                        val paint = Paint().apply {
+                            color = Color.BLACK
+                            textSize = 64f
+                            textAlign = Paint.Align.CENTER
+                        }
+                        canvas.drawText(text, bmp.width / 2f, bmp.height / 2f, paint)
+                        val file = File(requireContext().cacheDir, "TXT_${System.currentTimeMillis()}.jpg")
+                        FileOutputStream(file).use { out -> bmp.compress(Bitmap.CompressFormat.JPEG, 90, out) }
+                        handleSelectedMedia(listOf(Uri.fromFile(file)))
+                    }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
         }
         btnCapture.setOnClickListener {
             if (isVideoMode) startRecording() else takePhoto()
@@ -352,10 +396,19 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
         )
         isRecording = true
+        pbRecordProgress.isVisible = true
+        recordTimer?.cancel()
         recordLimitMs?.let { limit ->
-            recordingRunnable?.let { recordingHandler.removeCallbacks(it) }
-            recordingRunnable = Runnable { stopRecording() }
-            recordingHandler.postDelayed(recordingRunnable!!, limit)
+            recordTimer = object : CountDownTimer(limit, limit / 100) {
+                override fun onTick(millisUntilFinished: Long) {
+                    val progress = ((limit - millisUntilFinished) * 100 / limit).toInt()
+                    pbRecordProgress.progress = progress
+                }
+                override fun onFinish() {
+                    pbRecordProgress.progress = 100
+                    stopRecording()
+                }
+            }.apply { start() }
         }
     }
 
@@ -363,8 +416,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         if (!isRecording) return
         videoCapture?.stopRecording()
         isRecording = false
-        recordingRunnable?.let { recordingHandler.removeCallbacks(it) }
-        recordingRunnable = null
+        recordTimer?.cancel()
+        pbRecordProgress.isVisible = false
     }
 
     private fun handleSelectedMedia(uris: List<Uri>) {
