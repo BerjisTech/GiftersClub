@@ -8,8 +8,8 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvConversations"
         android:layout_width="match_parent"
-        android:layout_marginTop="35dp"
         android:layout_height="0dp"
+        android:layout_marginTop="35dp"
         android:layout_weight="1"
         android:padding="4dp" />
 
@@ -19,8 +19,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="35dp"
-        android:orientation="vertical"
-        android:visibility="gone">
+        android:visibility="gone"
+        android:orientation="vertical">
 
 
         <androidx.recyclerview.widget.RecyclerView
@@ -47,6 +47,7 @@
                 android:id="@+id/btnAttach"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
                 android:src="@android:drawable/ic_menu_camera"
                 android:contentDescription="@string/attach" />
 
@@ -61,6 +62,7 @@
                 android:id="@+id/btnSend"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
                 android:src="@android:drawable/ic_menu_send"
                 android:contentDescription="@string/send" />
         </LinearLayout>

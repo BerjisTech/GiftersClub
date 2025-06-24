@@ -26,6 +26,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.app.Dialog
 import android.view.WindowManager
+import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 
@@ -35,7 +36,7 @@ import android.widget.TextView
 class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
     private lateinit var rvComments: RecyclerView
     private lateinit var etComment: EditText
-    private lateinit var btnSendComment: Button
+    private lateinit var btnSendComment: ImageButton
     private lateinit var progressComments: ProgressBar
     private lateinit var adapter: CommentAdapter
     private lateinit var tvEmptyComments: TextView
