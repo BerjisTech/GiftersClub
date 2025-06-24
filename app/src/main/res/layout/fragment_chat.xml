@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
     <!-- Conversation list -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvConversations"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="match_parent"
         android:layout_marginTop="35dp"
-        android:layout_weight="1"
         android:padding="4dp" />
 
     <!-- Chat pane: appears once a conversation is selected -->
@@ -31,7 +29,7 @@
             app:layout_constraintTop_toTopOf="@id/chatPane"
             app:layout_constraintStart_toStartOf="@id/chatPane"
             app:layout_constraintEnd_toEndOf="@id/chatPane"
-            app:layout_constraintBottom_toTopOf="@id/attachmentPreviewContainer"/>
+            app:layout_constraintBottom_toTopOf="@id/chatForm"/>
 
         <FrameLayout
             android:id="@+id/attachmentPreviewContainer"
@@ -101,4 +99,4 @@
                 android:contentDescription="@string/send" />
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
-    </LinearLayout>
+</FrameLayout>
