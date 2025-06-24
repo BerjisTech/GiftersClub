@@ -24,7 +24,10 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import android.widget.ToggleButton
+import android.graphics.Typeface
+import android.view.inputmethod.InputMethodManager
+import android.widget.FrameLayout
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -106,6 +109,22 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var layoutFilterOptions: LinearLayout
     private lateinit var hsvFilters: HorizontalScrollView
     private lateinit var pbRecordProgress: ProgressBar
+    // Text post editor components
+    private lateinit var layoutTextEditor: ConstraintLayout
+    private lateinit var flTextCanvas: FrameLayout
+    private lateinit var etTextPost: EditText
+    private lateinit var btnCancelTextPost: Button
+    private lateinit var btnDoneTextPost: Button
+    private lateinit var hsvTextStyles: HorizontalScrollView
+    private lateinit var llTextStyles: LinearLayout
+    private lateinit var hsvTextColors: HorizontalScrollView
+    private lateinit var llTextColors: LinearLayout
+    private lateinit var hsvBgColors: HorizontalScrollView
+    private lateinit var llBgColors: LinearLayout
+    private lateinit var hsvBgImages: HorizontalScrollView
+    private lateinit var llBgImages: LinearLayout
+    private lateinit var hsvFonts: HorizontalScrollView
+    private lateinit var llFonts: LinearLayout
 
     private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
     private var imageCapture: ImageCapture? = null
@@ -179,6 +198,105 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnTimer15s = view.findViewById(R.id.btnTimer15s)
         btnModeToggle = view.findViewById(R.id.btnModeToggle)
         btnTextMode = view.findViewById(R.id.btnTextMode)
+        // Text post editor view bindings
+        layoutTextEditor = view.findViewById(R.id.layoutTextEditor)
+        flTextCanvas = view.findViewById(R.id.flTextCanvas)
+        etTextPost = view.findViewById(R.id.etTextPost)
+        btnCancelTextPost = view.findViewById(R.id.btnCancelTextPost)
+        btnDoneTextPost = view.findViewById(R.id.btnDoneTextPost)
+        hsvTextStyles = view.findViewById(R.id.hsvTextStyles)
+        llTextStyles = view.findViewById(R.id.llTextStyles)
+        hsvTextColors = view.findViewById(R.id.hsvTextColors)
+        llTextColors = view.findViewById(R.id.llTextColors)
+        hsvBgColors = view.findViewById(R.id.hsvBgColors)
+        llBgColors = view.findViewById(R.id.llBgColors)
+        hsvBgImages = view.findViewById(R.id.hsvBgImages)
+        llBgImages = view.findViewById(R.id.llBgImages)
+        hsvFonts = view.findViewById(R.id.hsvFonts)
+        llFonts = view.findViewById(R.id.llFonts)
+
+        // Populate text post editor controls
+        listOf("B", "I", "U").forEach { style ->
+            val toggle = ToggleButton(requireContext()).apply {
+                text = style; textOn = style; textOff = style
+                setTextAppearance(android.R.style.TextAppearance_Material_Headline)
+                setOnCheckedChangeListener { _, isChecked ->
+                    val paintFlags = etTextPost.paintFlags
+                    when (style) {
+                        "U" -> etTextPost.paintFlags = if (isChecked) paintFlags or Paint.UNDERLINE_TEXT_FLAG else paintFlags and Paint.UNDERLINE_TEXT_FLAG.inv()
+                        else -> {
+                            var tf = etTextPost.typeface?.style ?: Typeface.NORMAL
+                            tf = when (style) {
+                                "B" -> if (isChecked) tf or Typeface.BOLD else tf and Typeface.BOLD.inv()
+                                "I" -> if (isChecked) tf or Typeface.ITALIC else tf and Typeface.ITALIC.inv()
+                                else -> tf
+                            }
+                            etTextPost.setTypeface(null, tf)
+                        }
+                    }
+                }
+            }
+            llTextStyles.addView(toggle)
+        }
+        listOf(Color.WHITE, Color.BLACK, Color.RED, Color.BLUE, Color.GREEN).forEach { c ->
+            val swatch = View(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(60, 60).apply { setMargins(8, 8, 8, 8) }
+                setBackgroundColor(c)
+                setOnClickListener { etTextPost.setTextColor(c) }
+            }
+            llTextColors.addView(swatch)
+            val bgSwatch = View(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(60, 60).apply { setMargins(8, 8, 8, 8) }
+                setBackgroundColor(c)
+                setOnClickListener { flTextCanvas.setBackgroundColor(c) }
+            }
+            llBgColors.addView(bgSwatch)
+        }
+        listOf(
+            R.drawable.black_hole, R.drawable.galaxy, R.drawable.nebula, R.drawable.solar_system,
+            R.drawable.universe, R.drawable.supernova, R.drawable.castle, R.drawable.dragon,
+            R.drawable.phoenix, R.drawable.mermaid, R.drawable.treasure_chest, R.drawable.unicorn,
+            R.drawable.infinity, R.drawable.time_machine
+        ).forEach { resId ->
+            val iv = ImageView(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(120, 120).apply { setMargins(8, 8, 8, 8) }
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setImageResource(resId)
+                setOnClickListener { flTextCanvas.setBackgroundResource(resId) }
+            }
+            llBgImages.addView(iv)
+        }
+        listOf("Sans", "Serif", "Mono").forEach { name ->
+            val txt = TextView(requireContext()).apply {
+                text = name
+                setPadding(16, 8, 16, 8)
+                setOnClickListener {
+                    etTextPost.typeface = when (name) {
+                        "Serif" -> Typeface.SERIF
+                        "Mono" -> Typeface.MONOSPACE
+                        else -> Typeface.SANS_SERIF
+                    }
+                }
+            }
+            llFonts.addView(txt)
+        }
+        // Text editor cancel and done actions
+        btnCancelTextPost.setOnClickListener {
+            layoutTextEditor.isVisible = false
+            layoutMedia.isVisible = true
+        }
+        btnDoneTextPost.setOnClickListener {
+            // Hide keyboard
+            (requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                .hideSoftInputFromWindow(etTextPost.windowToken, 0)
+            // Render editor view to bitmap
+            val bmp = Bitmap.createBitmap(flTextCanvas.width, flTextCanvas.height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bmp)
+            flTextCanvas.draw(canvas)
+            val file = File(requireContext().cacheDir, "TXT_${System.currentTimeMillis()}.jpg")
+            FileOutputStream(file).use { out -> bmp.compress(Bitmap.CompressFormat.JPEG, 90, out) }
+            handleSelectedMedia(listOf(Uri.fromFile(file)))
+        }
         btnCapture = view.findViewById(R.id.btnCapture)
         btnSelectDevice = view.findViewById(R.id.btnSelectDevice)
         layoutFilterOptions = view.findViewById(R.id.layoutFilterOptions)
@@ -237,30 +355,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             isVideoMode = !isVideoMode
         }
         btnTextMode.setOnClickListener {
-            // Convert typed text into an image media
-            val edit = EditText(requireContext())
-            AlertDialog.Builder(requireContext())
-                .setTitle(R.string.enter_text)
-                .setView(edit)
-                .setPositiveButton(R.string.ok) { _, _ ->
-                    val text = edit.text.toString().trim()
-                    if (text.isNotEmpty()) {
-                        val bmp = Bitmap.createBitmap(1080, 1080, Bitmap.Config.ARGB_8888)
-                        val canvas = Canvas(bmp)
-                        canvas.drawColor(Color.WHITE)
-                        val paint = Paint().apply {
-                            color = Color.BLACK
-                            textSize = 64f
-                            textAlign = Paint.Align.CENTER
-                        }
-                        canvas.drawText(text, bmp.width / 2f, bmp.height / 2f, paint)
-                        val file = File(requireContext().cacheDir, "TXT_${System.currentTimeMillis()}.jpg")
-                        FileOutputStream(file).use { out -> bmp.compress(Bitmap.CompressFormat.JPEG, 90, out) }
-                        handleSelectedMedia(listOf(Uri.fromFile(file)))
-                    }
-                }
-                .setNegativeButton(R.string.cancel, null)
-                .show()
+            // Show full-screen text post editor
+            layoutMedia.isVisible = false
+            layoutTextEditor.isVisible = true
         }
         btnCapture.setOnClickListener {
             if (isVideoMode) startRecording() else takePhoto()

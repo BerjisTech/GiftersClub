@@ -14,6 +14,140 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
+        <!-- Text post editor screen (hidden by default) -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layoutTextEditor"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <!-- Toolbar with Cancel and Done -->
+            <LinearLayout
+                android:id="@+id/toolbarTextEditor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:background="@android:color/black"
+                android:gravity="center_vertical"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <Button
+                    android:id="@+id/btnCancelTextPost"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/cancel"
+                    android:textColor="@android:color/white"/>
+
+                <TextView
+                    android:id="@+id/tvTextEditorTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="@string/whats_on_your_mind"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"/>
+
+                <Button
+                    android:id="@+id/btnDoneTextPost"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/done"/>
+            </LinearLayout>
+
+            <!-- Editable canvas (rendered to bitmap) -->
+            <FrameLayout
+                android:id="@+id/flTextCanvas"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                app:layout_constraintTop_toBottomOf="@id/toolbarTextEditor"
+                app:layout_constraintBottom_toTopOf="@id/llTextControlsContainer"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <EditText
+                    android:id="@+id/etTextPost"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:hint="@string/whats_on_your_mind"
+                    android:textSize="36sp"
+                    android:textColor="@android:color/black"
+                    android:background="@android:color/transparent"
+                    android:inputType="textMultiLine"/>
+            </FrameLayout>
+
+            <!-- Styling controls -->
+            <LinearLayout
+                android:id="@+id/llTextControlsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="8dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <HorizontalScrollView
+                    android:id="@+id/hsvTextStyles"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:id="@+id/llTextStyles"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"/>
+                </HorizontalScrollView>
+
+                <HorizontalScrollView
+                    android:id="@+id/hsvTextColors"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:id="@+id/llTextColors"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"/>
+                </HorizontalScrollView>
+
+                <HorizontalScrollView
+                    android:id="@+id/hsvBgColors"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:id="@+id/llBgColors"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"/>
+                </HorizontalScrollView>
+
+                <HorizontalScrollView
+                    android:id="@+id/hsvBgImages"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:id="@+id/llBgImages"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"/>
+                </HorizontalScrollView>
+
+                <HorizontalScrollView
+                    android:id="@+id/hsvFonts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:id="@+id/llFonts"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"/>
+                </HorizontalScrollView>
+            </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
         <!-- Media selection and camera preview step -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layoutMedia"
