@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
+import java.text.NumberFormat
 
 /**
  * Fragment displaying the user's account info and stats.
@@ -146,11 +147,11 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
         tvUsername.text = profile.username
         tvFullName.text = profile.name.orEmpty()
         // Bind token and gift stats from profile
-        tvTokenBalance.text   = "Balance: ${profile.tokenBalance ?: 0}"
-        tvTokensReceived.text = "Received: ${profile.tokensReceived ?: 0}"
-        tvTokensSent.text     = "Sent: ${profile.tokensSent ?: 0}"
-        tvGiftsReceived.text  = "Received: ${profile.giftsReceived ?: 0}"
-        tvGiftsSent.text      = "Sent: ${profile.giftsSent ?: 0}"
+        tvTokenBalance.text   = NumberFormat.getInstance().format(profile.tokenBalance ?: 0)
+        tvTokensReceived.text = NumberFormat.getInstance().format(profile.tokensReceived ?: 0)
+        tvTokensSent.text     = NumberFormat.getInstance().format(profile.tokensSent ?: 0)
+        tvGiftsReceived.text  = NumberFormat.getInstance().format(profile.giftsReceived ?: 0)
+        tvGiftsSent.text      = NumberFormat.getInstance().format(profile.giftsSent ?: 0)
         // Load wishlist counts for this user
         lifecycleScope.launch {
             try {
@@ -160,8 +161,8 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                 )
                 val total = items.size
                 val fulfilled = items.count { it.isFulfilled }
-                tvWishlistsOpen.text      = "Open: ${total - fulfilled}"
-                tvWishlistsFulfilled.text = "Fulfilled: $fulfilled"
+                tvWishlistsOpen.text      = NumberFormat.getInstance().format(total - fulfilled)
+                tvWishlistsFulfilled.text = NumberFormat.getInstance().format(fulfilled)
             } catch (_: Exception) {
             }
         }

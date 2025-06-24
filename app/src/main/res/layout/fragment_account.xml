@@ -33,62 +33,48 @@
                 android:text="🖍" />
         </FrameLayout>
 
-        <!-- Username section -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Username"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvUsername"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingEnd="8dp"
-                android:text="username" />
-
-            <TextView
-                android:id="@+id/btnEditUsername"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🖍" />
-        </LinearLayout>
-
         <!-- Full name section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:gravity="center_vertical"
+            android:gravity="center"
             android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Full Name"
-                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvFullName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingEnd="8dp"
-                android:text="Full Name" />
+                android:text="@string/full_name" />
 
             <TextView
                 android:id="@+id/btnEditFullName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginHorizontal="5dp"
                 android:text="🖍️" />
+        </LinearLayout>
+
+        <!-- Username section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvUsername"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/username" />
+
+            <TextView
+                android:id="@+id/btnEditUsername"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="5dp"
+                android:text="🖍" />
         </LinearLayout>
 
         <!-- Stats section -->
@@ -113,14 +99,30 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="Tokens"
+                    android:text="@string/tokens"
                     android:textStyle="bold" />
 
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@string/token_icon"
+                        android:src="@drawable/token" />
+
+                    <TextView
+                        android:id="@+id/tvTokenBalance"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0" />
+                </LinearLayout>
+
                 <TextView
-                    android:id="@+id/tvTokenBalance"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Balance: 0" />
+                    android:text="@string/balance" />
 
                 <View
                     android:layout_width="match_parent"
@@ -136,17 +138,54 @@
                     android:gravity="center"
                     android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/tvTokensReceived"
+                    <LinearLayout
+                        android:id="@+id/tvTokensReceivedBox"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:textAlignment="textEnd"
-                        android:text="Received: 0"
                         android:layout_marginHorizontal="9dp"
-                        app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers"
+                        android:gravity="center"
+                        android:orientation="vertical"
                         app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
+                        app:layout_constraintEnd_toStartOf="@id/tokensNumbersDivider"
                         app:layout_constraintStart_toStartOf="@id/tokensBalanceNumbers"
-                        app:layout_constraintEnd_toStartOf="@id/tokensNumbersDivider"/>
+                        app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:contentDescription="@string/token_icon"
+                                android:src="@drawable/token" />
+
+                            <TextView
+                                android:id="@+id/tvTokensReceived"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginHorizontal="9dp"
+                                android:text="0"
+                                android:textAlignment="textEnd"
+                                app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
+                                app:layout_constraintEnd_toStartOf="@id/tokensNumbersDivider"
+                                app:layout_constraintStart_toStartOf="@id/tokensBalanceNumbers"
+                                app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers" />
+                        </LinearLayout>
+
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="9dp"
+                            android:text="@string/received"
+                            android:textAlignment="center"
+                            app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
+                            app:layout_constraintEnd_toStartOf="@id/tokensNumbersDivider"
+                            app:layout_constraintStart_toStartOf="@id/tokensBalanceNumbers"
+                            app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers" />
+                    </LinearLayout>
 
                     <View
                         android:id="@+id/tokensNumbersDivider"
@@ -154,21 +193,56 @@
                         android:layout_height="match_parent"
                         android:layout_marginHorizontal="9dp"
                         android:background="#CCCCCC"
-                        app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers"
                         app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
+                        app:layout_constraintEnd_toEndOf="@id/tokensBalanceNumbers"
                         app:layout_constraintStart_toStartOf="@id/tokensBalanceNumbers"
-                        app:layout_constraintEnd_toEndOf="@id/tokensBalanceNumbers"/>
+                        app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers" />
 
-                    <TextView
-                        android:id="@+id/tvTokensSent"
+                    <LinearLayout
+                        android:id="@+id/tvTokensSentBox"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Sent: 0"
                         android:layout_marginHorizontal="9dp"
-                        app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers"
+                        android:gravity="center"
+                        android:orientation="vertical"
                         app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
+                        app:layout_constraintEnd_toEndOf="@id/tokensBalanceNumbers"
                         app:layout_constraintStart_toEndOf="@id/tokensNumbersDivider"
-                        app:layout_constraintEnd_toEndOf="@id/tokensBalanceNumbers"/>
+                        app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:contentDescription="@string/token_icon"
+                                android:src="@drawable/token" />
+
+                            <TextView
+                                android:id="@+id/tvTokensSent"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginHorizontal="9dp"
+                                android:text="0"
+                                app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
+                                app:layout_constraintEnd_toEndOf="@id/tokensBalanceNumbers"
+                                app:layout_constraintStart_toEndOf="@id/tokensNumbersDivider"
+                                app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="9dp"
+                            android:text="@string/sent"
+                            app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
+                            app:layout_constraintEnd_toEndOf="@id/tokensBalanceNumbers"
+                            app:layout_constraintStart_toEndOf="@id/tokensNumbersDivider"
+                            app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers" />
+                    </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <androidx.constraintlayout.widget.ConstraintLayout
@@ -222,8 +296,9 @@
             android:layout_height="wrap_content"
             android:gravity="center">
 
-            <com.google.android.material.card.MaterialCardView
+            <androidx.cardview.widget.CardView
                 android:id="@+id/giftsCard"
+                android:layout_margin="10dp"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 app:layout_constraintBottom_toBottomOf="@id/giftsAndWishlistsCard"
@@ -234,9 +309,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="9dp"
-                    android:gravity="center">
+                    android:padding="9dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -244,19 +319,67 @@
                         android:text="Gifts"
                         android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/tvGiftsReceived"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Received: 0" />
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
 
-                    <TextView
-                        android:id="@+id/tvGiftsSent"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Sent: 0" />
+                        <LinearLayout
+                            android:id="@+id/giftsReceivedBox"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toStartOf="@id/giftBoxesDivider"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent">
+
+                            <TextView
+                                android:id="@+id/tvGiftsReceived"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/received" />
+                        </LinearLayout>
+
+                        <View
+                            android:id="@+id/giftBoxesDivider"
+                            android:layout_width="1dp"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <LinearLayout
+                            android:id="@+id/giftsSentBox"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toEndOf="@id/giftBoxesDivider"
+                            app:layout_constraintTop_toTopOf="parent">
+
+                            <TextView
+                                android:id="@+id/tvGiftsSent"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/sent" />
+                        </LinearLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            </androidx.cardview.widget.CardView>
 
 
             <View
@@ -269,12 +392,12 @@
                 app:layout_constraintEnd_toEndOf="@id/giftsAndWishlistsCard"
                 app:layout_constraintStart_toStartOf="@id/giftsAndWishlistsCard"
                 app:layout_constraintTop_toTopOf="@id/giftsAndWishlistsCard" />
-            <!-- Withdrawal link -->
-            <com.google.android.material.card.MaterialCardView
+
+            <androidx.cardview.widget.CardView
                 android:id="@+id/wishlistsCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="7dp"
+                android:layout_margin="10dp"
                 app:layout_constraintBottom_toBottomOf="@id/giftsAndWishlistsCard"
                 app:layout_constraintEnd_toEndOf="@id/giftsAndWishlistsCard"
                 app:layout_constraintStart_toEndOf="@id/giftsAndWishlistsCardDivider"
@@ -283,28 +406,77 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="9dp"
-                    android:gravity="center">
+                    android:padding="9dp">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Wishlists"
                         android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/tvWishlistsOpen"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Open: 0" />
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
 
-                    <TextView
-                        android:id="@+id/tvWishlistsFulfilled"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Fulfilled: 0" />
+                        <LinearLayout
+                            android:id="@+id/wishlistReceivedBox"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toStartOf="@id/wishlistBoxesDivider"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent">
+
+                            <TextView
+                                android:id="@+id/tvWishlistsOpen"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/open" />
+                        </LinearLayout>
+
+                        <View
+                            android:id="@+id/wishlistBoxesDivider"
+                            android:layout_width="1dp"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <LinearLayout
+                            android:id="@+id/wishlistSentBox"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toEndOf="@id/wishlistBoxesDivider"
+                            app:layout_constraintTop_toTopOf="parent">
+
+                            <TextView
+                                android:id="@+id/tvWishlistsFulfilled"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/fulfilled" />
+                        </LinearLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            </androidx.cardview.widget.CardView>
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <!-- Gifts and wishlists -->

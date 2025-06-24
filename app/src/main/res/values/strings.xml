@@ -51,4 +51,13 @@
     <string name="withdrawals">Withdrawals</string>
     <string name="buy">Buy</string>
     <string name="follow">Follow</string>
+    <string name="full_name">Full Name</string>
+    <string name="username">username</string>
+    <string name="received">Received</string>
+    <string name="sent">Sent</string>
+    <string name="token_icon">Token Icon</string>
+    <string name="tokens">Tokens</string>
+    <string name="fulfilled">Fulfilled</string>
+    <string name="open">Open</string>
+    <string name="balance">Balance</string>
 </resources>

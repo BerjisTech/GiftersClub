@@ -9,7 +9,6 @@
         android:id="@+id/tvMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?attr/textAppearanceBody1"
         android:textColor="@color/black"
         android:text="@string/notification_message" />
 
@@ -17,8 +16,7 @@
         android:id="@+id/tvCreatedAt"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?attr/textAppearanceCaption"
-        android:textColor="@color/black"
+        android:textColor="#cfcfcf"
         android:text="@string/_2h_ago"
         android:layout_marginTop="4dp" />
 

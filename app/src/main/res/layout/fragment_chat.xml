@@ -8,6 +8,7 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvConversations"
         android:layout_width="match_parent"
+        android:layout_marginTop="35dp"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:padding="4dp" />
@@ -17,6 +18,7 @@
         android:id="@+id/chatPane"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="35dp"
         android:orientation="vertical"
         android:visibility="gone">
 
