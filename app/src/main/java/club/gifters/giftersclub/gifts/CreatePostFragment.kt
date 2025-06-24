@@ -10,15 +10,12 @@ import android.os.Bundle
 import android.util.Base64
 import android.util.Log
 import android.view.View
-import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import android.widget.VideoView
 import android.widget.ImageView
-import android.widget.ImageButton
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -47,10 +44,16 @@ import org.json.JSONObject
 import club.gifters.giftersclub.gifts.FilterAdapter
 import club.gifters.giftersclub.gifts.FilterItem
 import java.util.regex.Pattern
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Button
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.VideoCapture
+import androidx.camera.core.Camera
+import java.io.File
 import androidx.camera.view.PreviewView
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
@@ -78,6 +81,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private val selectedUris = mutableListOf<Uri>()
     private var isVideoSelected = false
     private val REQUEST_PICK_MEDIA = 1001
+    private val REQUEST_CAMERA_PERM = 2001
 
     // CameraX variables
     private lateinit var previewView: PreviewView
@@ -99,6 +103,11 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var videoCapture: VideoCapture? = null
     private var recordLimitMs: Long? = null
     private var torchEnabled = false
+    private var isVideoMode = false
+    private var isRecording = false
+    private var camera: Camera? = null
+    private val recordingHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var recordingRunnable: Runnable? = null
 
     companion object {
         private const val TAG = "CreatePostFragment"
@@ -115,7 +124,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             videoCapture = VideoCapture.Builder().build()
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture, videoCapture)
+                camera = cameraProvider.bindToLifecycle(
+                    this,
+                    cameraSelector,
+                    preview,
+                    imageCapture,
+                    videoCapture
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Use case binding failed", e)
             }
@@ -170,7 +185,56 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             startActivityForResult(intent, REQUEST_PICK_MEDIA)
         }
 
-        startCamera()
+        // Request camera and audio permissions before starting preview
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            startCamera()
+        } else {
+            requestPermissions(
+                arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO),
+                REQUEST_CAMERA_PERM
+            )
+        }
+
+        // Camera control buttons
+        btnSwitchCamera.setOnClickListener {
+            cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA)
+                CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+            startCamera()
+        }
+        btnToggleFlash.setOnClickListener {
+            torchEnabled = !torchEnabled
+            camera?.cameraControl?.enableTorch(torchEnabled)
+        }
+        btnShowFilters.setOnClickListener {
+            layoutFilterOptions.isVisible = !layoutFilterOptions.isVisible
+        }
+
+        // Mode toggle and capture
+        btnModeToggle.setOnClickListener {
+            isVideoMode = !isVideoMode
+        }
+        btnTextMode.setOnClickListener {
+            layoutMedia.isVisible = false
+            layoutDetails.isVisible = true
+        }
+        btnCapture.setOnClickListener {
+            if (isVideoMode) startRecording() else takePhoto()
+        }
+
+        // Preset timers
+        btnTimer10m.setOnClickListener {
+            recordLimitMs = 10 * 60 * 1000L
+            startRecording()
+        }
+        btnTimer60s.setOnClickListener {
+            recordLimitMs = 60 * 1000L
+            startRecording()
+        }
+        btnTimer15s.setOnClickListener {
+            recordLimitMs = 15 * 1000L
+            startRecording()
+        }
 
         // Filter buttons for preview (stub for adding filter options)
         // TODO: Populate layoutFilterOptions with filter thumbnails for live preview
@@ -231,6 +295,76 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     override fun onDestroyView() {
         super.onDestroyView()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CAMERA_PERM) {
+            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                startCamera()
+            } else {
+                Toast.makeText(requireContext(), "Camera and audio permissions are required", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun takePhoto() {
+        val photoFile = java.io.File(requireContext().cacheDir, "IMG_${System.currentTimeMillis()}.jpg")
+        val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+        imageCapture?.takePicture(
+            outputOptions,
+            ContextCompat.getMainExecutor(requireContext()),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onError(exc: ImageCaptureException) {
+                    Log.e(TAG, "Photo capture failed", exc)
+                    Toast.makeText(requireContext(), "Photo capture failed", Toast.LENGTH_SHORT).show()
+                }
+
+                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                    val savedUri = Uri.fromFile(photoFile)
+                    handleSelectedMedia(listOf(savedUri))
+                }
+            }
+        )
+    }
+
+    private fun startRecording() {
+        if (isRecording) return
+        val videoFile = java.io.File(requireContext().cacheDir, "VID_${System.currentTimeMillis()}.mp4")
+        val outputOptions = VideoCapture.OutputFileOptions.Builder(videoFile).build()
+        videoCapture?.startRecording(
+            outputOptions,
+            ContextCompat.getMainExecutor(requireContext()),
+            object : VideoCapture.OnVideoSavedCallback {
+                override fun onError(videoCaptureError: Int, message: String, cause: Throwable?) {
+                    Log.e(TAG, "Video capture failed: $message", cause)
+                    Toast.makeText(requireContext(), "Video capture failed", Toast.LENGTH_SHORT).show()
+                }
+
+                override fun onVideoSaved(output: VideoCapture.OutputFileResults) {
+                    val savedUri = Uri.fromFile(videoFile)
+                    handleSelectedMedia(listOf(savedUri))
+                }
+            }
+        )
+        isRecording = true
+        recordLimitMs?.let { limit ->
+            recordingRunnable?.let { recordingHandler.removeCallbacks(it) }
+            recordingRunnable = Runnable { stopRecording() }
+            recordingHandler.postDelayed(recordingRunnable!!, limit)
+        }
+    }
+
+    private fun stopRecording() {
+        if (!isRecording) return
+        videoCapture?.stopRecording()
+        isRecording = false
+        recordingRunnable?.let { recordingHandler.removeCallbacks(it) }
+        recordingRunnable = null
     }
 
     private fun handleSelectedMedia(uris: List<Uri>) {
