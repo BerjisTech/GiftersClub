@@ -48,6 +48,15 @@ interface CommentApi {
     ): Response<Void>
 
     @Headers("Prefer: count=exact")
+    @GET("post_reactions")
+    suspend fun getPostReactionCount(
+        @Query("post_id", encoded = true) postIdFilter: String,
+        @Query("type", encoded = true) typeFilter: String,
+        @Query("select", encoded = true) select: String = "id",
+        @Query("limit") limit: Int = 0
+    ): Response<Void>
+
+    @Headers("Prefer: count=exact")
     @GET("comments")
     suspend fun getCommentReplyCount(
         @Query("parent_comment_id", encoded = true) parentIdFilter: String

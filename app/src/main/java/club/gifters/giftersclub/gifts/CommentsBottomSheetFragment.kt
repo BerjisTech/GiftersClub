@@ -253,8 +253,23 @@ object CommentApiHolder {
         return contentRange.substringAfterLast('/')?.toIntOrNull() ?: 0
     }
 
+    suspend fun getPostCommentCountValue(postId: String): Int {
+        val resp = api.getPostCommentCount(postIdFilter = "eq.$postId")
+        val contentRange = resp.headers()["Content-Range"] ?: return 0
+        return contentRange.substringAfterLast('/')?.toIntOrNull() ?: 0
+    }
+
     suspend fun getCommentReplyCountValue(commentId: String): Int {
         val resp = api.getCommentReplyCount(parentIdFilter = "eq.$commentId")
+        val contentRange = resp.headers()["Content-Range"] ?: return 0
+        return contentRange.substringAfterLast('/')?.toIntOrNull() ?: 0
+    }
+
+    suspend fun getPostReactionCountValue(postId: String, type: String): Int {
+        val resp = api.getPostReactionCount(
+            postIdFilter = "eq.$postId",
+            typeFilter = "eq.$type"
+        )
         val contentRange = resp.headers()["Content-Range"] ?: return 0
         return contentRange.substringAfterLast('/')?.toIntOrNull() ?: 0
     }

@@ -39,6 +39,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         swipeRefresh = view.findViewById(R.id.swipeRefresh)
         val pager = view.findViewById<ViewPager2>(R.id.viewPagerPosts)
         adapter = PostAdapter(
+            lifecycleScope,
             onLike = { /* TODO: handle like */ },
             onComment = { post ->
                 CommentsBottomSheetFragment.newInstance(post.id)

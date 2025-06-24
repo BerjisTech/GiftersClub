@@ -312,6 +312,11 @@
                     android:gravity="center"
                     android:orientation="vertical"
                     android:padding="9dp">
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:contentDescription="@string/gift_icon"
+                        android:src="@drawable/gift" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -409,6 +414,11 @@
                     android:gravity="center"
                     android:orientation="vertical"
                     android:padding="9dp">
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:contentDescription="@string/wishlist_icon"
+                        android:src="@drawable/wishlist" />
 
                     <TextView
                         android:layout_width="wrap_content"

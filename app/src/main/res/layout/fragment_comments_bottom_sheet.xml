@@ -39,6 +39,7 @@
             android:id="@+id/progressComments"
             android:layout_width="48dp"
             android:layout_height="48dp"
+            android:layout_marginVertical="200dp"
             android:layout_gravity="center"
             android:indeterminate="true" />
     </FrameLayout>

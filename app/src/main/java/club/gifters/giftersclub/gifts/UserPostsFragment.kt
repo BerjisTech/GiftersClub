@@ -44,6 +44,7 @@ class UserPostsFragment : Fragment(R.layout.fragment_posts) {
         super.onViewCreated(view, savedInstanceState)
         val pager = view.findViewById<ViewPager2>(R.id.viewPagerPosts)
         adapter = PostAdapter(
+            lifecycleScope,
             onLike = {}, onComment = {}, onShare = {}, onProfileClick = { uname ->
                 parentFragmentManager.beginTransaction()
                     .replace(R.id.mainContentContainer, GifterFragment.newInstance(uname))

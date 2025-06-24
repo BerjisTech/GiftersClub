@@ -16,6 +16,9 @@ import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
 import coil.load
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import club.gifters.giftersclub.gifts.CommentApiHolder
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -24,6 +27,7 @@ import java.util.TimeZone
  * Adapter for displaying posts in a vertical ViewPager2.
  */
 class PostAdapter(
+    private val scope: CoroutineScope,
     private val onLike: (Post) -> Unit,
     private val onComment: (Post) -> Unit,
     private val onShare: (Post) -> Unit,
@@ -33,7 +37,7 @@ class PostAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_post, parent, false)
-        return PostViewHolder(view, onLike, onComment, onShare, onProfileClick)
+        return PostViewHolder(view, scope, onLike, onComment, onShare, onProfileClick)
     }
 
     override fun onBindViewHolder(holder: PostViewHolder, position: Int) {
@@ -42,6 +46,7 @@ class PostAdapter(
 
     inner class PostViewHolder(
         itemView: View,
+        private val scope: CoroutineScope,
         private val onLike: (Post) -> Unit,
         private val onComment: (Post) -> Unit,
         private val onShare: (Post) -> Unit,
@@ -58,6 +63,7 @@ class PostAdapter(
         private val btnComment: TextView = itemView.findViewById(R.id.btnComment)
         private val tvCommentCount: TextView = itemView.findViewById(R.id.tvCommentCount)
         private val btnShare: TextView = itemView.findViewById(R.id.btnShare)
+        private val tvShareCount: TextView = itemView.findViewById(R.id.tvShareCount)
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private var current: Post? = null
         private val gestureDetector = GestureDetector(itemView.context,
@@ -151,9 +157,24 @@ class PostAdapter(
             }
             btnLike.setOnClickListener    { current?.let(onLike) }
             btnComment.setOnClickListener { current?.let(onComment) }
-            // display like & comment counts
-            tvLikeCount.text = post.reactionCounts?.like?.toString() ?: "0"
             btnShare.setOnClickListener   { current?.let(onShare) }
+            // initialize counts to zero; will refresh via API
+            tvLikeCount.text    = "0"
+            tvShareCount.text   = "0"
+            tvCommentCount.text = "0"
+            // fetch live counts via Supabase
+            scope.launch {
+                val likes = CommentApiHolder.getPostReactionCountValue(post.id, "like")
+                tvLikeCount.text = likes.toString()
+            }
+            scope.launch {
+                val shares = CommentApiHolder.getPostReactionCountValue(post.id, "share")
+                tvShareCount.text = shares.toString()
+            }
+            scope.launch {
+                val comments = CommentApiHolder.getPostCommentCountValue(post.id)
+                tvCommentCount.text = comments.toString()
+            }
         }
     }
 

@@ -10,7 +10,6 @@ import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -179,7 +178,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         msgAdapter: MessageAdapter,
         rvMessages: RecyclerView
     ) {
-        view?.findViewById<TextView>(R.id.tvPartnerName)?.text = partnerName
+        requireActivity().title = partnerName
         pollingJob?.cancel()
         pollingJob = lifecycleScope.launch {
             while (isActive) {
