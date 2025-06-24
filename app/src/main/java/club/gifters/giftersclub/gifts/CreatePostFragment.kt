@@ -27,7 +27,9 @@ import android.widget.Toast
 import android.widget.ToggleButton
 import android.graphics.Typeface
 import android.widget.FrameLayout
+import com.google.android.material.tabs.TabLayout
 import android.view.inputmethod.InputMethodManager
+import yuku.ambilwarna.AmbilWarnaDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -117,14 +119,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var btnDoneTextPost: Button
     private lateinit var hsvTextStyles: HorizontalScrollView
     private lateinit var llTextStyles: LinearLayout
-    private lateinit var hsvTextColors: HorizontalScrollView
-    private lateinit var llTextColors: LinearLayout
-    private lateinit var hsvBgColors: HorizontalScrollView
-    private lateinit var llBgColors: LinearLayout
+    private lateinit var hsvColorPickers: HorizontalScrollView
+    private lateinit var llColorPickers: LinearLayout
     private lateinit var hsvBgImages: HorizontalScrollView
     private lateinit var llBgImages: LinearLayout
     private lateinit var hsvFonts: HorizontalScrollView
     private lateinit var llFonts: LinearLayout
+    private lateinit var tabTextTools: TabLayout
 
     private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
     private var imageCapture: ImageCapture? = null
@@ -138,6 +139,16 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     companion object {
         private const val TAG = "CreatePostFragment"
+    }
+
+    /**
+     * Show exactly one of the four editor steps.
+     */
+    private fun showStep(step: View) {
+        layoutMedia.isVisible     = step === layoutMedia
+        layoutEdit.isVisible      = step === layoutEdit
+        layoutDetails.isVisible   = step === layoutDetails
+        layoutTextEditor.isVisible= step === layoutTextEditor
     }
 
     private fun startCamera() {
@@ -178,8 +189,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         progressBar = view.findViewById(R.id.progressBar)
 
         btnEditMedia.setOnClickListener {
-            layoutDetails.isVisible = false
-            layoutMedia.isVisible = true
+            showStep(layoutMedia)
         }
         btnPost.setOnClickListener {
             submitPost()
@@ -204,16 +214,15 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         etTextPost = view.findViewById(R.id.etTextPost)
         btnCancelTextPost = view.findViewById(R.id.btnCancelTextPost)
         btnDoneTextPost = view.findViewById(R.id.btnDoneTextPost)
-        hsvTextStyles = view.findViewById(R.id.hsvTextStyles)
-        llTextStyles = view.findViewById(R.id.llTextStyles)
-        hsvTextColors = view.findViewById(R.id.hsvTextColors)
-        llTextColors = view.findViewById(R.id.llTextColors)
-        hsvBgColors = view.findViewById(R.id.hsvBgColors)
-        llBgColors = view.findViewById(R.id.llBgColors)
-        hsvBgImages = view.findViewById(R.id.hsvBgImages)
-        llBgImages = view.findViewById(R.id.llBgImages)
-        hsvFonts = view.findViewById(R.id.hsvFonts)
-        llFonts = view.findViewById(R.id.llFonts)
+        hsvTextStyles      = view.findViewById(R.id.hsvTextStyles)
+        llTextStyles       = view.findViewById(R.id.llTextStyles)
+        hsvColorPickers    = view.findViewById(R.id.hsvColorPickers)
+        llColorPickers     = view.findViewById(R.id.llColorPickers)
+        hsvBgImages        = view.findViewById(R.id.hsvBgImages)
+        llBgImages         = view.findViewById(R.id.llBgImages)
+        hsvFonts           = view.findViewById(R.id.hsvFonts)
+        llFonts            = view.findViewById(R.id.llFonts)
+        tabTextTools       = view.findViewById(R.id.tabTextTools)
 
         // Populate text post editor controls
         listOf("B", "I", "U").forEach { style ->
@@ -238,20 +247,31 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
             llTextStyles.addView(toggle)
         }
-        listOf(Color.WHITE, Color.BLACK, Color.RED, Color.BLUE, Color.GREEN).forEach { c ->
-            val swatch = View(requireContext()).apply {
-                layoutParams = LinearLayout.LayoutParams(60, 60).apply { setMargins(8, 8, 8, 8) }
-                setBackgroundColor(c)
-                setOnClickListener { etTextPost.setTextColor(c) }
+        // Text & background color selectors: launch a full color picker
+        val btnTextColorPicker = Button(requireContext()).apply {
+            text = getString(R.string.text_color)
+            setOnClickListener {
+                AmbilWarnaDialog(requireContext(), Color.BLACK, true, object : AmbilWarnaDialog.OnAmbilWarnaListener {
+                    override fun onOk(dialog: AmbilWarnaDialog, color: Int) {
+                        etTextPost.setTextColor(color)
+                    }
+                    override fun onCancel(dialog: AmbilWarnaDialog) {}
+                }).show()
             }
-            llTextColors.addView(swatch)
-            val bgSwatch = View(requireContext()).apply {
-                layoutParams = LinearLayout.LayoutParams(60, 60).apply { setMargins(8, 8, 8, 8) }
-                setBackgroundColor(c)
-                setOnClickListener { flTextCanvas.setBackgroundColor(c) }
-            }
-            llBgColors.addView(bgSwatch)
         }
+        val btnBgColorPicker = Button(requireContext()).apply {
+            text = getString(R.string.background_color)
+            setOnClickListener {
+                AmbilWarnaDialog(requireContext(), Color.WHITE, true, object : AmbilWarnaDialog.OnAmbilWarnaListener {
+                    override fun onOk(dialog: AmbilWarnaDialog, color: Int) {
+                        flTextCanvas.setBackgroundColor(color)
+                    }
+                    override fun onCancel(dialog: AmbilWarnaDialog) {}
+                }).show()
+            }
+        }
+        llColorPickers.addView(btnTextColorPicker)
+        llColorPickers.addView(btnBgColorPicker)
         listOf(
             R.drawable.black_hole, R.drawable.galaxy, R.drawable.nebula, R.drawable.solar_system,
             R.drawable.universe, R.drawable.supernova, R.drawable.castle, R.drawable.dragon,
@@ -280,10 +300,31 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
             llFonts.addView(txt)
         }
+        // Tab switcher for styling controls
+        tabTextTools = view.findViewById(R.id.tabTextTools)
+        // Tab‐driven switch between text styling controls
+        val groups = listOf<View>(
+            hsvTextStyles, hsvColorPickers, hsvBgImages, hsvFonts
+        )
+        val labels = listOf(
+            "Style",
+            getString(R.string.colors),
+            getString(R.string.bg_image),
+            getString(R.string.font)
+        )
+        labels.forEach { tabTextTools.addTab(tabTextTools.newTab().setText(it)) }
+        fun showGroup(idx: Int) {
+            groups.forEachIndexed { i, g -> g.isVisible = i == idx }
+        }
+        showGroup(0)
+        tabTextTools.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) = showGroup(tab.position)
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
         // Text editor cancel and done actions
         btnCancelTextPost.setOnClickListener {
-            layoutTextEditor.isVisible = false
-            layoutMedia.isVisible = true
+            showStep(layoutMedia)
         }
         btnDoneTextPost.setOnClickListener {
             // Hide keyboard
@@ -355,9 +396,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             isVideoMode = !isVideoMode
         }
         btnTextMode.setOnClickListener {
-            // Show full-screen text post editor
-            layoutMedia.isVisible = false
-            layoutTextEditor.isVisible = true
+            showStep(layoutTextEditor)
         }
         btnCapture.setOnClickListener {
             if (isVideoMode) startRecording() else takePhoto()
@@ -533,11 +572,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             selectedUris.addAll(uris.take(10))
         }
         // Proceed to next step after selection
-        layoutMedia.isVisible = false
         if (isVideoSelected || selectedUris.isEmpty()) {
-            layoutDetails.isVisible = true
+            showStep(layoutDetails)
         } else {
-            layoutEdit.isVisible = true
+            showStep(layoutEdit)
             loadImageForEditing()
         }
     }

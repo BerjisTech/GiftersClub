@@ -50,6 +50,9 @@ dependencies {
     // GPUImage for real-time image filters
     // GPUImage for real-time image filters in the post editor
     implementation("jp.co.cyberagent.android:gpuimage:2.1.0")
+    // Color picker dialog for custom color selection
+    // Full‑range color‑picker for text/background: AmbilWarna via JitPack
+    implementation("com.github.yukuku:ambilwarna:2.0.1")
     // CameraX for live camera preview and capture
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
