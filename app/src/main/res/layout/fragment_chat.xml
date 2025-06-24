@@ -31,7 +31,41 @@
             app:layout_constraintTop_toTopOf="@id/chatPane"
             app:layout_constraintStart_toStartOf="@id/chatPane"
             app:layout_constraintEnd_toEndOf="@id/chatPane"
-            app:layout_constraintBottom_toTopOf="@id/chatForm"/>
+            app:layout_constraintBottom_toTopOf="@id/attachmentPreviewContainer"/>
+
+        <FrameLayout
+            android:id="@+id/attachmentPreviewContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/rvMessages"
+            app:layout_constraintStart_toStartOf="@id/chatPane"
+            app:layout_constraintEnd_toEndOf="@id/chatPane">
+
+            <ImageView
+                android:id="@+id/ivAttachmentPreview"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:scaleType="centerCrop" />
+
+            <ProgressBar
+                android:id="@+id/pbAttachmentUpload"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:indeterminate="true"
+                android:visibility="gone" />
+
+            <ImageButton
+                android:id="@+id/btnCancelAttachment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:contentDescription="@android:string/cancel" />
+
+        </FrameLayout>
 
         <LinearLayout
             android:id="@+id/chatForm"

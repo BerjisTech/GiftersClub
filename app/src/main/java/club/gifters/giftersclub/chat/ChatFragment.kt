@@ -10,9 +10,13 @@ import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.ProgressBar
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
@@ -20,10 +24,14 @@ import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.network.ChatApi
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.network.StorageApi
+import club.gifters.giftersclub.chat.ConversationAdapter
+import club.gifters.giftersclub.chat.ConversationUi
+import club.gifters.giftersclub.chat.MessageAdapter
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -39,6 +47,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
 
     private var userId: String = ""
     private var selectedAttachment: Uri? = null
+    private var uploadJob: Job? = null
     private val REQUEST_ATTACHMENT = 3001
     private var pollingJob: Job? = null
 
@@ -127,6 +136,17 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         }
         rvConvs.adapter = convAdapter
         loadConversations(convAdapter)
+
+        // attachment preview controls
+        val attachmentPreviewContainer = view.findViewById<FrameLayout>(R.id.attachmentPreviewContainer)
+        val ivAttachmentPreview = view.findViewById<ImageView>(R.id.ivAttachmentPreview)
+        val pbAttachmentUpload = view.findViewById<ProgressBar>(R.id.pbAttachmentUpload)
+        val btnCancelAttachment = view.findViewById<ImageButton>(R.id.btnCancelAttachment)
+        btnCancelAttachment.setOnClickListener {
+            uploadJob?.cancel()
+            attachmentPreviewContainer.isVisible = false
+            selectedAttachment = null
+        }
     }
 
 
@@ -209,7 +229,11 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_ATTACHMENT && resultCode == Activity.RESULT_OK) {
-            selectedAttachment = data?.data
+            data?.data?.let { uri ->
+                selectedAttachment = uri
+                view?.findViewById<FrameLayout>(R.id.attachmentPreviewContainer)?.isVisible = true
+                view?.findViewById<ImageView>(R.id.ivAttachmentPreview)?.setImageURI(uri)
+            }
         }
     }
 
@@ -223,21 +247,30 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         lifecycleScope.launch {
             val attachmentsPayload = mutableListOf<Map<String, Any>>()
             selectedAttachment?.let { uri ->
-                try {
-                    val type = requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
-                    val ext = type.substringAfterLast('/', "bin")
-                    val filename = "${System.currentTimeMillis()}-${UUID.randomUUID()}.$ext"
-                    requireContext().contentResolver.openInputStream(uri)?.use { stream ->
-                        val bytes = stream.readBytes()
-                        val body = bytes.toRequestBody(type.toMediaTypeOrNull())
-                        val resp = storageApi.uploadChatMedia(filename, body, type)
-                        if (resp.isSuccessful) {
-                            val publicUrl = "${SupabaseConfig.SUPABASE_URL}/storage/v1/object/public/${SupabaseConfig.CHAT_MEDIA_BUCKET}/$filename"
-                            val mediaType = if (type.startsWith("image/")) "image" else "video"
-                            attachmentsPayload.add(mapOf("url" to publicUrl, "type" to mediaType))
+                requireView().findViewById<ProgressBar>(R.id.pbAttachmentUpload).isVisible = true
+                val job = lifecycleScope.launch {
+                    try {
+                        val type = requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
+                        val ext = type.substringAfterLast('/', "bin")
+                        val filename = "${System.currentTimeMillis()}-${UUID.randomUUID()}.$ext"
+                        requireContext().contentResolver.openInputStream(uri)?.use { stream ->
+                            val bytes = stream.readBytes()
+                            val body = bytes.toRequestBody(type.toMediaTypeOrNull())
+                            val resp = storageApi.uploadChatMedia(filename, body, type)
+                            if (resp.isSuccessful) {
+                                val publicUrl = "${SupabaseConfig.SUPABASE_URL}/storage/v1/object/public/${SupabaseConfig.CHAT_MEDIA_BUCKET}/$filename"
+                                val mediaType = if (type.startsWith("image/")) "image" else "video"
+                                attachmentsPayload.add(mapOf("url" to publicUrl, "type" to mediaType))
+                            }
                         }
+                    } catch (_: CancellationException) {
+                    } catch (_: Exception) {
                     }
-                } catch (_: Exception) { }
+                }
+                uploadJob = job
+                job.join()
+                requireView().findViewById<ProgressBar>(R.id.pbAttachmentUpload).isVisible = false
+                requireView().findViewById<FrameLayout>(R.id.attachmentPreviewContainer).isVisible = false
                 selectedAttachment = null
             }
             try {
