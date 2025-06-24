@@ -22,6 +22,7 @@ import club.gifters.giftersclub.gifts.CommentApiHolder
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.math.abs
 
 /**
  * Adapter for displaying posts in a vertical ViewPager2.
@@ -68,6 +69,8 @@ class PostAdapter(
         private var current: Post? = null
         private var startX = 0f
         private var startY = 0f
+        private var isCarouselTouch = false
+        private val postDetails: View = itemView.findViewById(R.id.postDetails)
         private val gestureDetector = GestureDetector(itemView.context,
             object : GestureDetector.SimpleOnGestureListener() {
                 override fun onDoubleTap(e: MotionEvent): Boolean {
@@ -78,30 +81,37 @@ class PostAdapter(
             }
         )
         init {
-            // Intercept only horizontal scrolls in the carousel; allow vertical swipes to bubble up
+            // Only intercept horizontal drags that start in the media (above the details overlay);
+            // let other gestures bubble up to parent ViewPagers (post scrolling or tab swipes).
             mediaPager.post {
                 (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { v, ev ->
-                    when (ev.action) {
+                    when (ev.actionMasked) {
                         MotionEvent.ACTION_DOWN -> {
-                            startX = ev.x
-                            startY = ev.y
+                            // Determine if the touch began above the postDetails overlay
+                            val rawY = ev.rawY.toInt()
+                            val loc = IntArray(2)
+                            postDetails.getLocationOnScreen(loc)
+                            isCarouselTouch = rawY < loc[1]
+                            if (!isCarouselTouch) return@setOnTouchListener false
+                            startX = ev.x; startY = ev.y
                             var parent = v.parent
                             while (parent is ViewGroup) {
                                 parent.requestDisallowInterceptTouchEvent(true)
                                 parent = parent.parent
                             }
                         }
-                        MotionEvent.ACTION_MOVE -> {
+                        MotionEvent.ACTION_MOVE -> if (isCarouselTouch) {
                             val dx = ev.x - startX
                             val dy = ev.y - startY
-                            val disallow = kotlin.math.abs(dx) > kotlin.math.abs(dy)
+                            val disallow = abs(dx) > abs(dy)
                             var parent = v.parent
                             while (parent is ViewGroup) {
                                 parent.requestDisallowInterceptTouchEvent(disallow)
                                 parent = parent.parent
                             }
                         }
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> if (isCarouselTouch) {
+                            isCarouselTouch = false
                             var parent = v.parent
                             while (parent is ViewGroup) {
                                 parent.requestDisallowInterceptTouchEvent(false)
