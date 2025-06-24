@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/createPostRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -13,64 +14,165 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <!-- Media selection step -->
+        <!-- Media selection and camera preview step -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layoutMedia"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="bottom"
-            android:orientation="vertical">
+            android:layout_height="match_parent">
 
-            <TextView
-                android:id="@+id/tvSelectedCount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text=""
-                android:gravity="center"
-                android:layout_marginTop="28dp"
-                app:layout_constraintTop_toTopOf="@id/layoutMedia"
-                app:layout_constraintStart_toStartOf="@id/layoutMedia"
-                app:layout_constraintEnd_toEndOf="@id/layoutMedia"/>
-
-            <HorizontalScrollView
+            <!-- Camera preview -->
+            <androidx.camera.view.PreviewView
+                android:id="@+id/previewView"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:layout_marginTop="8dp"
-                android:foregroundGravity="center_vertical"
-                app:layout_constraintStart_toStartOf="@id/layoutMedia"
-                app:layout_constraintEnd_toEndOf="@id/layoutMedia"
-                app:layout_constraintTop_toBottomOf="@id/tvSelectedCount"
-                app:layout_constraintBottom_toTopOf="@id/btnSelectMedia">
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                tools:ignore="MissingClass"/>
 
-                <LinearLayout
-                    android:id="@+id/layoutPreviews"
+            <!-- Top right controls: switch camera, flash, timer, filters -->
+            <LinearLayout
+                android:id="@+id/topControls"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <ImageView
+                    android:id="@+id/btnSwitchCamera"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginVertical="5dp"
+                    android:contentDescription="@string/switch_camera"
+                    android:src="@drawable/switch_camera"/>
+
+                <ImageView
+                    android:id="@+id/btnToggleFlash"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginVertical="5dp"
+                    android:contentDescription="@string/toggle_flash"
+                    android:src="@drawable/toggle_light"/>
+
+                <ImageView
+                    android:id="@+id/btnSetTimer"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginVertical="5dp"
+                    android:contentDescription="@string/set_recording_timer"
+                    android:src="@drawable/timer"/>
+
+                <ImageView
+                    android:id="@+id/btnShowFilters"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginVertical="5dp"
+                    android:contentDescription="@string/show_filters"
+                    android:src="@drawable/filters"/>
+            </LinearLayout>
+
+            <!-- Bottom controls: timers, mode switches -->
+            <LinearLayout
+                android:id="@+id/bottomControlsTop"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:padding="8dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/bottomControlsBottom">
+
+                <TextView
+                    android:id="@+id/btnTimer10m"
                     android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:layout_gravity="center_vertical"
-                    android:foregroundGravity="center_vertical"
-                    android:orientation="horizontal" />
-            </HorizontalScrollView>
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="10dp"
+                    android:text="10m"/>
 
-            <Button
-                android:id="@+id/btnSelectMedia"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/select_photos_videos"
-                app:layout_constraintStart_toStartOf="@id/layoutMedia"
-                app:layout_constraintEnd_toEndOf="@id/layoutMedia"
-                app:layout_constraintBottom_toTopOf="@id/btnNext"/>
+                <TextView
+                    android:id="@+id/btnTimer60s"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="10dp"
+                    android:text="60s"/>
 
-            <Button
-                android:id="@+id/btnNext"
-                android:layout_width="match_parent"
+                <TextView
+                    android:id="@+id/btnTimer15s"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="10dp"
+                    android:text="15s"/>
+
+                <ImageView
+                    android:id="@+id/btnModeToggle"
+                    android:src="@drawable/camera"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:contentDescription="@string/toggle_photo_video"/>
+
+                <ImageView
+                    android:id="@+id/btnTextMode"
+                    android:src="@drawable/text"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:contentDescription="Create text post"/>
+            </LinearLayout>
+
+            <!-- Bottom filter and device picker row -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/bottomControlsBottom"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="@string/next"
-                android:layout_marginTop="16dp"
-                android:enabled="false"
-                app:layout_constraintStart_toStartOf="@id/layoutMedia"
-                app:layout_constraintEnd_toEndOf="@id/layoutMedia"
-                app:layout_constraintBottom_toBottomOf="@id/layoutMedia"/>
+                android:padding="8dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent">
+
+                <HorizontalScrollView
+                    android:id="@+id/hsvFilters"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/btnCapture">
+
+                    <LinearLayout
+                        android:id="@+id/layoutFilterOptions"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"/>
+                </HorizontalScrollView>
+
+                <ImageView
+                    android:id="@+id/btnCapture"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:contentDescription="@string/capture"
+                    android:src="@drawable/record"
+                    android:layout_marginHorizontal="10dp"
+                    app:layout_constraintStart_toEndOf="@id/hsvFilters"
+                    app:layout_constraintEnd_toStartOf="@id/btnSelectDevice"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"/>
+
+                <ImageView
+                    android:id="@+id/btnSelectDevice"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:contentDescription="@string/select_from_device"
+                    android:src="@drawable/images"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"/>
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

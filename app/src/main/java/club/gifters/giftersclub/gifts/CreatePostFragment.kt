@@ -18,6 +18,7 @@ import android.widget.TextView
 import android.widget.Toast
 import android.widget.VideoView
 import android.widget.ImageView
+import android.widget.ImageButton
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -46,6 +47,13 @@ import org.json.JSONObject
 import club.gifters.giftersclub.gifts.FilterAdapter
 import club.gifters.giftersclub.gifts.FilterItem
 import java.util.regex.Pattern
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.Preview
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.VideoCapture
+import androidx.camera.view.PreviewView
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.content.ContextCompat
 
 /**
  * Fragment for creating a new post in two steps: select media, then add details.
@@ -53,10 +61,7 @@ import java.util.regex.Pattern
 class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private val postApi = RetrofitClient.postApi
     private val storageApi = RetrofitClient.storageApi
-    private lateinit var btnSelectMedia: Button
-    private lateinit var tvSelectedCount: TextView
-    private lateinit var layoutPreviews: LinearLayout
-    private lateinit var btnNext: Button
+    // Media selection preview and next step removed; using camera UI by default
     private lateinit var layoutMedia: ConstraintLayout
     private lateinit var layoutEdit: ConstraintLayout
     private lateinit var layoutDetails: LinearLayout
@@ -74,18 +79,53 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var isVideoSelected = false
     private val REQUEST_PICK_MEDIA = 1001
 
+    // CameraX variables
+    private lateinit var previewView: PreviewView
+    private lateinit var btnSwitchCamera: ImageView
+    private lateinit var btnToggleFlash: ImageView
+    private lateinit var btnSetTimer: ImageView
+    private lateinit var btnShowFilters: ImageView
+    private lateinit var btnTimer10m: TextView
+    private lateinit var btnTimer60s: TextView
+    private lateinit var btnTimer15s: TextView
+    private lateinit var btnModeToggle: ImageView
+    private lateinit var btnTextMode: ImageView
+    private lateinit var btnCapture: ImageView
+    private lateinit var btnSelectDevice: ImageView
+    private lateinit var layoutFilterOptions: LinearLayout
+
+    private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+    private var imageCapture: ImageCapture? = null
+    private var videoCapture: VideoCapture? = null
+    private var recordLimitMs: Long? = null
+    private var torchEnabled = false
+
     companion object {
         private const val TAG = "CreatePostFragment"
+    }
+
+    private fun startCamera() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
+        cameraProviderFuture.addListener({
+            val cameraProvider = cameraProviderFuture.get()
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(previewView.surfaceProvider)
+            }
+            imageCapture = ImageCapture.Builder().build()
+            videoCapture = VideoCapture.Builder().build()
+            try {
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture, videoCapture)
+            } catch (e: Exception) {
+                Log.e(TAG, "Use case binding failed", e)
+            }
+        }, ContextCompat.getMainExecutor(requireContext()))
     }
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        btnSelectMedia = view.findViewById(R.id.btnSelectMedia)
-        tvSelectedCount = view.findViewById(R.id.tvSelectedCount)
-        layoutPreviews = view.findViewById(R.id.layoutPreviews)
-        btnNext = view.findViewById(R.id.btnNext)
         layoutMedia = view.findViewById(R.id.layoutMedia)
         layoutEdit = view.findViewById(R.id.layoutEdit)
         layoutDetails = view.findViewById(R.id.layoutDetails)
@@ -95,26 +135,6 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnPost = view.findViewById(R.id.btnPost)
         progressBar = view.findViewById(R.id.progressBar)
 
-    // Remove fragment-level close button; use toolbar back arrow only
-        btnSelectMedia.setOnClickListener {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "*/*"
-                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*"))
-                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-            }
-            startActivityForResult(intent, REQUEST_PICK_MEDIA)
-        }
-        btnNext.setOnClickListener {
-            layoutMedia.isVisible = false
-            if (isVideoSelected || selectedUris.isEmpty()) {
-                layoutDetails.isVisible = true
-            } else {
-                // proceed to edit first image
-                layoutEdit.isVisible = true
-                loadImageForEditing()
-            }
-        }
         btnEditMedia.setOnClickListener {
             layoutDetails.isVisible = false
             layoutMedia.isVisible = true
@@ -124,6 +144,36 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
         // Update toolbar title
         requireActivity().title = getString(R.string.create_post)
+
+        // CameraX UI setup and start camera preview
+        previewView = view.findViewById(R.id.previewView)
+        btnSwitchCamera = view.findViewById(R.id.btnSwitchCamera)
+        btnToggleFlash = view.findViewById(R.id.btnToggleFlash)
+        btnSetTimer = view.findViewById(R.id.btnSetTimer)
+        btnShowFilters = view.findViewById(R.id.btnShowFilters)
+        btnTimer10m = view.findViewById(R.id.btnTimer10m)
+        btnTimer60s = view.findViewById(R.id.btnTimer60s)
+        btnTimer15s = view.findViewById(R.id.btnTimer15s)
+        btnModeToggle = view.findViewById(R.id.btnModeToggle)
+        btnTextMode = view.findViewById(R.id.btnTextMode)
+        btnCapture = view.findViewById(R.id.btnCapture)
+        btnSelectDevice = view.findViewById(R.id.btnSelectDevice)
+        layoutFilterOptions = view.findViewById(R.id.layoutFilterOptions)
+
+        btnSelectDevice.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*"))
+                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            }
+            startActivityForResult(intent, REQUEST_PICK_MEDIA)
+        }
+
+        startCamera()
+
+        // Filter buttons for preview (stub for adding filter options)
+        // TODO: Populate layoutFilterOptions with filter thumbnails for live preview
 
         // Filter buttons
         // Initialize GPUImageView for filter preview
@@ -198,8 +248,14 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         } else {
             selectedUris.addAll(uris.take(10))
         }
-        updatePreviews()
-        btnNext.isEnabled = selectedUris.isNotEmpty()
+        // Proceed to next step after selection
+        layoutMedia.isVisible = false
+        if (isVideoSelected || selectedUris.isEmpty()) {
+            layoutDetails.isVisible = true
+        } else {
+            layoutEdit.isVisible = true
+            loadImageForEditing()
+        }
     }
 
     private fun loadImageForEditing() {
@@ -212,26 +268,6 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     }
 
 
-    private fun updatePreviews() {
-        layoutPreviews.removeAllViews()
-        for (uri in selectedUris) {
-            val view = if (isVideoSelected) {
-                VideoView(requireContext()).apply {
-                    setVideoURI(uri)
-                    setOnPreparedListener { mp -> mp.isLooping = true; pause() }
-                    layoutParams = LinearLayout.LayoutParams(300, 300).apply { setMargins(8, 0, 8, 0) }
-                }
-            } else {
-                ImageView(requireContext()).apply {
-                    layoutParams = LinearLayout.LayoutParams(300, 300).apply { setMargins(8, 0, 8, 0) }
-                    scaleType = ImageView.ScaleType.CENTER_CROP
-                    setImageURI(uri)
-                }
-            }
-            layoutPreviews.addView(view)
-        }
-        tvSelectedCount.text = "${selectedUris.size} file(s) selected"
-    }
 
     private fun submitPost() {
         val content = etContent.text.toString().trim()

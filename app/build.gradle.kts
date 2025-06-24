@@ -50,6 +50,10 @@ dependencies {
     // GPUImage for real-time image filters
     // GPUImage for real-time image filters in the post editor
     implementation("jp.co.cyberagent.android:gpuimage:2.1.0")
+    // CameraX for live camera preview and capture
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
