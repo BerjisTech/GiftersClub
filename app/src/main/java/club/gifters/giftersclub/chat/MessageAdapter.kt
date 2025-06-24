@@ -1,6 +1,8 @@
 package club.gifters.giftersclub.chat
 
 import android.net.Uri
+import android.content.Intent
+import club.gifters.giftersclub.chat.FullscreenMediaActivity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -68,24 +70,46 @@ class MessageAdapter(
 
         fun displayAttachments(msg: Message) {
             llAttachments.removeAllViews()
+            val maxHeight = (300 * itemView.context.resources.displayMetrics.density).toInt()
             msg.attachments?.forEach { attach ->
                 if (attach.type == "image") {
                     val iv = ImageView(itemView.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
+                            maxHeight
                         )
+                        adjustViewBounds = true
                         scaleType = ImageView.ScaleType.CENTER_CROP
                         setPadding(0, 4, 0, 0)
+                        setOnClickListener {
+                            val ctx = itemView.context
+                            val intent = Intent(ctx, FullscreenMediaActivity::class.java).apply {
+                                putExtra("url", attach.url)
+                                putExtra("type", "image")
+                            }
+                            ctx.startActivity(intent)
+                        }
                     }
                     iv.load(attach.url) { placeholder(android.R.color.darker_gray) }
                     llAttachments.addView(iv)
                 } else {
                     val vv = VideoView(itemView.context).apply {
-                        layoutParams = LinearLayout.LayoutParams(300, 300)
-                        setVideoURI(Uri.parse(attach.url))
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            maxHeight
+                        )
                         setPadding(0, 4, 0, 0)
+                        setOnPreparedListener { mp -> mp.isLooping = true }
+                        setOnClickListener {
+                            val ctx = itemView.context
+                            val intent = Intent(ctx, FullscreenMediaActivity::class.java).apply {
+                                putExtra("url", attach.url)
+                                putExtra("type", "video")
+                            }
+                            ctx.startActivity(intent)
+                        }
                     }
+                    vv.setVideoURI(Uri.parse(attach.url))
                     llAttachments.addView(vv)
                 }
             }

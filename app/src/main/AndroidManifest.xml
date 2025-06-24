@@ -35,6 +35,9 @@
         <activity android:name=".MainActivity"/>
         <activity android:name=".PostsActivity"/>
         <activity android:name=".payments.PaymentWebViewActivity"/>
+        <activity android:name=".chat.FullscreenMediaActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GiftersClub"/>
 
     </application>
 
