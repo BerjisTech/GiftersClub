@@ -28,7 +28,6 @@ import android.widget.ToggleButton
 import android.graphics.Typeface
 import android.widget.FrameLayout
 import android.view.inputmethod.InputMethodManager
-import android.widget.FrameLayout
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
