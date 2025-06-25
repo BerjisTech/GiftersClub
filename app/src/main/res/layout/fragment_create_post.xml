@@ -19,8 +19,8 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layoutTextEditor"
             android:layout_width="match_parent"
-            android:visibility="gone"
             android:layout_height="match_parent"
+            android:visibility="gone"
             >
 
             <!-- Toolbar with Cancel and Done -->
@@ -48,6 +48,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
+                    android:textColor="@color/white"
                     android:text="@string/whats_on_your_mind"
                     android:textSize="18sp"/>
 
@@ -62,10 +63,10 @@
             <!-- Editable canvas (rendered to bitmap) -->
             <FrameLayout
                 android:id="@+id/flTextCanvas"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                app:layout_constraintTop_toBottomOf="@id/toolbarTextEditor"
-                app:layout_constraintBottom_toTopOf="@id/llTextControlsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintDimensionRatio="1:1">
@@ -77,6 +78,7 @@
                     android:gravity="center"
                     android:hint="@string/whats_on_your_mind"
                     android:textSize="36sp"
+                    android:padding="30dp"
                     android:textColor="@android:color/black"
                     android:background="@android:color/transparent"
                     android:inputType="textMultiLine"/>
@@ -89,7 +91,9 @@
                 android:layout_height="wrap_content"
                 app:tabMode="fixed"
                 app:tabGravity="fill"
-                app:layout_constraintTop_toBottomOf="@id/flTextCanvas"
+                app:tabTextColor="@color/white"
+                android:background="@android:color/transparent"
+                app:layout_constraintBottom_toTopOf="@id/llTextControlsContainer"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
@@ -100,7 +104,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="8dp"
-                app:layout_constraintTop_toBottomOf="@id/tabTextTools"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent">
