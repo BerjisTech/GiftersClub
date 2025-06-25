@@ -247,6 +247,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             val toggle = ToggleButton(requireContext()).apply {
                 text = style; textOn = style; textOff = style
                 setTextAppearance(android.R.style.TextAppearance_Material_Headline)
+                setBackgroundColor(Color.TRANSPARENT)
                 setOnCheckedChangeListener { _, isChecked ->
                     val paintFlags = etTextPost.paintFlags
                     when (style) {
@@ -425,7 +426,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         listOf("Normal", "Gray", "Sepia", "Invert").forEach { name ->
             val tv = TextView(requireContext()).apply {
                 text = name
-                setPadding(16, 8, 16, 8)
+                setPadding(0, 4, 0, 4)
+                setTextColor(Color.WHITE)
                 alpha = if (name == "Normal") 1f else 0.5f
                 setOnClickListener {
                     initialCameraFilter = when (name) {
