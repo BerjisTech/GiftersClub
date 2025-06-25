@@ -30,6 +30,7 @@ import android.widget.FrameLayout
 import com.google.android.material.tabs.TabLayout
 import android.view.inputmethod.InputMethodManager
 import yuku.ambilwarna.AmbilWarnaDialog
+import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -92,6 +93,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var initialCameraFilter: GPUImageFilter? = null
     private val sliderPositions = mutableMapOf<String, Int>()
     private val enabledAdjustable = mutableSetOf<String>()
+    private var customTimerSec = 15
     private lateinit var etContent: EditText
     private lateinit var btnEditMedia: Button
     private lateinit var btnApplyFilter: Button
@@ -458,6 +460,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             recordLimitMs = 15 * 1000L
             startRecording()
         }
+        btnSetTimer.setOnClickListener {
+            showTimerDialog()
+        }
 
         // Initialize GPUImageView for filter preview and multi-filter setup
         gpuImageView = view.findViewById(R.id.imageEditView)
@@ -618,8 +623,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         recordLimitMs?.let { limit ->
             recordTimer = object : CountDownTimer(limit, limit / 100) {
                 override fun onTick(millisUntilFinished: Long) {
-                    val progress = ((limit - millisUntilFinished) * 100 / limit).toInt()
-                    pbRecordProgress.progress = progress
+                    val p = ((limit - millisUntilFinished) * 100 / limit).toInt()
+                    pbRecordProgress.progress = p
                 }
 
                 override fun onFinish() {
@@ -638,16 +643,52 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         pbRecordProgress.isVisible = false
     }
 
+    private fun showTimerDialog() {
+        val maxSec = 10 * 60
+        var chosen = customTimerSec.coerceIn(1, maxSec)
+        val tv = TextView(requireContext()).apply {
+            text = String.format("%d sec", chosen)
+            setPadding(0, 0, 0, 16)
+        }
+        val sb = SeekBar(requireContext()).apply {
+            max = maxSec
+            progress = chosen
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(s: SeekBar, p: Int, fromUser: Boolean) {
+                    chosen = p.coerceAtLeast(1)
+                    tv.text = String.format("%d sec", chosen)
+                }
+                override fun onStartTrackingTouch(s: SeekBar) {}
+                override fun onStopTrackingTouch(s: SeekBar) {}
+            })
+        }
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.set_recording_timer)
+            .setView(LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(48, 16, 48, 16)
+                addView(tv)
+                addView(sb)
+            })
+            .setPositiveButton(R.string.ok) { _, _ ->
+                customTimerSec = chosen
+                recordLimitMs = chosen * 1000L
+                startRecording()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
     private fun handleSelectedMedia(uris: List<Uri>) {
         selectedUris.clear()
         isVideoSelected = uris.any { uri ->
-            val type = requireContext().contentResolver.getType(uri)
-            type?.startsWith("video/") == true
+            val mime = requireContext().contentResolver.getType(uri)
+            (mime?.startsWith("video/") == true) || (uri.path?.endsWith(".mp4") == true)
         }
         if (isVideoSelected) {
             val videoUri = uris.first { uri ->
-                val type = requireContext().contentResolver.getType(uri)
-                type?.startsWith("video/") == true
+                val mime = requireContext().contentResolver.getType(uri)
+                (mime?.startsWith("video/") == true) || (uri.path?.endsWith(".mp4") == true)
             }
             selectedUris.add(videoUri)
         } else {

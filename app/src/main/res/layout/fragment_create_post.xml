@@ -79,7 +79,7 @@
                     android:hint="@string/whats_on_your_mind"
                     android:textSize="36sp"
                     android:padding="30dp"
-                    android:textColor="@android:color/black"
+                    android:textColor="@android:color/white"
                     android:background="@android:color/transparent"
                     android:inputType="textMultiLine"/>
             </FrameLayout>
@@ -305,12 +305,15 @@
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent">
 
-                    <ProgressBar
-                        android:id="@+id/pbRecordProgress"
-                        style="?android:attr/progressBarStyleLarge"
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
-                        android:visibility="gone" />
+                <ProgressBar
+                    android:id="@+id/pbRecordProgress"
+                    style="@style/Widget.MaterialComponents.CircularProgressIndicator"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:indeterminate="false"
+                    android:max="100"
+                    android:progress="0"
+                    android:visibility="gone" />
 
                     <ImageView
                         android:id="@+id/btnCapture"
