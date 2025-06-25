@@ -245,6 +245,7 @@
 
                 <TextView
                     android:id="@+id/btnTimer10m"
+                android:textColor="@color/white"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingHorizontal="10dp"
@@ -252,6 +253,7 @@
 
                 <TextView
                     android:id="@+id/btnTimer60s"
+                android:textColor="@color/white"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingHorizontal="10dp"
@@ -259,6 +261,7 @@
 
                 <TextView
                     android:id="@+id/btnTimer15s"
+                android:textColor="@color/white"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="10dp"
@@ -319,16 +322,17 @@
                     app:layout_constraintStart_toEndOf="@id/hsvFilters"
                     app:layout_constraintTop_toTopOf="parent">
 
-                    <ProgressBar
+                    <com.google.android.material.progressindicator.CircularProgressIndicator
                         android:id="@+id/pbRecordProgress"
-                        style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="60dp"
                         android:layout_height="60dp"
                         android:indeterminate="false"
                         android:max="100"
                         android:progress="0"
-                        android:rotation="270"
-                        android:visibility="gone" />
+                        android:visibility="gone"
+                        app:indicatorSize="60dp"
+                        app:trackThickness="4dp"
+                        app:indicatorDirectionCircular="clockwise" />
 
                     <ImageView
                         android:id="@+id/btnCapture"

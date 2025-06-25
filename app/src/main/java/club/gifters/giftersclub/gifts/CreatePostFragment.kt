@@ -24,6 +24,7 @@ import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import com.google.android.material.progressindicator.CircularProgressIndicator
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.ToggleButton
@@ -123,7 +124,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var btnSelectDevice: ImageView
     private lateinit var layoutFilterOptions: LinearLayout
     private lateinit var hsvFilters: HorizontalScrollView
-    private lateinit var pbRecordProgress: ProgressBar
+    private lateinit var pbRecordProgress: CircularProgressIndicator
     private lateinit var tvElapsedTime: TextView
     private var recordStartTimeMs: Long = 0L
     private var elapsedHandler: Handler? = null
@@ -244,7 +245,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         listOf("B", "I", "U").forEach { style ->
             val toggle = ToggleButton(requireContext()).apply {
                 text = style; textOn = style; textOff = style
-                setTextAppearance(android.R.style.TextAppearance_Material_Headline)
+                setPadding(4, 4, 4, 4)
                 setBackgroundColor(Color.TRANSPARENT)
                 setOnCheckedChangeListener { _, isChecked ->
                     val paintFlags = etTextPost.paintFlags
