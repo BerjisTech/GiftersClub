@@ -52,6 +52,7 @@ import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageColorInvertFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageContrastFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageBrightnessFilter
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilterGroup
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -76,6 +77,7 @@ import java.util.regex.Pattern
 class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private val postApi = RetrofitClient.postApi
     private val storageApi = RetrofitClient.storageApi
+
     // Media selection preview and next step removed; using camera UI by default
     private lateinit var layoutMedia: ConstraintLayout
     private lateinit var layoutEdit: ConstraintLayout
@@ -83,6 +85,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var rvFilters: RecyclerView
     private lateinit var sbFilterLevel: SeekBar
     private lateinit var gpuImageView: jp.co.cyberagent.android.gpuimage.GPUImageView
+    private lateinit var baseFilter: GPUImageFilter
+    private lateinit var contrastFilter: GPUImageContrastFilter
+    private lateinit var brightnessFilter: GPUImageBrightnessFilter
+    private lateinit var selectedFilterItem: FilterItem
+    private var initialCameraFilter: GPUImageFilter? = null
+    private val sliderPositions = mutableMapOf<String, Int>()
+    private val enabledAdjustable = mutableSetOf<String>()
     private lateinit var etContent: EditText
     private lateinit var btnEditMedia: Button
     private lateinit var btnApplyFilter: Button
@@ -111,6 +120,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var layoutFilterOptions: LinearLayout
     private lateinit var hsvFilters: HorizontalScrollView
     private lateinit var pbRecordProgress: ProgressBar
+
     // Text post editor components
     private lateinit var layoutTextEditor: ConstraintLayout
     private lateinit var flTextCanvas: FrameLayout
@@ -145,10 +155,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
      * Show exactly one of the four editor steps.
      */
     private fun showStep(step: View) {
-        layoutMedia.isVisible     = step === layoutMedia
-        layoutEdit.isVisible      = step === layoutEdit
-        layoutDetails.isVisible   = step === layoutDetails
-        layoutTextEditor.isVisible= step === layoutTextEditor
+        layoutMedia.isVisible = step === layoutMedia
+        layoutEdit.isVisible = step === layoutEdit
+        layoutDetails.isVisible = step === layoutDetails
+        layoutTextEditor.isVisible = step === layoutTextEditor
     }
 
     private fun startCamera() {
@@ -214,15 +224,15 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         etTextPost = view.findViewById(R.id.etTextPost)
         btnCancelTextPost = view.findViewById(R.id.btnCancelTextPost)
         btnDoneTextPost = view.findViewById(R.id.btnDoneTextPost)
-        hsvTextStyles      = view.findViewById(R.id.hsvTextStyles)
-        llTextStyles       = view.findViewById(R.id.llTextStyles)
-        hsvColorPickers    = view.findViewById(R.id.hsvColorPickers)
-        llColorPickers     = view.findViewById(R.id.llColorPickers)
-        hsvBgImages        = view.findViewById(R.id.hsvBgImages)
-        llBgImages         = view.findViewById(R.id.llBgImages)
-        hsvFonts           = view.findViewById(R.id.hsvFonts)
-        llFonts            = view.findViewById(R.id.llFonts)
-        tabTextTools       = view.findViewById(R.id.tabTextTools)
+        hsvTextStyles = view.findViewById(R.id.hsvTextStyles)
+        llTextStyles = view.findViewById(R.id.llTextStyles)
+        hsvColorPickers = view.findViewById(R.id.hsvColorPickers)
+        llColorPickers = view.findViewById(R.id.llColorPickers)
+        hsvBgImages = view.findViewById(R.id.hsvBgImages)
+        llBgImages = view.findViewById(R.id.llBgImages)
+        hsvFonts = view.findViewById(R.id.hsvFonts)
+        llFonts = view.findViewById(R.id.llFonts)
+        tabTextTools = view.findViewById(R.id.tabTextTools)
 
         // Populate text post editor controls
         listOf("B", "I", "U").forEach { style ->
@@ -232,7 +242,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 setOnCheckedChangeListener { _, isChecked ->
                     val paintFlags = etTextPost.paintFlags
                     when (style) {
-                        "U" -> etTextPost.paintFlags = if (isChecked) paintFlags or Paint.UNDERLINE_TEXT_FLAG else paintFlags and Paint.UNDERLINE_TEXT_FLAG.inv()
+                        "U" -> etTextPost.paintFlags =
+                            if (isChecked) paintFlags or Paint.UNDERLINE_TEXT_FLAG else paintFlags and Paint.UNDERLINE_TEXT_FLAG.inv()
+
                         else -> {
                             var tf = etTextPost.typeface?.style ?: Typeface.NORMAL
                             tf = when (style) {
@@ -251,23 +263,33 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         val btnTextColorPicker = Button(requireContext()).apply {
             text = getString(R.string.text_color)
             setOnClickListener {
-                AmbilWarnaDialog(requireContext(), Color.BLACK, true, object : AmbilWarnaDialog.OnAmbilWarnaListener {
-                    override fun onOk(dialog: AmbilWarnaDialog, color: Int) {
-                        etTextPost.setTextColor(color)
-                    }
-                    override fun onCancel(dialog: AmbilWarnaDialog) {}
-                }).show()
+                AmbilWarnaDialog(
+                    requireContext(),
+                    Color.BLACK,
+                    true,
+                    object : AmbilWarnaDialog.OnAmbilWarnaListener {
+                        override fun onOk(dialog: AmbilWarnaDialog, color: Int) {
+                            etTextPost.setTextColor(color)
+                        }
+
+                        override fun onCancel(dialog: AmbilWarnaDialog) {}
+                    }).show()
             }
         }
         val btnBgColorPicker = Button(requireContext()).apply {
             text = getString(R.string.background_color)
             setOnClickListener {
-                AmbilWarnaDialog(requireContext(), Color.WHITE, true, object : AmbilWarnaDialog.OnAmbilWarnaListener {
-                    override fun onOk(dialog: AmbilWarnaDialog, color: Int) {
-                        flTextCanvas.setBackgroundColor(color)
-                    }
-                    override fun onCancel(dialog: AmbilWarnaDialog) {}
-                }).show()
+                AmbilWarnaDialog(
+                    requireContext(),
+                    Color.WHITE,
+                    true,
+                    object : AmbilWarnaDialog.OnAmbilWarnaListener {
+                        override fun onOk(dialog: AmbilWarnaDialog, color: Int) {
+                            flTextCanvas.setBackgroundColor(color)
+                        }
+
+                        override fun onCancel(dialog: AmbilWarnaDialog) {}
+                    }).show()
             }
         }
         llColorPickers.addView(btnTextColorPicker)
@@ -331,7 +353,11 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             (requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
                 .hideSoftInputFromWindow(etTextPost.windowToken, 0)
             // Render editor view to bitmap
-            val bmp = Bitmap.createBitmap(flTextCanvas.width, flTextCanvas.height, Bitmap.Config.ARGB_8888)
+            val bmp = Bitmap.createBitmap(
+                flTextCanvas.width,
+                flTextCanvas.height,
+                Bitmap.Config.ARGB_8888
+            )
             val canvas = Canvas(bmp)
             flTextCanvas.draw(canvas)
             val file = File(requireContext().cacheDir, "TXT_${System.currentTimeMillis()}.jpg")
@@ -355,8 +381,15 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
 
         // Request camera and audio permissions before starting preview
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-            && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+            && ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             startCamera()
         } else {
             requestPermissions(
@@ -379,13 +412,23 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             hsvFilters.isVisible = !hsvFilters.isVisible
         }
 
-        // Populate camera filter options (stub labels)
+        // Populate camera filter options
         listOf("Normal", "Gray", "Sepia", "Invert").forEach { name ->
             val tv = TextView(requireContext()).apply {
                 text = name
                 setPadding(16, 8, 16, 8)
+                alpha = if (name == "Normal") 1f else 0.5f
                 setOnClickListener {
-                    Toast.makeText(requireContext(), "Filter: $name", Toast.LENGTH_SHORT).show()
+                    initialCameraFilter = when (name) {
+                        "Gray" -> GPUImageGrayscaleFilter()
+                        "Sepia" -> GPUImageSepiaToneFilter()
+                        "Invert" -> GPUImageColorInvertFilter()
+                        else -> GPUImageFilter()
+                    }
+                    for (i in 0 until layoutFilterOptions.childCount) {
+                        val child = layoutFilterOptions.getChildAt(i)
+                        child.alpha = if (child == it) 1f else 0.5f
+                    }
                 }
             }
             layoutFilterOptions.addView(tv)
@@ -416,52 +459,82 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             startRecording()
         }
 
-        // Filter buttons for preview (stub for adding filter options)
-        // TODO: Populate layoutFilterOptions with filter thumbnails for live preview
-
-        // Filter buttons
-        // Initialize GPUImageView for filter preview
+        // Initialize GPUImageView for filter preview and multi-filter setup
         gpuImageView = view.findViewById(R.id.imageEditView)
 
-        // Setup filter selector
+        baseFilter = GPUImageFilter()
+        contrastFilter = GPUImageContrastFilter(1.0f)
+        brightnessFilter = GPUImageBrightnessFilter(0.0f)
+        selectedFilterItem = FilterItem("Normal", baseFilter, false)
+        // initialize default slider positions for adjustable filters
+        sliderPositions["Contrast+"] = 50
+        sliderPositions["Bright+"]   = 50
+
+        fun applyFilters() {
+            val group = GPUImageFilterGroup().apply {
+                addFilter(baseFilter)
+                // apply all enabled adjustable filters
+                if ("Contrast+" in enabledAdjustable) addFilter(contrastFilter)
+                if ("Bright+"   in enabledAdjustable) addFilter(brightnessFilter)
+            }
+            gpuImageView.filter = group
+            gpuImageView.requestRender()
+        }
+
         rvFilters = view.findViewById(R.id.rvFilters)
-        rvFilters.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        rvFilters.layoutManager =
+            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         val filters = listOf(
-            FilterItem("Normal", GPUImageFilter(), false),
+            FilterItem("Normal", baseFilter, false),
             FilterItem("Gray", GPUImageGrayscaleFilter()),
             FilterItem("Sepia", GPUImageSepiaToneFilter()),
             FilterItem("Invert", GPUImageColorInvertFilter()),
-            FilterItem("Contrast+", GPUImageContrastFilter(2.0f), true),
-            FilterItem("Bright+", GPUImageBrightnessFilter(0.5f), true)
+            FilterItem("Contrast+", contrastFilter, true),
+            FilterItem("Bright+", brightnessFilter, true)
         )
         val filterAdapter = FilterAdapter { item ->
-            gpuImageView.filter = item.filter
-            // reset slider
-            sbFilterLevel.progress = if (item.adjustable) 50 else 0
+            selectedFilterItem = item
+            if (item.adjustable) {
+                // enable contrast/brightness without disabling others
+                enabledAdjustable.add(item.name)
+            } else {
+                // static filter: set base; clear all on Normal
+                baseFilter = item.filter
+                if (item.name == "Normal") enabledAdjustable.clear()
+            }
+            applyFilters()
+            if (item.adjustable) {
+                sbFilterLevel.isVisible = true
+                sbFilterLevel.progress = sliderPositions[item.name] ?: 50
+            } else {
+                sbFilterLevel.isVisible = false
+            }
         }
         filterAdapter.submitList(filters)
         rvFilters.adapter = filterAdapter
-        // default to Normal filter
-        gpuImageView.filter = filters.first().filter
 
-        // SeekBar for adjustable filters
+        applyFilters()
+
         sbFilterLevel = view.findViewById(R.id.sbFilterLevel)
+        sbFilterLevel.isVisible = false
         sbFilterLevel.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar, progress: Int, fromUser: Boolean) {
-                val fi = filters[filterAdapter.currentList.indexOfFirst { gpuImageView.filter == it.filter }]
-                if (fi.adjustable) {
-                    when (val f = gpuImageView.filter) {
-                        is GPUImageContrastFilter -> f.setContrast(1f + (progress - 50) / 50f)
-                        is GPUImageBrightnessFilter -> f.setBrightness((progress - 50) / 50f)
+                if (selectedFilterItem.adjustable) {
+                    // remember and apply this adjustable filter
+                    sliderPositions[selectedFilterItem.name] = progress
+                    when (selectedFilterItem.filter) {
+                        is GPUImageContrastFilter   -> contrastFilter.setContrast(1f + (progress - 50)/50f)
+                        is GPUImageBrightnessFilter -> brightnessFilter.setBrightness((progress - 50)/50f)
                     }
-                    gpuImageView.requestRender()
+                    applyFilters()
                 }
             }
+
             override fun onStartTrackingTouch(sb: SeekBar) {}
             override fun onStopTrackingTouch(sb: SeekBar) {}
         })
+
         btnApplyFilter.setOnClickListener {
-            // Capture the filtered image and proceed to details
             editedBitmap = try {
                 gpuImageView.capture()
             } catch (e: InterruptedException) {
@@ -487,13 +560,18 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
                 startCamera()
             } else {
-                Toast.makeText(requireContext(), "Camera and audio permissions are required", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Camera and audio permissions are required",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
 
     private fun takePhoto() {
-        val photoFile = java.io.File(requireContext().cacheDir, "IMG_${System.currentTimeMillis()}.jpg")
+        val photoFile =
+            java.io.File(requireContext().cacheDir, "IMG_${System.currentTimeMillis()}.jpg")
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
         imageCapture?.takePicture(
             outputOptions,
@@ -501,7 +579,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             object : ImageCapture.OnImageSavedCallback {
                 override fun onError(exc: ImageCaptureException) {
                     Log.e(TAG, "Photo capture failed", exc)
-                    Toast.makeText(requireContext(), "Photo capture failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Photo capture failed", Toast.LENGTH_SHORT)
+                        .show()
                 }
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
@@ -514,7 +593,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     private fun startRecording() {
         if (isRecording) return
-        val videoFile = java.io.File(requireContext().cacheDir, "VID_${System.currentTimeMillis()}.mp4")
+        val videoFile =
+            java.io.File(requireContext().cacheDir, "VID_${System.currentTimeMillis()}.mp4")
         val outputOptions = VideoCapture.OutputFileOptions.Builder(videoFile).build()
         videoCapture?.startRecording(
             outputOptions,
@@ -522,7 +602,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             object : VideoCapture.OnVideoSavedCallback {
                 override fun onError(videoCaptureError: Int, message: String, cause: Throwable?) {
                     Log.e(TAG, "Video capture failed: $message", cause)
-                    Toast.makeText(requireContext(), "Video capture failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Video capture failed", Toast.LENGTH_SHORT)
+                        .show()
                 }
 
                 override fun onVideoSaved(output: VideoCapture.OutputFileResults) {
@@ -540,6 +621,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     val progress = ((limit - millisUntilFinished) * 100 / limit).toInt()
                     pbRecordProgress.progress = progress
                 }
+
                 override fun onFinish() {
                     pbRecordProgress.progress = 100
                     stopRecording()
@@ -587,8 +669,18 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             editedBitmap = originalBitmap
             gpuImageView.setImage(editedBitmap)
         }
+        initialCameraFilter?.let { baseFilter = it }
+        applyFilters()
     }
 
+    private fun applyFilters() {
+        val group = GPUImageFilterGroup()
+        group.addFilter(baseFilter)
+        group.addFilter(contrastFilter)
+        group.addFilter(brightnessFilter)
+        gpuImageView.filter = group
+        gpuImageView.requestRender()
+    }
 
 
     private fun submitPost() {
@@ -618,14 +710,21 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     )
                 )
                 if (!postResp.isSuccessful) {
-                    Log.e(TAG, "Failed to create post: HTTP ${postResp.code()} ${postResp.errorBody()?.string()}")
-                    Toast.makeText(requireContext(), "Failed to create post", Toast.LENGTH_SHORT).show()
+                    Log.e(
+                        TAG,
+                        "Failed to create post: HTTP ${postResp.code()} ${
+                            postResp.errorBody()?.string()
+                        }"
+                    )
+                    Toast.makeText(requireContext(), "Failed to create post", Toast.LENGTH_SHORT)
+                        .show()
                     return@launch
                 }
                 val posts = postResp.body().orEmpty()
                 if (posts.isEmpty()) {
                     Log.e(TAG, "CreatePost returned empty list")
-                    Toast.makeText(requireContext(), "Failed to create post", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Failed to create post", Toast.LENGTH_SHORT)
+                        .show()
                     return@launch
                 }
                 val post = posts[0]
@@ -639,13 +738,20 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 if (tagMatches.isNotEmpty()) {
                     val tagsResp = postApi.upsertTags(tagMatches.map { TagUpsertRequest(it) })
                     if (tagsResp.isSuccessful) {
-                        postApi.upsertPostTags(tagsResp.body()!!.map { PostTagUpsertRequest(post.id, it.id) })
+                        postApi.upsertPostTags(
+                            tagsResp.body()!!.map { PostTagUpsertRequest(post.id, it.id) })
                     } else {
-                        Log.e(TAG, "Failed to upsert tags: HTTP ${tagsResp.code()} ${tagsResp.errorBody()?.string()}")
+                        Log.e(
+                            TAG,
+                            "Failed to upsert tags: HTTP ${tagsResp.code()} ${
+                                tagsResp.errorBody()?.string()
+                            }"
+                        )
                     }
                 }
                 for ((index, uri) in selectedUris.withIndex()) {
-                    val type = requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
+                    val type =
+                        requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
                     val ext = type.substringAfterLast('/', "bin")
                     val ts = System.currentTimeMillis()
                     val filename = "${post.id}-$ts-$index.$ext"
@@ -660,7 +766,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         val body = bytes.toRequestBody(type.toMediaTypeOrNull())
                         storageApi.uploadPostMedia(filename, body, type)
                     }
-                    val publicUrl = "${SupabaseConfig.SUPABASE_URL}/storage/v1/object/public/${SupabaseConfig.POSTS_BUCKET}/$filename"
+                    val publicUrl =
+                        "${SupabaseConfig.SUPABASE_URL}/storage/v1/object/public/${SupabaseConfig.POSTS_BUCKET}/$filename"
                     val mediaResp = postApi.createPostMedia(
                         createMedia = CreatePostMediaRequest(
                             post.id,
@@ -670,10 +777,16 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         )
                     )
                     if (!mediaResp.isSuccessful) {
-                        Log.e(TAG, "Failed to save post media: HTTP ${mediaResp.code()} ${mediaResp.errorBody()?.string()}")
+                        Log.e(
+                            TAG,
+                            "Failed to save post media: HTTP ${mediaResp.code()} ${
+                                mediaResp.errorBody()?.string()
+                            }"
+                        )
                     }
                 }
-                Toast.makeText(requireContext(), "Post created successfully", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Post created successfully", Toast.LENGTH_SHORT)
+                    .show()
                 parentFragmentManager.popBackStack()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to create post", e)
