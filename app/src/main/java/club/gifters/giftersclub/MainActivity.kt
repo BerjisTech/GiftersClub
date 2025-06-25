@@ -91,12 +91,14 @@ class MainActivity : AppCompatActivity() {
 
         fun updateBars() {
             val isRoot = supportFragmentManager.backStackEntryCount == 0
+            val current = supportFragmentManager.findFragmentById(R.id.mainContentContainer)
+            val isCreatePost = current is CreatePostFragment
             tabLayout.visibility = if (isRoot) View.VISIBLE else View.GONE
             bottomNav.visibility = if (isRoot) View.VISIBLE else View.GONE
-            toolbar.visibility = if (isRoot) View.GONE else View.VISIBLE
+            toolbar.visibility = if (isRoot || isCreatePost) View.GONE else View.VISIBLE
             // overlay container for bottom-nav screens
             findViewById<FrameLayout>(R.id.mainContentContainer).visibility = if (isRoot) View.GONE else View.VISIBLE
-            supportActionBar?.setDisplayHomeAsUpEnabled(!isRoot)
+            supportActionBar?.setDisplayHomeAsUpEnabled(!isRoot && !isCreatePost)
         }
 
         supportFragmentManager.addOnBackStackChangedListener { updateBars() }

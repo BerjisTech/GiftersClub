@@ -212,8 +212,6 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnPost.setOnClickListener {
             submitPost()
         }
-        // Update toolbar title
-        requireActivity().title = getString(R.string.create_post)
 
         // CameraX UI setup and start camera preview
         previewView = view.findViewById(R.id.previewView)
@@ -426,7 +424,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         listOf("Normal", "Gray", "Sepia", "Invert").forEach { name ->
             val tv = TextView(requireContext()).apply {
                 text = name
-                setPadding(0, 4, 0, 4)
+                setPadding(4, 4, 4, 4)
                 setTextColor(Color.WHITE)
                 alpha = if (name == "Normal") 1f else 0.5f
                 setOnClickListener {
