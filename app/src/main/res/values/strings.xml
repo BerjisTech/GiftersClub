@@ -78,4 +78,5 @@
     <string name="ok">OK</string>
     <string name="done">Done</string>
     <string name="cancel">Cancel</string>
+    <string name="who_can_view_this_post">Who can view this post</string>
 </resources>

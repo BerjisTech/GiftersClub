@@ -3,16 +3,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/createPostRoot"
-    android:background="@color/black"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/black"
     android:orientation="vertical">
 
     <FrameLayout
         android:id="@+id/flStepContainer"
         android:layout_width="match_parent"
-        android:layout_marginTop="40dp"
         android:layout_height="0dp"
+        android:layout_marginTop="40dp"
         android:layout_weight="1">
 
         <!-- Text post editor screen (hidden by default) -->
@@ -20,27 +20,26 @@
             android:id="@+id/layoutTextEditor"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone"
-            >
+            android:visibility="gone">
 
             <!-- Toolbar with Cancel and Done -->
             <LinearLayout
                 android:id="@+id/toolbarTextEditor"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="16dp"
-                android:gravity="center_vertical"
-                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintTop_toTopOf="parent">
 
                 <Button
                     android:id="@+id/btnCancelTextPost"
                     android:layout_width="50dp"
                     android:layout_height="wrap_content"
                     android:background="@android:color/transparent"
-                    android:text="❌"/>
+                    android:text="❌" />
 
                 <TextView
                     android:id="@+id/tvTextEditorTitle"
@@ -48,16 +47,16 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:textColor="@color/white"
                     android:text="@string/whats_on_your_mind"
-                    android:textSize="18sp"/>
+                    android:textColor="@color/white"
+                    android:textSize="18sp" />
 
                 <Button
                     android:id="@+id/btnDoneTextPost"
-                    android:layout_height="wrap_content"
                     android:layout_width="50dp"
+                    android:layout_height="wrap_content"
                     android:background="@android:color/transparent"
-                    android:text="✔️"/>
+                    android:text="✔️" />
             </LinearLayout>
 
             <!-- Editable canvas (rendered to bitmap) -->
@@ -65,23 +64,23 @@
                 android:id="@+id/flTextCanvas"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintDimensionRatio="1:1"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintDimensionRatio="1:1">
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
                 <EditText
                     android:id="@+id/etTextPost"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
                     android:gravity="center"
                     android:hint="@string/whats_on_your_mind"
-                    android:textSize="36sp"
+                    android:inputType="textMultiLine"
                     android:padding="30dp"
                     android:textColor="@android:color/white"
-                    android:background="@android:color/transparent"
-                    android:inputType="textMultiLine"/>
+                    android:textSize="36sp" />
             </FrameLayout>
 
             <!-- Tabs for text styling tools -->
@@ -89,13 +88,13 @@
                 android:id="@+id/tabTextTools"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:tabMode="fixed"
-                app:tabGravity="fill"
-                app:tabTextColor="@color/white"
                 android:background="@android:color/transparent"
                 app:layout_constraintBottom_toTopOf="@id/llTextControlsContainer"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                app:tabGravity="fill"
+                app:tabMode="fixed"
+                app:tabTextColor="@color/white" />
 
             <!-- Styling controls (only one group visible at a time) -->
             <LinearLayout
@@ -104,56 +103,60 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="8dp"
-                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent">
+                app:layout_constraintStart_toStartOf="parent">
 
                 <HorizontalScrollView
                     android:id="@+id/hsvTextStyles"
-                    android:visibility="gone"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:visibility="gone">
+
                     <LinearLayout
                         android:id="@+id/llTextStyles"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"/>
+                        android:orientation="horizontal" />
                 </HorizontalScrollView>
 
                 <HorizontalScrollView
                     android:id="@+id/hsvColorPickers"
-                    android:visibility="gone"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:visibility="gone">
+
                     <LinearLayout
                         android:id="@+id/llColorPickers"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"/>
+                        android:orientation="horizontal" />
                 </HorizontalScrollView>
 
                 <HorizontalScrollView
                     android:id="@+id/hsvBgImages"
-                    android:visibility="gone"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:visibility="gone">
+
                     <LinearLayout
                         android:id="@+id/llBgImages"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"/>
+                        android:orientation="horizontal" />
                 </HorizontalScrollView>
 
                 <HorizontalScrollView
                     android:id="@+id/hsvFonts"
-                    android:visibility="gone"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:visibility="gone">
+
                     <LinearLayout
                         android:id="@+id/llFonts"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"/>
+                        android:orientation="horizontal" />
                 </HorizontalScrollView>
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -169,11 +172,22 @@
                 android:id="@+id/previewView"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
-                app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                tools:ignore="MissingClass"/>
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="MissingClass" />
+
+            <TextView
+                android:id="@+id/tvElapsedTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <!-- Top right controls: switch camera, flash, timer, filters -->
             <LinearLayout
@@ -182,8 +196,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
                 <ImageView
                     android:id="@+id/btnSwitchCamera"
@@ -191,7 +205,7 @@
                     android:layout_height="30dp"
                     android:layout_marginVertical="5dp"
                     android:contentDescription="@string/switch_camera"
-                    android:src="@drawable/switch_camera"/>
+                    android:src="@drawable/switch_camera" />
 
                 <ImageView
                     android:id="@+id/btnToggleFlash"
@@ -199,7 +213,7 @@
                     android:layout_height="30dp"
                     android:layout_marginVertical="5dp"
                     android:contentDescription="@string/toggle_flash"
-                    android:src="@drawable/toggle_light"/>
+                    android:src="@drawable/toggle_light" />
 
                 <ImageView
                     android:id="@+id/btnSetTimer"
@@ -207,7 +221,7 @@
                     android:layout_height="30dp"
                     android:layout_marginVertical="5dp"
                     android:contentDescription="@string/set_recording_timer"
-                    android:src="@drawable/timer"/>
+                    android:src="@drawable/timer" />
 
                 <ImageView
                     android:id="@+id/btnShowFilters"
@@ -215,7 +229,7 @@
                     android:layout_height="30dp"
                     android:layout_marginVertical="5dp"
                     android:contentDescription="@string/show_filters"
-                    android:src="@drawable/filters"/>
+                    android:src="@drawable/filters" />
             </LinearLayout>
 
             <!-- Bottom controls: timers, mode switches -->
@@ -223,49 +237,49 @@
                 android:id="@+id/bottomControlsTop"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:gravity="center"
+                android:orientation="horizontal"
                 android:padding="8dp"
-                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/bottomControlsBottom"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintBottom_toTopOf="@id/bottomControlsBottom">
+                app:layout_constraintStart_toStartOf="parent">
 
                 <TextView
                     android:id="@+id/btnTimer10m"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingHorizontal="10dp"
-                    android:text="10m"/>
+                    android:text="10m" />
 
                 <TextView
                     android:id="@+id/btnTimer60s"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingHorizontal="10dp"
-                    android:text="60s"/>
+                    android:text="60s" />
 
                 <TextView
                     android:id="@+id/btnTimer15s"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="10dp"
-                    android:text="15s"/>
+                    android:text="15s" />
 
                 <ImageView
                     android:id="@+id/btnModeToggle"
-                    android:src="@drawable/camera"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:layout_marginHorizontal="10dp"
-                    android:contentDescription="@string/toggle_photo_video"/>
+                    android:contentDescription="@string/toggle_photo_video"
+                    android:src="@drawable/camera" />
 
                 <ImageView
                     android:id="@+id/btnTextMode"
-                    android:src="@drawable/text"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:layout_marginHorizontal="10dp"
-                    android:contentDescription="Create text post"/>
+                    android:contentDescription="Create text post"
+                    android:src="@drawable/text" />
             </LinearLayout>
 
             <!-- Bottom filter and device picker row -->
@@ -274,9 +288,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:padding="8dp"
-                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent">
+                app:layout_constraintStart_toStartOf="parent">
 
 
                 <!-- Camera filter list and record spinner -->
@@ -284,44 +298,46 @@
                     android:id="@+id/hsvFilters"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@id/btnCapture"
-                    android:visibility="gone">
+                    app:layout_constraintEnd_toStartOf="@id/captureButtonAndProgressBar">
 
                     <LinearLayout
                         android:id="@+id/layoutFilterOptions"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"/>
+                        android:orientation="horizontal" />
                 </HorizontalScrollView>
 
                 <FrameLayout
+                    android:id="@+id/captureButtonAndProgressBar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:layout_constraintStart_toEndOf="@id/hsvFilters"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toStartOf="@id/btnSelectDevice"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent">
+                    app:layout_constraintStart_toEndOf="@id/hsvFilters"
+                    app:layout_constraintTop_toTopOf="parent">
 
-                <ProgressBar
-                    android:id="@+id/pbRecordProgress"
-                    style="@style/Widget.MaterialComponents.CircularProgressIndicator"
-                    android:layout_width="60dp"
-                    android:layout_height="60dp"
-                    android:indeterminate="false"
-                    android:max="100"
-                    android:progress="0"
-                    android:visibility="gone" />
+                    <ProgressBar
+                        android:id="@+id/pbRecordProgress"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:indeterminate="false"
+                        android:max="100"
+                        android:progress="0"
+                        android:rotation="270"
+                        android:visibility="gone" />
 
                     <ImageView
                         android:id="@+id/btnCapture"
                         android:layout_width="50dp"
                         android:layout_height="50dp"
+                        android:layout_gravity="center"
                         android:contentDescription="@string/capture"
-                        android:src="@drawable/record"
-                        android:layout_gravity="center" />
+                        android:src="@drawable/record" />
                 </FrameLayout>
 
                 <ImageView
@@ -331,9 +347,9 @@
                     android:layout_marginHorizontal="10dp"
                     android:contentDescription="@string/select_from_device"
                     android:src="@drawable/images"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"/>
+                    app:layout_constraintTop_toTopOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -343,10 +359,9 @@
             android:id="@+id/layoutEdit"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
             android:background="@color/black"
-            android:visibility="gone"
-            >
+            android:orientation="vertical"
+            android:visibility="gone">
 
             <jp.co.cyberagent.android.gpuimage.GPUImageView
                 android:id="@+id/imageEditView"
@@ -354,10 +369,10 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:scaleType="centerCrop"
-                app:layout_constraintTop_toTopOf="@id/layoutEdit"
-                app:layout_constraintStart_toStartOf="@id/layoutEdit"
+                app:layout_constraintBottom_toBottomOf="@id/layoutEdit"
                 app:layout_constraintEnd_toEndOf="@id/layoutEdit"
-                app:layout_constraintBottom_toBottomOf="@id/layoutEdit"/>
+                app:layout_constraintStart_toStartOf="@id/layoutEdit"
+                app:layout_constraintTop_toTopOf="@id/layoutEdit" />
 
             <!-- Filter picker -->
             <androidx.recyclerview.widget.RecyclerView
@@ -365,11 +380,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
+                android:clipToPadding="false"
                 android:orientation="horizontal"
                 android:overScrollMode="never"
-                android:clipToPadding="false"
-                app:layout_constraintEnd_toEndOf="@id/layoutEdit"
-                app:layout_constraintBottom_toTopOf="@id/btnApplyFilter" />
+                app:layout_constraintBottom_toTopOf="@id/btnApplyFilter"
+                app:layout_constraintEnd_toEndOf="@id/layoutEdit" />
 
             <SeekBar
                 android:id="@+id/sbFilterLevel"
@@ -377,8 +392,8 @@
                 android:layout_height="wrap_content"
                 android:max="100"
                 android:progress="50"
-                app:layout_constraintEnd_toEndOf="@id/layoutEdit"
-                app:layout_constraintBottom_toTopOf="@id/btnApplyFilter" />
+                app:layout_constraintBottom_toTopOf="@id/btnApplyFilter"
+                app:layout_constraintEnd_toEndOf="@id/layoutEdit" />
 
             <Button
                 android:id="@+id/btnApplyFilter"
@@ -386,38 +401,46 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="@string/apply_filter"
-                app:layout_constraintStart_toStartOf="@id/layoutEdit"
+                app:layout_constraintBottom_toBottomOf="@id/layoutEdit"
                 app:layout_constraintEnd_toEndOf="@id/layoutEdit"
-                app:layout_constraintBottom_toBottomOf="@id/layoutEdit" />
+                app:layout_constraintStart_toStartOf="@id/layoutEdit" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <!-- Details step -->
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layoutDetails"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
             android:layout_marginTop="30dp"
             android:visibility="gone"
-            android:background="@drawable/bg_post_details_gradient">
+            android:background="@color/black">
 
             <EditText
                 android:id="@+id/etContent"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:hint="@string/whats_on_your_mind"
                 android:gravity="top"
+                android:hint="@string/whats_on_your_mind"
                 android:inputType="textMultiLine"
-                android:padding="8dp" />
+                android:padding="8dp"
+                android:textColor="@color/white"
+                app:layout_constraintBottom_toTopOf="@id/layoutDetailsPostButtons"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <LinearLayout
+                android:id="@+id/layoutDetailsPostButtons"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
                 android:gravity="end"
-                android:layout_marginTop="8dp">
+                android:orientation="horizontal"
+                app:layout_constraintBottom_toTopOf="@id/layoutDetailsDivider"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent">
 
                 <Button
                     android:id="@+id/btnEditMedia"
@@ -429,12 +452,76 @@
                     android:id="@+id/btnPost"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/post"
-                    android:layout_marginStart="16dp" />
+                    android:layout_marginStart="16dp"
+                    android:text="@string/post" />
 
             </LinearLayout>
 
-        </LinearLayout>
+            <View
+                android:id="@+id/layoutDetailsDivider"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/layoutDetailsDivider">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/white"
+                        android:text="@string/who_can_view_this_post"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/switchWhoCanSeePost"/>
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchWhoCanSeePost"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"/>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/white"
+                        android:text="Allow comments"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/switchAllowComments"/>
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchAllowComments"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"/>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
     </FrameLayout>
 

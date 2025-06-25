@@ -16,6 +16,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.CountDownTimer
+import android.os.Handler
+import android.os.Looper
 import android.widget.Button
 import android.widget.EditText
 import android.widget.HorizontalScrollView
@@ -82,7 +84,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     // Media selection preview and next step removed; using camera UI by default
     private lateinit var layoutMedia: ConstraintLayout
     private lateinit var layoutEdit: ConstraintLayout
-    private lateinit var layoutDetails: LinearLayout
+    private lateinit var layoutDetails: ConstraintLayout
     private lateinit var rvFilters: RecyclerView
     private lateinit var sbFilterLevel: SeekBar
     private lateinit var gpuImageView: jp.co.cyberagent.android.gpuimage.GPUImageView
@@ -122,6 +124,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var layoutFilterOptions: LinearLayout
     private lateinit var hsvFilters: HorizontalScrollView
     private lateinit var pbRecordProgress: ProgressBar
+    private lateinit var tvElapsedTime: TextView
+    private var recordStartTimeMs: Long = 0L
+    private var elapsedHandler: Handler? = null
+    private var elapsedRunnable: Runnable? = null
 
     // Text post editor components
     private lateinit var layoutTextEditor: ConstraintLayout
@@ -371,6 +377,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         layoutFilterOptions = view.findViewById(R.id.layoutFilterOptions)
         hsvFilters = view.findViewById(R.id.hsvFilters)
         pbRecordProgress = view.findViewById(R.id.pbRecordProgress)
+        tvElapsedTime = view.findViewById(R.id.tvElapsedTime)
 
         btnSelectDevice.setOnClickListener {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -444,7 +451,27 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             showStep(layoutTextEditor)
         }
         btnCapture.setOnClickListener {
-            if (isVideoMode) startRecording() else takePhoto()
+            if (!isVideoMode) {
+                takePhoto()
+            } else {
+                if (!isRecording) {
+                    startRecording()
+                    recordStartTimeMs = System.currentTimeMillis()
+                    tvElapsedTime.isVisible = true
+                    elapsedHandler = Handler(Looper.getMainLooper())
+                    elapsedRunnable = object : Runnable {
+                        override fun run() {
+                            val secs = ((System.currentTimeMillis() - recordStartTimeMs) / 1000).toInt()
+                            tvElapsedTime.text = String.format("%02d:%02d", secs / 60, secs % 60)
+                            elapsedHandler?.postDelayed(this, 1000)
+                        }
+                    }.also { it.run() }
+                } else {
+                    stopRecording()
+                    tvElapsedTime.isVisible = false
+                    elapsedHandler?.removeCallbacks(elapsedRunnable!!)
+                }
+            }
         }
 
         // Preset timers
@@ -791,13 +818,14 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     }
                 }
                 for ((index, uri) in selectedUris.withIndex()) {
-                    val type =
-                        requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
-                    val ext = type.substringAfterLast('/', "bin")
+                    val rawType = requireContext().contentResolver.getType(uri)
+                    val isVideo = rawType?.startsWith("video/") == true || uri.path?.endsWith(".mp4") == true
+                    val type = rawType ?: if (isVideo) "video/mp4" else "application/octet-stream"
+                    val ext = if (isVideo) "mp4" else type.substringAfterLast('/', "bin")
                     val ts = System.currentTimeMillis()
                     val filename = "${post.id}-$ts-$index.$ext"
                     requireContext().contentResolver.openInputStream(uri)?.use { stream ->
-                        val bytes = if (index == 0 && editedBitmap != null) {
+                        val bytes = if (index == 0 && editedBitmap != null && !isVideo) {
                             java.io.ByteArrayOutputStream().apply {
                                 editedBitmap!!.compress(Bitmap.CompressFormat.JPEG, 90, this)
                             }.toByteArray()
@@ -812,7 +840,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     val mediaResp = postApi.createPostMedia(
                         createMedia = CreatePostMediaRequest(
                             post.id,
-                            if (type.startsWith("video/")) "video" else "photo",
+                            if (isVideo) "video" else "photo",
                             publicUrl,
                             index
                         )
