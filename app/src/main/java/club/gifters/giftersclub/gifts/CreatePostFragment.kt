@@ -244,6 +244,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnTimer60s = view.findViewById(R.id.btnTimer60s)
         btnTimer15s = view.findViewById(R.id.btnTimer15s)
         btnModeToggle = view.findViewById(R.id.btnModeToggle)
+        // initialize photo/video icon
+        btnModeToggle.setImageResource(if (isVideoMode) R.drawable.video else R.drawable.camera)
+        // initialize photo/video icon
+        btnModeToggle.setImageResource(if (isVideoMode) R.drawable.video else R.drawable.camera)
         btnTextMode = view.findViewById(R.id.btnTextMode)
         // Text post editor view bindings
         layoutTextEditor = view.findViewById(R.id.layoutTextEditor)
@@ -469,6 +473,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         // Mode toggle and capture
         btnModeToggle.setOnClickListener {
             isVideoMode = !isVideoMode
+            btnModeToggle.setImageResource(if (isVideoMode) R.drawable.video else R.drawable.camera)
         }
         btnTextMode.setOnClickListener {
             showStep(layoutTextEditor)
