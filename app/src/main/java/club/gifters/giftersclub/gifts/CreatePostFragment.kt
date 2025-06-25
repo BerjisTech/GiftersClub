@@ -246,6 +246,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             val toggle = ToggleButton(requireContext()).apply {
                 text = style; textOn = style; textOff = style
                 setPadding(4, 4, 4, 4)
+                setTextColor(Color.WHITE)
                 setBackgroundColor(Color.TRANSPARENT)
                 setOnCheckedChangeListener { _, isChecked ->
                     val paintFlags = etTextPost.paintFlags
@@ -320,6 +321,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             val txt = TextView(requireContext()).apply {
                 text = name
                 setPadding(16, 8, 16, 8)
+                setTextColor(Color.WHITE)
                 setOnClickListener {
                     etTextPost.typeface = when (name) {
                         "Serif" -> Typeface.SERIF

@@ -21,6 +21,31 @@
             android:layout_height="match_parent"
             android:visibility="gone">
 
+            <!-- Editable canvas (rendered to bitmap) -->
+            <FrameLayout
+                android:id="@+id/flTextCanvas"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="35dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintDimensionRatio="1:1"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <EditText
+                    android:id="@+id/etTextPost"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:gravity="center"
+                    android:hint="@string/whats_on_your_mind"
+                    android:inputType="textMultiLine"
+                    android:padding="30dp"
+                    android:textColor="@android:color/white"
+                    android:textSize="36sp" />
+            </FrameLayout>
+
             <!-- Toolbar with Cancel and Done -->
             <LinearLayout
                 android:id="@+id/toolbarTextEditor"
@@ -28,6 +53,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
+                android:layout_marginTop="35dp"
                 android:padding="16dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -58,37 +84,13 @@
                     android:text="✔️" />
             </LinearLayout>
 
-            <!-- Editable canvas (rendered to bitmap) -->
-            <FrameLayout
-                android:id="@+id/flTextCanvas"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintDimensionRatio="1:1"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
-
-                <EditText
-                    android:id="@+id/etTextPost"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@android:color/transparent"
-                    android:gravity="center"
-                    android:hint="@string/whats_on_your_mind"
-                    android:inputType="textMultiLine"
-                    android:padding="30dp"
-                    android:textColor="@android:color/white"
-                    android:textSize="36sp" />
-            </FrameLayout>
-
             <!-- Tabs for text styling tools -->
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tabTextTools"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@android:color/transparent"
-                app:layout_constraintBottom_toTopOf="@id/llTextControlsContainer"
+                android:background="@color/black"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:tabGravity="fill"
@@ -102,7 +104,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="8dp"
-                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/tabTextTools"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent">
 
