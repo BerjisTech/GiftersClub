@@ -820,8 +820,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 for ((index, uri) in selectedUris.withIndex()) {
                     val rawType = requireContext().contentResolver.getType(uri)
                     val isVideo = rawType?.startsWith("video/") == true || uri.path?.endsWith(".mp4") == true
-                    val type = rawType ?: if (isVideo) "video/mp4" else "application/octet-stream"
-                    val ext = if (isVideo) "mp4" else type.substringAfterLast('/', "bin")
+                    val type = rawType ?: "application/octet-stream"
+                    val ext = if (isVideo) "bin" else type.substringAfterLast('/', "bin")
                     val ts = System.currentTimeMillis()
                     val filename = "${post.id}-$ts-$index.$ext"
                     requireContext().contentResolver.openInputStream(uri)?.use { stream ->
