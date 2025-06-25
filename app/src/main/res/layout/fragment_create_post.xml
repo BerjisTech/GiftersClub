@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:csb="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/createPostRoot"
     android:layout_width="match_parent"
@@ -286,7 +287,9 @@
                     android:src="@drawable/text" />
             </LinearLayout>
 
+
             <!-- Bottom filter and device picker row -->
+            <!-- Camera filter list and record spinner -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/bottomControlsBottom"
                 android:layout_width="0dp"
@@ -297,15 +300,72 @@
                 app:layout_constraintStart_toStartOf="parent">
 
 
+                <!-- Circular zoom control -->
+                <com.akaita.android.circularseekbar.CircularSeekBar
+                    android:id="@+id/zoomControl"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:visibility="visible"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintBottom_toTopOf="@id/captureButtonAndProgressBar"/>
+
+                <!-- Zoom preset levels -->
+                <LinearLayout
+                    android:id="@+id/zoomLevels"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    app:layout_constraintBottom_toTopOf="@id/zoomControl"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
+                    <TextView
+                        android:id="@+id/zoom05"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp"
+                        android:text="0.5x"
+                        android:textColor="@android:color/white" />
+                    <TextView
+                        android:id="@+id/zoom1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp"
+                        android:text="1x"
+                        android:textColor="@android:color/white" />
+                    <TextView
+                        android:id="@+id/zoom2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp"
+                        android:text="2x"
+                        android:textColor="@android:color/white" />
+                    <TextView
+                        android:id="@+id/zoom4"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp"
+                        android:text="4x"
+                        android:textColor="@android:color/white" />
+                    <TextView
+                        android:id="@+id/zoom8"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp"
+                        android:text="8x"
+                        android:textColor="@android:color/white" />
+                </LinearLayout>
+
                 <!-- Camera filter list and record spinner -->
                 <HorizontalScrollView
                     android:id="@+id/hsvFilters"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:visibility="gone"
-                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintBottom_toBottomOf="@id/captureButtonAndProgressBar"
+                    app:layout_constraintTop_toTopOf="@id/captureButtonAndProgressBar"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintEnd_toStartOf="@id/captureButtonAndProgressBar">
 
                     <LinearLayout
@@ -320,9 +380,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@id/btnSelectDevice"
-                    app:layout_constraintStart_toEndOf="@id/hsvFilters"
-                    app:layout_constraintTop_toTopOf="parent">
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
 
                     <com.google.android.material.progressindicator.CircularProgressIndicator
                         android:id="@+id/pbRecordProgress"
@@ -352,9 +411,9 @@
                     android:layout_marginHorizontal="10dp"
                     android:contentDescription="@string/select_from_device"
                     android:src="@drawable/images"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintBottom_toBottomOf="@id/captureButtonAndProgressBar"
+                    app:layout_constraintTop_toTopOf="@id/captureButtonAndProgressBar"
+                    app:layout_constraintEnd_toEndOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -367,6 +426,7 @@
             android:background="@color/black"
             android:orientation="vertical"
             android:visibility="gone">
+
 
             <jp.co.cyberagent.android.gpuimage.GPUImageView
                 android:id="@+id/imageEditView"
@@ -420,6 +480,36 @@
             android:layout_marginTop="30dp"
             android:visibility="gone"
             android:background="@color/black">
+
+            <!-- Crop & Scale controls -->
+            <LinearLayout
+                android:id="@+id/layoutCropScaleToolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="end"
+                android:padding="8dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <ImageView
+                    android:id="@+id/btnCrop"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="@string/crop"
+                    android:padding="4dp"
+                    android:src="@android:drawable/ic_menu_crop" />
+
+                <ImageView
+                    android:id="@+id/btnScale"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="@string/scale"
+                    android:padding="4dp"
+                    android:src="@android:drawable/ic_menu_zoom" />
+
+            </LinearLayout>
 
             <EditText
                 android:id="@+id/etContent"

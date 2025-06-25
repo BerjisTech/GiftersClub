@@ -23,7 +23,6 @@ import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ProgressBar
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import android.widget.TextView
 import android.widget.Toast
@@ -49,6 +48,7 @@ import kotlinx.coroutines.launch
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.widget.SeekBar
+import android.widget.ProgressBar
 import jp.co.cyberagent.android.gpuimage.GPUImageView
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageGrayscaleFilter
@@ -58,12 +58,15 @@ import jp.co.cyberagent.android.gpuimage.filter.GPUImageContrastFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageBrightnessFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilterGroup
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import android.util.TypedValue
+import android.view.ViewGroup
+import com.akaita.android.circularseekbar.CircularSeekBar
+import com.akaita.android.circularseekbar.CircularSeekBar.OnCircularSeekBarChangeListener
+import com.yalantis.ucrop.UCrop
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import club.gifters.giftersclub.gifts.FilterAdapter
 import club.gifters.giftersclub.gifts.FilterItem
-import java.io.File
-import java.io.FileOutputStream
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.core.ImageCapture
@@ -73,6 +76,8 @@ import androidx.camera.core.Camera
 import androidx.camera.view.PreviewView
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import java.io.File
+import java.io.FileOutputStream
 import java.util.regex.Pattern
 
 /**
@@ -130,6 +135,20 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var elapsedHandler: Handler? = null
     private var elapsedRunnable: Runnable? = null
 
+    
+    // Crop & scale in image editor
+    private lateinit var btnCrop: ImageView
+    private lateinit var btnScale: ImageView
+
+    // Camera zoom controls
+    private lateinit var zoomControl: CircularSeekBar
+    private lateinit var zoom05: TextView
+    private lateinit var zoom1: TextView
+    private lateinit var zoom2: TextView
+    private lateinit var zoom4: TextView
+    private lateinit var zoom8: TextView
+    private var currentZoomRatio = 1f
+
     // Text post editor components
     private lateinit var layoutTextEditor: ConstraintLayout
     private lateinit var flTextCanvas: FrameLayout
@@ -155,6 +174,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var isRecording = false
     private var camera: Camera? = null
     private var recordTimer: CountDownTimer? = null
+
 
     companion object {
         private const val TAG = "CreatePostFragment"
@@ -496,6 +516,49 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
         // Initialize GPUImageView for filter preview and multi-filter setup
         gpuImageView = view.findViewById(R.id.imageEditView)
+        // Crop & scale toolbar
+        btnCrop = view.findViewById(R.id.btnCrop)
+        btnScale = view.findViewById(R.id.btnScale)
+        btnCrop.setOnClickListener {
+            editedBitmap?.let { bmp ->
+        val srcFile = File(requireContext().cacheDir, "CROP_SRC_${System.currentTimeMillis()}.jpg")
+        FileOutputStream(srcFile).use { out -> bmp.compress(Bitmap.CompressFormat.JPEG, 90, out) }
+        val destFile = File(requireContext().cacheDir, "CROP_DST_${System.currentTimeMillis()}.jpg")
+        UCrop.of(Uri.fromFile(srcFile), Uri.fromFile(destFile))
+            .withAspectRatio(1f, 1f)
+            .start(requireActivity(), UCrop.REQUEST_CROP)
+            }
+        }
+        btnScale = view.findViewById(R.id.btnScale)
+        btnScale.setOnClickListener {
+            // TODO: implement pinch-to-scale behavior on GPUImageView
+        }
+        // Camera zoom controls
+        zoomControl = view.findViewById(R.id.zoomControl)
+        zoom05 = view.findViewById(R.id.zoom05)
+        zoom1 = view.findViewById(R.id.zoom1)
+        zoom2 = view.findViewById(R.id.zoom2)
+        zoom4 = view.findViewById(R.id.zoom4)
+        zoom8 = view.findViewById(R.id.zoom8)
+        // Configure circular zoom control programmatically
+        zoomControl.max = 800f
+        zoomControl.progress = 100f
+        // zoomControl.setBarColor(Color.WHITE)
+        // zoomControl.setPointerColor(Color.WHITE)
+        zoomControl.setOnCircularSeekBarChangeListener(object : OnCircularSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: CircularSeekBar?, progress: Float, fromUser: Boolean) {
+                val ratio = progress / 100f
+                camera?.cameraControl?.setZoomRatio(ratio)
+                currentZoomRatio = ratio
+            }
+            override fun onStartTrackingTouch(seekBar: CircularSeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: CircularSeekBar?) {}
+        })
+        zoom05.setOnClickListener { setZoomRatio(0.5f) }
+        zoom1.setOnClickListener  { setZoomRatio(1f) }
+        zoom2.setOnClickListener  { setZoomRatio(2f) }
+        zoom4.setOnClickListener  { setZoomRatio(4f) }
+        zoom8.setOnClickListener  { setZoomRatio(8f) }
 
         baseFilter = GPUImageFilter()
         contrastFilter = GPUImageContrastFilter(1.0f)
@@ -603,6 +666,17 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
         }
     }
+
+    /**
+     * Set camera zoom via zoom wheel or preset.
+     */
+    private fun setZoomRatio(ratio: Float) {
+        currentZoomRatio = ratio
+        zoomControl.progress = (ratio * 100)
+        camera?.cameraControl?.setZoomRatio(ratio)
+    }
+
+
 
     private fun takePhoto() {
         val photoFile =
@@ -871,15 +945,17 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_PICK_MEDIA && resultCode == Activity.RESULT_OK) {
-            val uris = mutableListOf<Uri>()
-            data?.data?.let { uris.add(it) }
-            data?.clipData?.let { clip ->
-                for (i in 0 until clip.itemCount) {
-                    clip.getItemAt(i).uri?.let { uris.add(it) }
+        when {
+            requestCode == REQUEST_PICK_MEDIA && resultCode == Activity.RESULT_OK -> {
+                val uris = mutableListOf<Uri>()
+                data?.data?.let { uris.add(it) }
+                data?.clipData?.let { clip ->
+                    for (i in 0 until clip.itemCount) clip.getItemAt(i).uri?.let { uris.add(it) }
                 }
+                handleSelectedMedia(uris)
             }
-            handleSelectedMedia(uris)
+            requestCode == UCrop.REQUEST_CROP && resultCode == Activity.RESULT_OK && data != null ->
+                UCrop.getOutput(data)?.let { uri -> handleSelectedMedia(listOf(uri)) }
         }
     }
 }
