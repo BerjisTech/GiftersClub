@@ -20,6 +20,8 @@ import club.gifters.giftersclub.gifts.AccountFragment
 import club.gifters.giftersclub.gifts.WishlistsFragment
 import club.gifters.giftersclub.chat.ChatFragment
 import club.gifters.giftersclub.chat.NotificationListFragment
+import android.content.Intent
+import club.gifters.giftersclub.live.LiveStreamActivity
 
 class MainActivity : AppCompatActivity() {
 
@@ -64,6 +66,10 @@ class MainActivity : AppCompatActivity() {
                         .replace(R.id.mainContentContainer, AccountFragment())
                         .addToBackStack(null)
                         .commit()
+                    true
+                }
+                R.id.nav_go_live -> {
+                    startActivity(Intent(this, LiveStreamActivity::class.java))
                     true
                 }
                 R.id.nav_chat -> {

@@ -85,4 +85,6 @@
     <string name="_60s">60s</string>
     <string name="_10m">10m</string>
     <string name="_15s">15s</string>
+    <string name="write_a_comment">Write a comment...</string>
+    <string name="recharge">Recharge</string>
 </resources>
