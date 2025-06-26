@@ -46,6 +46,7 @@
     <string name="apply_filter">Apply filter</string>
     <string name="enter_token_amount">Enter token amount</string>
     <string name="invalid_amount">Please enter a valid amount</string>
+    <string name="failed_to_initiate_purchase">Failed to initiate token purchase</string>
     <string name="search_wishlists">Search wishlists…</string>
     <string name="no_wishlists_found">No wishlists found</string>
     <string name="withdrawals">Withdrawals</string>
@@ -87,4 +88,5 @@
     <string name="_15s">15s</string>
     <string name="write_a_comment">Write a comment...</string>
     <string name="recharge">Recharge</string>
+    <string name="streamer_name">Streamer Name</string>
 </resources>

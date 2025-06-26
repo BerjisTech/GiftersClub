@@ -1,14 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp">
+    android:layout_margin="4dp"
+    android:orientation="vertical"
+    android:gravity="center_horizontal">
 
     <ImageView
         android:id="@+id/ivGiftIcon"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         android:scaleType="centerCrop"
         android:contentDescription="@null" />
 
-</FrameLayout>
+    <TextView
+        android:id="@+id/tvGiftName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textAppearance="?attr/textAppearanceCaption"
+        android:textColor="@android:color/black"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="2dp"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/ivTokenIcon"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/token"
+            android:contentDescription="@string/token_icon" />
+
+        <TextView
+            android:id="@+id/tvGiftTokens"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="2dp"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:textColor="@android:color/black" />
+
+    </LinearLayout>
+
+</LinearLayout>
