@@ -51,6 +51,13 @@
                     android:textAppearance="?attr/textAppearanceHeadline6"
                     android:textColor="?android:attr/textColorSecondary" />
 
+                <TextView
+                    android:id="@+id/textBio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:layout_marginBottom="16dp" />
+
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -69,13 +76,6 @@
                         android:layout_margin="8dp"
                         android:textAppearance="?attr/textAppearanceCaption" />
                 </LinearLayout>
-
-                <TextView
-                    android:id="@+id/textBio"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:layout_marginBottom="16dp" />
 
                 <LinearLayout
                     android:layout_width="wrap_content"

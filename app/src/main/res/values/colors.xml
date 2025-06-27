@@ -1,10 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="pink_100">#FFFF80AB</color>
+    <color name="pink_200">#FFFF4081</color>
+    <color name="pink_500">#FFF50057</color>
+    <color name="pink_700">#FFC51162</color>
+
+    <color name="indigo_100">#FF8C9EFF</color>
+    <color name="indigo_200">#FF536DFE</color>
+    <color name="indigo_500">#FF3D5AFE</color>
+    <color name="indigo_700">#FF304FFE</color>
+
+    <color name="blue_100">#FF82B1FF</color>
+    <color name="blue_200">#FF82B1FF</color>
+    <color name="blue_500">#FF448AFF</color>
+    <color name="blue_700">#FF2979FF</color>
+
+    <color name="blue_grey_100">#FFB0BEC5</color>
+    <color name="blue_grey_200">#FF90A4AE</color>
+    <color name="blue_grey_500">#FF607D8B</color>
+    <color name="blue_grey_700">#FF455A64</color>
+
+    <color name="purple_100">#FFBB86FC</color>
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
+
+    <color name="teal_100">#FF03DAC5</color>
     <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_500">#FF018786</color>
     <color name="teal_700">#FF018786</color>
+
+    <color name="yellow_100">#FFFFF176</color>
+    <color name="yellow_200">#FFFFF176</color>
+    <color name="yellow_500">#FFFFEA00</color>
+    <color name="yellow_700">#FFFFC400</color>
+
+    <color name="orange_100">#FFFFAB40</color>
+    <color name="orange_200">#FFFF9100</color>
+    <color name="orange_500">#FFFF6D00</color>
+    <color name="orange_700">#FFDD2C00</color>
+
+    <color name="green_100">#FFA5D6A7</color>
+    <color name="green_200">#FF81C784</color>
+    <color name="green_500">#FF4CAF50</color>
+    <color name="green_700">#FF388E3C</color>
+
+    <color name="red_100">#FFFF8A80</color>
+    <color name="red_200">#FFFF5252</color>
+    <color name="red_500">#FFF44336</color>
+    <color name="red_700">#FFD32F2F</color>
+
+    <color name="grey_100">#FFF5F5F5</color>
+    <color name="grey_200">#FFE0E0E0</color>
+    <color name="grey_500">#FF9E9E9E</color>
+    <color name="grey_700">#FF616161</color>
+
+
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <!-- Chat bubble colors -->
