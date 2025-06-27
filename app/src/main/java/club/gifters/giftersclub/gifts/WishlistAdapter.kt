@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.ProgressBar
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -35,6 +36,8 @@ class WishlistAdapter(
         private val ivImage: ImageView = itemView.findViewById(R.id.ivWishlistImage)
         private val tvName: TextView = itemView.findViewById(R.id.tvWishlistName)
         private val tvDesc: TextView = itemView.findViewById(R.id.tvWishlistDesc)
+        private val tvPercentage: TextView = itemView.findViewById(R.id.contributionPercentage)
+        private val progressBar: ProgressBar = itemView.findViewById(R.id.contributionProgressBar)
 
         fun bind(item: Wishlist) {
             itemView.setOnClickListener { onClick(item) }
@@ -48,6 +51,12 @@ class WishlistAdapter(
             } else {
                 ivImage.setImageResource(android.R.color.darker_gray)
             }
+            val total = item.contributorsCount ?: 0
+            val max = item.tokens
+            val percent = if (max > 0) (total * 100 / max) else 0
+            val clamped = percent.coerceIn(0, 100)
+            progressBar.progress = clamped
+            tvPercentage.text = "$clamped%"
         }
     }
 

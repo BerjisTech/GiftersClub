@@ -2,11 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_home"
-        android:icon="@android:drawable/ic_menu_view"
+        android:icon="@drawable/home"
         android:title="@string/home" />
     <item
         android:id="@+id/nav_friends"
-        android:icon="@android:drawable/ic_menu_share"
+        android:icon="@drawable/friends"
         android:title="@string/friends" />
     <item
         android:id="@+id/nav_create"
@@ -14,10 +14,10 @@
         android:title="@string/create" />
     <item
         android:id="@+id/nav_inbox"
-        android:icon="@android:drawable/ic_menu_send"
+        android:icon="@drawable/notifications"
         android:title="@string/inbox" />
     <item
         android:id="@+id/nav_profile"
-        android:icon="@android:drawable/ic_menu_manage"
+        android:icon="@drawable/profile"
         android:title="@string/profile" />
 </menu>
