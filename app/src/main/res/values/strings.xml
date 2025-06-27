@@ -117,4 +117,10 @@
     <string name="wishlist_title">Wishlist Title</string>
     <string name="owner_name">Owner Name</string>
     <string name="_0_0">0 / 0</string>
+    <string name="favicon">favicon</string>
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="gifters_club">Gifters Club</string>
+    <string name="share_joy_spread_love">Share joy, spread love</string>
+    <string name="connect_with_friends_and_celebrate_together">Connect with friends and celebrate together</string>
+    <string name="by_continuing_you_agree_to_our_terms_of_service_and_privacy_policy">By continuing, you agree to our Terms of Service and Privacy Policy</string>
 </resources>
