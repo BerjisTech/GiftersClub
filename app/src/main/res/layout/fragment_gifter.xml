@@ -102,13 +102,13 @@
                         android:src="@android:drawable/ic_menu_send"
                         android:contentDescription="@string/chat_with_user" />
 
-                    <ImageButton
+                    <ImageView
                         android:id="@+id/btnSettings"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:visibility="gone"
                         android:layout_marginBottom="16dp"
-                        android:src="@android:drawable/ic_menu_preferences"
+                        android:src="@drawable/settings"
                         android:contentDescription="@string/account" />
                 </LinearLayout>
             </LinearLayout>

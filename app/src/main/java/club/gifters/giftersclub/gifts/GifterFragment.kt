@@ -1,37 +1,32 @@
 package club.gifters.giftersclub.gifts
 
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.View
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
+import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import coil.load
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
+import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
-import android.util.Log
-import club.gifters.giftersclub.gifts.GiftFragment
-import club.gifters.giftersclub.gifts.UserPostsFragment
-import club.gifters.giftersclub.gifts.UserWishlistsFragment
+import club.gifters.giftersclub.chat.ChatFragment
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.network.ProfileApi
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.AuthUtils
-import club.gifters.giftersclub.gifts.FollowApiHolder
-import club.gifters.giftersclub.gifts.AccountFragment
-import com.google.android.material.button.MaterialButton
-import android.widget.ImageButton
-import club.gifters.giftersclub.chat.ChatFragment
-import android.graphics.Color
-import android.content.res.ColorStateList
-import androidx.core.view.isVisible
-import kotlinx.coroutines.launch
-import androidx.core.widget.NestedScrollView
-import androidx.appcompat.app.AppCompatActivity
+import coil.load
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
+import kotlinx.coroutines.launch
 
 /**
  * Fragment showing a user's profile and their gift page.
@@ -111,7 +106,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
                 }
 
                 // Settings button for account owner
-                val btnSettings = view.findViewById<ImageButton>(R.id.btnSettings)
+                val btnSettings = view.findViewById<ImageView>(R.id.btnSettings)
                 if (currentUserId != null && currentUserId == prof.userId) {
                     btnSettings.isVisible = true
                     btnSettings.setOnClickListener {
