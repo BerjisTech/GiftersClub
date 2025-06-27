@@ -8,7 +8,6 @@
         android:id="@+id/rvConversations"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="35dp"
         android:padding="4dp" />
 
     <!-- Chat pane: appears once a conversation is selected -->
@@ -16,7 +15,6 @@
         android:id="@+id/chatPane"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="35dp"
         android:visibility="gone"
         android:orientation="vertical">
 

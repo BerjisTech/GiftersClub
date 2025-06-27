@@ -27,13 +27,5 @@
         android:layout_marginTop="?attr/actionBarSize"
         android:layout_marginBottom="56dp" />
     
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:itemIconTint="@null"
-        app:itemTextColor="@null"
-        android:layout_gravity="bottom"
-        app:menu="@menu/bottom_nav_menu" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
