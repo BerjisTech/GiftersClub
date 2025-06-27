@@ -57,15 +57,9 @@ dependencies {
     implementation("com.github.yukuku:ambilwarna:2.0.1")
     // Image cropping UI via uCrop (JitPack)
     // Image cropping UI via uCrop (Maven Central native build)
-    implementation("com.yalantis:ucrop:2.2.0-native") {
-        // Exclude legacy support-compat to avoid AndroidX conflicts
-        exclude(group = "com.android.support", module = "support-compat")
-    }
+    implementation("com.yalantis:ucrop:2.2.0-native")
     // Circular zoom control (rotary seekbar) via Maven Central
-    implementation("com.akaita.android:circular-seek-bar:1.0") {
-        // ensure no support-[compat] pulled in transitively
-        exclude(group = "com.android.support", module = "support-compat")
-    }
+    implementation("com.akaita.android:circular-seek-bar:1.0")
     // CameraX for live camera preview and capture
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)

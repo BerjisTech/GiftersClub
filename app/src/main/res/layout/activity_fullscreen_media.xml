@@ -34,7 +34,6 @@
         android:layout_margin="16dp"
         android:src="@android:drawable/ic_menu_close_clear_cancel"
         android:contentDescription="@string/cancel"
-        app:tint="@android:color/white"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
         app:layout_constraintTop_toTopOf="parent"
