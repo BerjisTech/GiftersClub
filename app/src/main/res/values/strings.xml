@@ -111,4 +111,10 @@
     <string name="you_have_3_new_gifts">You have 3 new gifts</string>
     <string name="top_gifters">Top Gifters</string>
     <string name="leaderboard_icon">Leaderboard Icon</string>
+    <string name="wishlist_image">Wishlist Image</string>
+    <string name="wishlist_name">Wishlist Name</string>
+    <string name="description">Description</string>
+    <string name="wishlist_title">Wishlist Title</string>
+    <string name="owner_name">Owner Name</string>
+    <string name="_0_0">0 / 0</string>
 </resources>
