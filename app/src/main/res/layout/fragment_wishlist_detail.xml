@@ -132,8 +132,7 @@
                                 android:layout_marginTop="4dp"
                                 android:max="100"
                                 android:progress="0"
-                                android:progressBackgroundTint="@color/pink_950"
-                                android:progressBackgroundTintMode="multiply" />
+                                android:progressBackgroundTint="@color/blue_950" />
 
 
                         </LinearLayout>
@@ -162,9 +161,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="0 contributors"
+                android:text="@string/contributors_title"
                 android:textAppearance="?attr/textAppearanceCaption"
-                android:textSize="23sp" />
+                android:textSize="12sp" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvContributors"
