@@ -5,29 +5,24 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.Button
-import android.widget.ImageButton
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
-import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import coil.load
+import club.gifters.giftersclub.AuthActivity
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.model.WishlistItem
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
-import club.gifters.giftersclub.gifts.WithdrawalsFragment
+import coil.load
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -110,6 +105,16 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
         }
         btnShareProfile.setOnClickListener { shareProfile() }
         btnBuyTokens.setOnClickListener { showBuyTokensDialog() }
+
+        // Logout
+        val btnLogout = view.findViewById<Button>(R.id.btnLogout)
+        btnLogout.setOnClickListener {
+            // clear stored Supabase tokens and return to AuthActivity
+            requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
+                .edit().remove("access_token").remove("refresh_token").apply()
+            startActivity(Intent(requireContext(), AuthActivity::class.java))
+            requireActivity().finish()
+        }
     }
 
     private fun loadProfile() {
@@ -302,6 +307,6 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, shareUrl)
         }
-        startActivity(Intent.createChooser(intent, "Share Profile"))
+        startActivity(Intent.createChooser(intent, getString(R.string.share_profile)))
     }
 }
