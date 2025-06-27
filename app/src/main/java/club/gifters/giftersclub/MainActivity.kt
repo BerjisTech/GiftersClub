@@ -22,6 +22,11 @@ import club.gifters.giftersclub.chat.ChatFragment
 import club.gifters.giftersclub.chat.NotificationListFragment
 import android.content.Intent
 import club.gifters.giftersclub.live.LiveStreamActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.gifts.GifterFragment
+import club.gifters.giftersclub.social.FriendsFragment
 
 class MainActivity : AppCompatActivity() {
 
@@ -54,36 +59,52 @@ class MainActivity : AppCompatActivity() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavView)
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_new_post -> {
+                R.id.nav_home -> {
+                    supportFragmentManager.popBackStack(
+                        null,
+                        androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+                    )
+                    true
+                }
+                R.id.nav_friends -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.mainContentContainer, 
+                            FriendsFragment.newInstance(0)
+                        )
+                        .addToBackStack(null)
+                        .commit()
+                    true
+                }
+                R.id.nav_create -> {
                     supportFragmentManager.beginTransaction()
                         .replace(R.id.mainContentContainer, CreatePostFragment())
                         .addToBackStack(null)
                         .commit()
                     true
                 }
-                R.id.nav_account -> {
-                    supportFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, AccountFragment())
-                        .addToBackStack(null)
-                        .commit()
-                    true
-                }
-                R.id.nav_go_live -> {
-                    startActivity(Intent(this, LiveStreamActivity::class.java))
-                    true
-                }
-                R.id.nav_chat -> {
+                R.id.nav_inbox -> {
                     supportFragmentManager.beginTransaction()
                         .replace(R.id.mainContentContainer, ChatFragment())
                         .addToBackStack(null)
                         .commit()
                     true
                 }
-                R.id.nav_notifications -> {
-                    supportFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, NotificationListFragment())
-                        .addToBackStack(null)
-                        .commit()
+                R.id.nav_profile -> {
+                    AuthUtils.getCurrentUserId(this)?.let { uid ->
+                        lifecycleScope.launch {
+                            RetrofitClient.profileApi.getProfileByUserId(
+                                "*", "eq.$uid"
+                            ).firstOrNull()?.let { prof ->
+                                supportFragmentManager.beginTransaction()
+                                    .replace(
+                                        R.id.mainContentContainer,
+                                        GifterFragment.newInstance(prof.username)
+                                    )
+                                    .addToBackStack(null)
+                                    .commit()
+                            }
+                        }
+                    }
                     true
                 }
                 else -> true
@@ -100,7 +121,7 @@ class MainActivity : AppCompatActivity() {
             val current = supportFragmentManager.findFragmentById(R.id.mainContentContainer)
             val isCreatePost = current is CreatePostFragment
             tabLayout.visibility = if (isRoot) View.VISIBLE else View.GONE
-            bottomNav.visibility = if (isRoot) View.VISIBLE else View.GONE
+            bottomNav.visibility = if (isCreatePost) View.GONE else View.VISIBLE
             toolbar.visibility = if (isRoot || isCreatePost) View.GONE else View.VISIBLE
             // overlay container for bottom-nav screens
             findViewById<FrameLayout>(R.id.mainContentContainer).visibility = if (isRoot) View.GONE else View.VISIBLE

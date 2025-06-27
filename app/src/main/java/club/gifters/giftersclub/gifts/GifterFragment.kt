@@ -21,6 +21,7 @@ import club.gifters.giftersclub.network.ProfileApi
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.gifts.FollowApiHolder
+import club.gifters.giftersclub.gifts.AccountFragment
 import com.google.android.material.button.MaterialButton
 import android.widget.ImageButton
 import club.gifters.giftersclub.chat.ChatFragment
@@ -28,6 +29,9 @@ import android.graphics.Color
 import android.content.res.ColorStateList
 import androidx.core.view.isVisible
 import kotlinx.coroutines.launch
+import androidx.core.widget.NestedScrollView
+import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.appbar.MaterialToolbar
 
 /**
  * Fragment showing a user's profile and their gift page.
@@ -56,8 +60,16 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
         val textBio     = view.findViewById<TextView>(R.id.textBio)
         val btnFollow   = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnFollow)
 
+        // Toolbar title changes as header collapses
+        val nestedScroll = view.findViewById<NestedScrollView>(R.id.nestedScrollView)
+        val headerUsername = view.findViewById<TextView>(R.id.textUsername)
+        val toolbar = (requireActivity() as AppCompatActivity).findViewById<MaterialToolbar>(R.id.topAppBar)
+        toolbar.title = ""
+        nestedScroll.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, _ ->
+            toolbar.title = if (scrollY >= headerUsername.bottom) username.orEmpty() else ""
+        })
         lifecycleScope.launch {
-            username?.let { uname ->
+                username?.let { uname ->
                 val profiles = profileApi.getProfileByUsername("*", "eq.$uname")
                 val prof = profiles.firstOrNull() ?: return@launch
                 Log.d(TAG, "Fetched profile: $prof")
@@ -98,6 +110,17 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
                     }
                 }
 
+                // Settings button for account owner
+                val btnSettings = view.findViewById<ImageButton>(R.id.btnSettings)
+                if (currentUserId != null && currentUserId == prof.userId) {
+                    btnSettings.isVisible = true
+                    btnSettings.setOnClickListener {
+                        parentFragmentManager.beginTransaction()
+                            .replace(R.id.mainContentContainer, AccountFragment())
+                            .addToBackStack(null)
+                            .commit()
+                    }
+                }
                 // Setup tabs and viewpager
                 val tabLayout = view.findViewById<TabLayout>(R.id.tabLayout)
                 val viewPager = view.findViewById<ViewPager2>(R.id.viewPager)

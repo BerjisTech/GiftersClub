@@ -32,6 +32,24 @@
     <string name="account">Account</string>
     <string name="conversations">Conversations</string>
     <string name="notifications">Notifications</string>
+    <string name="home">Home</string>
+    <string name="friends">Friends</string>
+    <string name="create">Create</string>
+    <string name="inbox">Inbox</string>
+    <string name="profile">Profile</string>
+
+    <!-- Chat header items -->
+    <string name="new_followers">New followers</string>
+    <string name="activity">Activity</string>
+    <string name="system_notifications">System notifications</string>
+    <string name="my_followers">My followers</string>
+    <string name="my_gifters">My gifters</string>
+    <string name="my_following">My following</string>
+
+    <!-- Chat header previews -->
+    <string name="new_followers_preview">userx and n others started following you</string>
+    <string name="activity_preview">Userx liked your photo</string>
+    <string name="system_notifications_preview">Your token purchase ...</string>
     <string name="wishlist">Wishlist</string>
     <string name="send">Send</string>
     <string name="chat_with_user">Chat</string>

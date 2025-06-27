@@ -26,6 +26,12 @@ import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.network.StorageApi
 import club.gifters.giftersclub.chat.ConversationAdapter
 import club.gifters.giftersclub.chat.ConversationUi
+import androidx.recyclerview.widget.ConcatAdapter
+import club.gifters.giftersclub.chat.ChatHeaderAdapter
+import club.gifters.giftersclub.chat.ChatHeaderAdapter.HeaderType
+import club.gifters.giftersclub.social.FriendsFragment
+import club.gifters.giftersclub.chat.NotificationListFragment
+import club.gifters.giftersclub.chat.SystemNotificationsFragment
 import club.gifters.giftersclub.chat.MessageAdapter
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -110,6 +116,35 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         // Otherwise show conversation list as usual
         val rvConvs = view.findViewById<RecyclerView>(R.id.rvConversations)
         rvConvs.layoutManager = LinearLayoutManager(requireContext())
+        // Header items: New followers, Activity, System notifications
+        val headerAdapter = ChatHeaderAdapter { type ->
+            when (type) {
+                ChatHeaderAdapter.HeaderType.NEW_FOLLOWERS ->
+                    parentFragmentManager.beginTransaction()
+                        .replace(
+                            R.id.mainContentContainer,
+                            FriendsFragment.newInstance(0)
+                        )
+                        .addToBackStack(null)
+                        .commit()
+                ChatHeaderAdapter.HeaderType.ACTIVITY ->
+                    parentFragmentManager.beginTransaction()
+                        .replace(
+                            R.id.mainContentContainer,
+                            NotificationListFragment()
+                        )
+                        .addToBackStack(null)
+                        .commit()
+                ChatHeaderAdapter.HeaderType.SYSTEM_NOTIFICATIONS ->
+                    parentFragmentManager.beginTransaction()
+                        .replace(
+                            R.id.mainContentContainer,
+                            SystemNotificationsFragment()
+                        )
+                        .addToBackStack(null)
+                        .commit()
+            }
+        }
         val convAdapter = ConversationAdapter(userId) { conv ->
             // user tapped a conversation: show its chat pane
             view.findViewById<RecyclerView>(R.id.rvConversations).visibility = View.GONE
@@ -134,7 +169,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 rvMsgs
             )
         }
-        rvConvs.adapter = convAdapter
+        rvConvs.adapter = ConcatAdapter(headerAdapter, convAdapter)
         loadConversations(convAdapter)
 
         // attachment preview controls

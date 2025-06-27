@@ -45,6 +45,8 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.viewpager2)
+    // ConcatAdapter for merging header and conversation adapters (requires RecyclerView 1.2+)
+    implementation("androidx.recyclerview:recyclerview:1.2.1")
     // Pull-to-refresh support for post feed
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     // GPUImage for real-time image filters

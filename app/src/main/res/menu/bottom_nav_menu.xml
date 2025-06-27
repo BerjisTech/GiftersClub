@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/nav_new_post"
+        android:id="@+id/nav_home"
+        android:icon="@android:drawable/ic_menu_view"
+        android:title="@string/home" />
+    <item
+        android:id="@+id/nav_friends"
+        android:icon="@android:drawable/ic_menu_share"
+        android:title="@string/friends" />
+    <item
+        android:id="@+id/nav_create"
         android:icon="@android:drawable/ic_menu_add"
-        android:title="New Post" />
+        android:title="@string/create" />
     <item
-        android:id="@+id/nav_account"
-        android:icon="@android:drawable/ic_menu_manage"
-        android:title="Account" />
-    <item
-        android:id="@+id/nav_go_live"
-        android:icon="@android:drawable/ic_media_play"
-        android:title="Go Live" />
-    <item
-        android:id="@+id/nav_chat"
+        android:id="@+id/nav_inbox"
         android:icon="@android:drawable/ic_menu_send"
-        android:title="Chat" />
+        android:title="@string/inbox" />
     <item
-        android:id="@+id/nav_notifications"
-        android:icon="@android:drawable/ic_menu_info_details"
-        android:title="Notifications" />
+        android:id="@+id/nav_profile"
+        android:icon="@android:drawable/ic_menu_manage"
+        android:title="@string/profile" />
 </menu>
