@@ -12,77 +12,84 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:orientation="vertical"
-        android:padding="8dp">
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/ivWishlistImage"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:contentDescription="@string/wishlist_image"
+            android:scaleType="centerCrop"
+            android:background="@color/pink_100"
+            android:src="@android:drawable/ic_menu_gallery" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical">
+            android:gravity="fill_vertical"
+            android:orientation="vertical"
+            android:padding="8dp">
 
-            <ImageView
-                android:id="@+id/ivWishlistImage"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:contentDescription="@string/wishlist_image"
-                android:scaleType="centerCrop"
-                android:src="@android:drawable/ic_menu_gallery" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
-            <LinearLayout
-                android:layout_width="0dp"
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingStart="8dp">
+
+                        <TextView
+                            android:id="@+id/tvWishlistName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/wishlist_name"
+                            android:textAppearance="?attr/textAppearanceSubtitle1"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvWishlistDesc"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/description"
+                            android:textAppearance="?attr/textAppearanceBody2" />
+                    </LinearLayout>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="10dp">
+
+                        <TextView
+                            android:id="@+id/contributionPercentage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@color/pink_100"
+                            android:paddingHorizontal="5dp"
+                            android:shadowColor="@color/orange_500"
+                            android:shadowDx="10"
+                            android:shadowDy="10"
+                            android:text="30%"
+                            android:textColor="@color/pink_900"
+                            android:textSize="15sp" />
+                    </androidx.cardview.widget.CardView>
+                </LinearLayout>
+
+
+            <ProgressBar
+                android:id="@+id/contributionProgressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:paddingStart="8dp">
-
-                <TextView
-                    android:id="@+id/tvWishlistName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/wishlist_name"
-                    android:textAppearance="?attr/textAppearanceSubtitle1"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvWishlistDesc"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/description"
-                    android:textAppearance="?attr/textAppearanceBody2" />
-            </LinearLayout>
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="10dp">
-
-                <TextView
-                    android:id="@+id/contributionPercentage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@color/pink_100"
-                    android:padding="5dp"
-                    android:shadowColor="@color/orange_500"
-                    android:shadowDx="10"
-                    android:shadowDy="10"
-                    android:text="30%"
-                    android:textColor="@color/pink_900"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </androidx.cardview.widget.CardView>
+                android:layout_marginTop="4dp"
+                android:max="100"
+                android:progress="0"
+                android:progressBackgroundTint="@color/pink_950"
+                android:progressBackgroundTintMode="multiply" />
         </LinearLayout>
-
-
-        <ProgressBar
-            android:id="@+id/contributionProgressBar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:max="100"
-            android:progress="0"
-            android:progressBackgroundTint="@color/pink_950"
-            android:progressBackgroundTintMode="multiply" />
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>
