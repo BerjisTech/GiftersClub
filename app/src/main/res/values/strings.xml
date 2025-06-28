@@ -80,6 +80,8 @@
     <string name="tokens">Tokens</string>
     <string name="fulfilled">Fulfilled</string>
     <string name="open">Open</string>
+    <string name="subscribe_to_view">Subscribe to view</string>
+    <string name="purchase_to_view">Purchase to view</string>
     <string name="balance">Balance</string>
     <string name="gift_icon">Gift Icon</string>
     <string name="wishlist_icon">Wishlist Icon</string>

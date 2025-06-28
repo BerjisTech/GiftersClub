@@ -13,6 +13,7 @@ import org.json.JSONObject
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import club.gifters.giftersclub.network.WithdrawalApi
+import club.gifters.giftersclub.network.SubscriptionsApi
 import club.gifters.giftersclub.network.RecentGiftsApi
 import club.gifters.giftersclub.network.LiveStreamApi
 
@@ -164,6 +165,7 @@ object RetrofitClient {
         .client(client)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
+    val subscriptionsApi: SubscriptionsApi = retrofit.create(SubscriptionsApi::class.java)
     val functionsApi: FunctionsApi = functionsRetrofit.create(FunctionsApi::class.java)
     val commentApi: club.gifters.giftersclub.gifts.CommentApi = retrofit.create(club.gifters.giftersclub.gifts.CommentApi::class.java)
 }

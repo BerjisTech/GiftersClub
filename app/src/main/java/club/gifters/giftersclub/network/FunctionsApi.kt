@@ -28,4 +28,20 @@ interface FunctionsApi {
     suspend fun processPurchaseTokensRpc(
         @Body body: Map<String, @JvmSuppressWildcards Any>
     ): Response<Unit>
+
+    /**
+     * Subscribe to a creator by purchasing a subscription via Edge Function.
+     */
+    @POST("subscribe-creator")
+    suspend fun subscribeToCreatorRpc(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /**
+     * Purchase pay-per-post access via Edge Function.
+     */
+    @POST("purchase-post-access")
+    suspend fun purchasePostAccessRpc(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
 }

@@ -7,6 +7,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
@@ -32,13 +33,14 @@ class PostAdapter(
     private val onLike: (Post) -> Unit,
     private val onComment: (Post) -> Unit,
     private val onShare: (Post) -> Unit,
-    private val onProfileClick: (String) -> Unit
+    private val onProfileClick: (String) -> Unit,
+    private val onLocked: (Post) -> Unit
 ) : ListAdapter<Post, PostAdapter.PostViewHolder>(PostDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_post, parent, false)
-        return PostViewHolder(view, scope, onLike, onComment, onShare, onProfileClick)
+        return PostViewHolder(view, scope, onLike, onComment, onShare, onProfileClick, onLocked)
     }
 
     override fun onBindViewHolder(holder: PostViewHolder, position: Int) {
@@ -51,7 +53,8 @@ class PostAdapter(
         private val onLike: (Post) -> Unit,
         private val onComment: (Post) -> Unit,
         private val onShare: (Post) -> Unit,
-        private val onProfileClick: (String) -> Unit
+        private val onProfileClick: (String) -> Unit,
+        private val onLocked: (Post) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
         private val avatar: ImageView = itemView.findViewById(R.id.avatarImage)
         private val username: TextView = itemView.findViewById(R.id.usernameText)
@@ -166,6 +169,19 @@ class PostAdapter(
             }
             timestamp.text = formatRelativeTime(post.createdAt)
             content.text = post.content ?: ""
+            // Setup paywall overlay for subscription/paid posts
+            val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
+            val lockAction = itemView.findViewById<TextView>(R.id.tvLockAction)
+            if (post.accessType != "free") {
+                overlay.visibility = View.VISIBLE
+                lockAction.text = if (post.accessType == "subscription")
+                    itemView.context.getString(R.string.subscribe_to_view)
+                else
+                    itemView.context.getString(R.string.purchase_to_view)
+                overlay.setOnClickListener { onLocked(post) }
+            } else {
+                overlay.visibility = View.GONE
+            }
             // Setup media carousel (images/videos)
             val mediaList = post.media ?: emptyList()
             mediaPager.adapter = PostMediaAdapter(mediaList)

@@ -50,7 +50,7 @@ class UserPostsFragment : Fragment(R.layout.fragment_posts) {
                     .replace(R.id.mainContentContainer, GifterFragment.newInstance(uname))
                     .addToBackStack(null)
                     .commit()
-            }
+            }, onLocked = {}
         )
         pager.adapter = adapter
 

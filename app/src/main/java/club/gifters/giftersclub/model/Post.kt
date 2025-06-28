@@ -15,6 +15,11 @@ data class Post(
     val profile: Profile?,
     val media: List<PostMedia>?,
     @SerializedName("reaction_counts") val reactionCounts: ReactionCounts?,
+    /** Access policy: free, subscription-only, or pay-per-post */
+    @SerializedName("access_type") val accessType: String,
+    /** Price in tokens for pay-per-post; null otherwise */
+    val price: Int?,
+    /** Hashtags associated with this post */
     val tags: List<Tag>?
 )
 

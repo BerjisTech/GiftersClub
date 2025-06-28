@@ -5,6 +5,37 @@
     android:layout_height="match_parent"
     android:background="@color/black">
 
+    <!-- Overlay for subscription/paywall when accessType != free -->
+    <FrameLayout
+        android:id="@+id/lockOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/white"
+        android:alpha="0.9"
+        android:visibility="gone">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_gravity="center"
+            android:gravity="center">
+            <TextView
+                android:id="@+id/tvLockIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔒"
+                android:textSize="36sp" />
+            <TextView
+                android:id="@+id/tvLockAction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:text="Subscribe to view" />
+        </LinearLayout>
+    </FrameLayout>
+
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/mediaPager"
         android:layout_width="match_parent"
