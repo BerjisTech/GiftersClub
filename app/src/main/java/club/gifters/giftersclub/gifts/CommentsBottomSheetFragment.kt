@@ -21,7 +21,10 @@ import club.gifters.giftersclub.gifts.GifterFragment
 import android.content.Context
 import android.util.Base64
 import org.json.JSONObject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import club.gifters.giftersclub.AuthUtils
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.app.Dialog
@@ -273,5 +276,34 @@ object CommentApiHolder {
         )
         val contentRange = resp.headers()["Content-Range"] ?: return 0
         return contentRange.substringAfterLast('/')?.toIntOrNull() ?: 0
+    }
+
+    /**
+     * React (like/share) to a post; user_id must be provided for RLS.
+     */
+    suspend fun reactToPost(reaction: Map<String, @JvmSuppressWildcards Any>) =
+        api.reactToPost(reaction)
+
+    /**
+     * Remove a reaction (unlike/unshare) from a post.
+     */
+    suspend fun unreactToPost(
+        postIdFilter: String,
+        userIdFilter: String,
+        typeFilter: String
+    ) = api.unreactToPost(postIdFilter, userIdFilter, typeFilter)
+
+    /**
+     * Returns true if the current user has liked the given post.
+     */
+    suspend fun isPostLikedByUser(postId: String): Boolean = withContext(Dispatchers.IO) {
+        val current = AuthUtils.getCurrentUserId(RetrofitClient.context) ?: return@withContext false
+        val resp = api.isPostLikedByUser(
+            postIdFilter = "eq.$postId",
+            userIdFilter = "eq.$current",
+            typeFilter = "eq.like"
+        )
+        val header = resp.headers()["Content-Range"] ?: return@withContext false
+        (header.substringAfterLast('/').toIntOrNull() ?: 0) > 0
     }
 }

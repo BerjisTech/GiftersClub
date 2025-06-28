@@ -16,6 +16,8 @@ import android.widget.Toast
 import retrofit2.HttpException
 import club.gifters.giftersclub.gifts.PostAdapter
 import kotlinx.coroutines.launch
+import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.gifts.CommentApiHolder
 
 /**
  * Fragment for displaying posts in a vertical, swipeable view (one post per screen).
@@ -40,7 +42,26 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         val pager = view.findViewById<ViewPager2>(R.id.viewPagerPosts)
         adapter = PostAdapter(
             lifecycleScope,
-            onLike = { /* TODO: handle like */ },
+            onLike = { post ->
+                lifecycleScope.launch {
+                    val userId = AuthUtils.getCurrentUserId(requireContext()) ?: return@launch
+                    val liked = CommentApiHolder.isPostLikedByUser(post.id)
+                    val body = mapOf(
+                        "post_id" to post.id,
+                        "user_id" to userId,
+                        "type" to "like"
+                    )
+                    if (!liked) CommentApiHolder.reactToPost(body)
+                    else CommentApiHolder.unreactToPost(
+                        postIdFilter = "eq.${post.id}",
+                        userIdFilter = "eq.$userId",
+                        typeFilter = "eq.like"
+                    )
+                    adapter.currentList.indexOf(post).takeIf { it >= 0 }?.let { idx ->
+                        adapter.notifyItemChanged(idx)
+                    }
+                }
+            },
             onComment = { post ->
                 CommentsBottomSheetFragment.newInstance(post.id)
                     .show(parentFragmentManager, "comments")

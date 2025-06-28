@@ -5,6 +5,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.POST
+import retrofit2.http.DELETE
 import retrofit2.http.Query
 
 /**
@@ -51,6 +52,40 @@ interface CommentApi {
     @GET("post_reactions")
     suspend fun getPostReactionCount(
         @Query("post_id", encoded = true) postIdFilter: String,
+        @Query("type", encoded = true) typeFilter: String,
+        @Query("select", encoded = true) select: String = "id",
+        @Query("limit") limit: Int = 0
+    ): Response<Void>
+
+    /**
+     * React (like/share) to a post; user_id must be included for RLS.
+     */
+    @Headers("Prefer: return=representation")
+    @POST("post_reactions")
+    suspend fun reactToPost(
+        @Body reaction: Map<String, @JvmSuppressWildcards Any>
+    ): Response<List<PostReaction>>
+
+    /**
+     * Remove a reaction (unlike/unshare) from a post.
+     */
+    @Headers("Prefer: return=minimal")
+    @DELETE("post_reactions")
+    suspend fun unreactToPost(
+        @Query("post_id", encoded = true) postIdFilter: String,
+        @Query("user_id", encoded = true) userIdFilter: String,
+        @Query("type", encoded = true) typeFilter: String
+    ): Response<Void>
+
+    /**
+     * Check if the current user has reacted to (liked) a post.
+     * Returns count via Content-Range header.
+     */
+    @Headers("Prefer: count=exact")
+    @GET("post_reactions")
+    suspend fun isPostLikedByUser(
+        @Query("post_id", encoded = true) postIdFilter: String,
+        @Query("user_id", encoded = true) userIdFilter: String,
         @Query("type", encoded = true) typeFilter: String,
         @Query("select", encoded = true) select: String = "id",
         @Query("limit") limit: Int = 0
