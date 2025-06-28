@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import android.widget.FrameLayout
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.ContributorSummary
 import club.gifters.giftersclub.model.Notification
@@ -30,6 +31,7 @@ import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.network.WishlistApi
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import coil.load
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.text.NumberFormat
@@ -158,10 +160,14 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
                 }
                 contribAdapter.submitList(summary)
                 tvCount.text = getString(R.string.contributors_title) + " (${summary.size})"
-                // Show contribute button
-                view.findViewById<Button>(R.id.btnContribute).apply {
-                    visibility = View.VISIBLE
-                    setOnClickListener { showContributeBottomSheet(wish, total) }
+                // Disable contribute on own wishlist; otherwise show contribution drawer
+                val currentUser = getCurrentUserId()
+                val contributeBtn = view.findViewById<Button>(R.id.btnContribute)
+                if (currentUser != null && currentUser == wish.userId) {
+                    contributeBtn.visibility = View.GONE
+                } else {
+                    contributeBtn.visibility = View.VISIBLE
+                    contributeBtn.setOnClickListener { showContributeBottomSheet(wish, total) }
                 }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Failed to load wishlist details", Toast.LENGTH_SHORT).show()
@@ -181,6 +187,11 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
     private fun showContributeBottomSheet(wishlist: Wishlist, contributed: Int) {
         val remaining = wishlist.tokens - contributed
         val sheet = BottomSheetDialog(requireContext())
+        sheet.setOnShowListener { dialog ->
+            (dialog as BottomSheetDialog)
+                .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
+                ?.setBackgroundResource(R.drawable.bg_rounded_top)
+        }
         val content = layoutInflater.inflate(R.layout.fragment_contribute_bottom_sheet, null)
         sheet.setContentView(content)
         (sheet.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet))?.let { sheetView ->

@@ -194,8 +194,16 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
     }
 
     private fun handleGiftClick(gift: Gift) {
-        if (recipientUserId != null) showConfirmDialog(gift)
-        else showRecipientSearchDialog(gift)
+        val currentUser = getCurrentUserId()
+        if (recipientUserId != null) {
+            if (recipientUserId == currentUser) {
+                Toast.makeText(requireContext(), "Cannot gift yourself", Toast.LENGTH_SHORT).show()
+            } else {
+                showConfirmDialog(gift)
+            }
+        } else {
+            showRecipientSearchDialog(gift)
+        }
     }
 
     /**
@@ -222,9 +230,12 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
                     val filter = "(username.ilike.*$q*,email.ilike.*$q*)"
                     Log.i(TAG, "Searching profiles with filter: $filter")
                     try {
-                        val list = RetrofitClient.profileApi.searchProfiles("*", filter)
-                        Log.i(TAG, "Search returned ${'$'}{list.size} profiles")
-                        adapter.submitList(list)
+                        val raw = RetrofitClient.profileApi.searchProfiles("*", filter)
+                        // Exclude current user to prevent gifting oneself
+                        val currentUser = getCurrentUserId()
+                        val filtered = raw.filter { it.userId != currentUser }
+                        Log.i(TAG, "Search returned ${'$'}{raw.size} profiles, filtered to ${'$'}{filtered.size}")
+                        adapter.submitList(filtered)
                     } catch (e: HttpException) {
                         Log.w(TAG, "Search HTTP error (filter=$filter)", e)
                         if (e.code() == 401) {
