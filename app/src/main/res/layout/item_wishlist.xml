@@ -88,8 +88,7 @@
                 android:layout_marginTop="4dp"
                 android:max="100"
                 android:progress="0"
-                android:progressBackgroundTint="@color/pink_950"
-                android:progressBackgroundTintMode="multiply" />
+                android:progressBackgroundTint="@color/pink_500" />
         </LinearLayout>
     </LinearLayout>
 
