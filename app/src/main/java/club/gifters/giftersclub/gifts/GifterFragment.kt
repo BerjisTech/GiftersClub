@@ -92,6 +92,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
                                 }
                         }
                     }
+                    updateFollowButton(btnFollow)
                     // chat button for direct messaging
                     val btnChat = view.findViewById<ImageButton>(R.id.btnChat)
                     btnChat.isVisible = true
@@ -169,22 +170,15 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
     }
 
     private fun updateFollowButton(btn: MaterialButton) {
-        val green = Color.parseColor("#22c55e")
-        val indigo = Color.parseColor("#6366f1")
-        val pink = Color.parseColor("#ec4899")
-        when {
-            isFriend -> {
-                btn.text = "Friends"
-                btn.backgroundTintList = ColorStateList.valueOf(green)
-            }
-            isFollowing -> {
-                btn.text = "Following"
-                btn.backgroundTintList = ColorStateList.valueOf(indigo)
-            }
-            else -> {
-                btn.text = "Follow"
-                btn.backgroundTintList = ColorStateList.valueOf(pink)
-            }
+        if (isFriend) {
+            btn.text = "Friends"
+            btn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#22c55e"))
+        } else if (isFollowing) {
+            btn.text = "Following"
+            btn.setBackgroundResource(R.drawable.bg_pink_indigo_gradient)
+        } else {
+            btn.text = "Follow"
+            btn.setBackgroundResource(R.drawable.bg_yellow_orange_gradient)
         }
         btn.setTextColor(Color.WHITE)
     }

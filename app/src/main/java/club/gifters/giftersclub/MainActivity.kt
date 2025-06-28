@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity() {
 
         // Setup bottom navigation
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavView)
+        bottomNav.itemIconTintList = null
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
