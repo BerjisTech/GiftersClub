@@ -1,32 +1,34 @@
 package club.gifters.giftersclub.gifts
 
-import android.os.Bundle
-import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.Spinner
-import androidx.fragment.app.Fragment
 import android.content.Context
+import android.os.Bundle
 import android.util.Base64
 import android.util.Log
-import androidx.appcompat.app.AlertDialog
-import android.widget.EditText
-import android.widget.Toast
-import androidx.core.widget.doAfterTextChanged
-import androidx.lifecycle.lifecycleScope
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.Spinner
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.TextView
-import coil.load
-import coil.transform.CircleCropTransformation
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.core.widget.doAfterTextChanged
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
+import coil.transform.CircleCropTransformation
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.network.GiftApi
 import club.gifters.giftersclub.model.Gift
 import club.gifters.giftersclub.model.Profile
+import club.gifters.giftersclub.network.GiftApi
 import club.gifters.giftersclub.network.RetrofitClient
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.launch
@@ -130,15 +132,30 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
     }
 
     private fun showConfirmDialog(gift: Gift) {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Send Gift")
-            .setMessage(
-                "Send ${gift.name} for ${gift.tokens} tokens to ${recipientUsername ?: "user"}?"
-            )
-            .setPositiveButton("Send") { _, _ -> sendGift(gift) }
-            .setNeutralButton("Change") { _, _ -> showRecipientSearchDialog(gift) }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        // Bottom sheet Styled like Contribute
+        val sheet = BottomSheetDialog(requireContext())
+        sheet.setOnShowListener { dlg ->
+            (dlg as BottomSheetDialog)
+                .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
+                ?.setBackgroundResource(R.drawable.bg_rounded_top)
+        }
+        val content = layoutInflater.inflate(
+            R.layout.fragment_gift_confirm_bottom_sheet, null
+        )
+        sheet.setContentView(content)
+        content.findViewById<android.widget.TextView>(R.id.tvGiftConfirmMessage).text =
+            "Send ${gift.name} for ${gift.tokens} tokens to ${recipientUsername ?: "user"}?"
+        content.findViewById<Button>(R.id.btnChangeRecipient)
+            .setOnClickListener {
+                sheet.dismiss()
+                showRecipientSearchDialog(gift)
+            }
+        content.findViewById<Button>(R.id.btnConfirmSend)
+            .setOnClickListener {
+                sheet.dismiss()
+                sendGift(gift)
+            }
+        sheet.show()
     }
 
     private fun sendGift(gift: Gift) {
