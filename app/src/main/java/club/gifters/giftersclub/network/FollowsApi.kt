@@ -51,4 +51,22 @@ interface FollowsApi {
         @Query("select", encoded = true) select: String = "id",
         @Query("limit") limit: Int = 0
     ): Response<Void>
+
+    /**
+     * List follower entries for a given user (users who follow the specified user).
+     */
+    @GET("follows")
+    suspend fun getFollowers(
+        @Query("select", encoded = true) select: String = "follower_id",
+        @Query("followed_id", encoded = true) followedIdFilter: String
+    ): List<club.gifters.giftersclub.model.FollowsEntry>
+
+    /**
+     * List following entries for a given user (users whom the specified user is following).
+     */
+    @GET("follows")
+    suspend fun getFollowing(
+        @Query("select", encoded = true) select: String = "followed_id",
+        @Query("follower_id", encoded = true) followerIdFilter: String
+    ): List<club.gifters.giftersclub.model.FollowsEntry>
 }

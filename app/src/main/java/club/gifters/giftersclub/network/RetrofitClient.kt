@@ -13,6 +13,7 @@ import org.json.JSONObject
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import club.gifters.giftersclub.network.WithdrawalApi
+import club.gifters.giftersclub.network.RecentGiftsApi
 import club.gifters.giftersclub.network.LiveStreamApi
 
 /**
@@ -152,6 +153,11 @@ object RetrofitClient {
     val withdrawalApi: WithdrawalApi = retrofit.create(WithdrawalApi::class.java)
     val tokenApi: TokenApi = retrofit.create(TokenApi::class.java)
     val followsApi: FollowsApi = retrofit.create(FollowsApi::class.java)
+
+    /**
+     * API for querying the recent_gifts view (gifts received by user).
+     */
+    val recentGiftsApi: RecentGiftsApi = retrofit.create(RecentGiftsApi::class.java)
 
     private val functionsRetrofit = Retrofit.Builder()
         .baseUrl("${SupabaseConfig.SUPABASE_URL}/functions/v1/")
