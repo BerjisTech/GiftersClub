@@ -34,6 +34,7 @@
             android:id="@+id/btnCancelContribute"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textColor="@color/pink_50"
             android:background="@drawable/bg_yellow_orange_gradient"
             android:text="@string/cancel" />
 
@@ -42,6 +43,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
+            android:textColor="@color/pink_50"
             android:background="@drawable/bg_pink_indigo_gradient"
             android:paddingHorizontal="15dp"
             android:text="@string/contribute" />
