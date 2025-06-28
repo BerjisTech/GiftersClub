@@ -15,5 +15,6 @@ data class Wishlist(
     val tokens: Int,
     @SerializedName("is_fulfilled") val isFulfilled: Boolean? = null,
     @SerializedName("contributors_count") val contributorsCount: Int? = null,
-    @SerializedName("created_at") val createdAt: String? = null
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("tokens_contributed") val tokensContributed: Int? = null
 )

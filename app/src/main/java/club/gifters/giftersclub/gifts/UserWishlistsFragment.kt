@@ -45,7 +45,7 @@ class UserWishlistsFragment : Fragment(R.layout.fragment_wishlists) {
         lifecycleScope.launch {
             try {
                 val joined = wishlistApi.getWishlists(
-                    select = "*,profile:profiles(id,user_id,username,name)",
+                    select = "*,profile:profiles(id,user_id,username,name),wishlist_contributions(tokens)",
                     userIdFilter = "eq.$userId",
                     order = "created_at.desc",
                     limit = Int.MAX_VALUE,

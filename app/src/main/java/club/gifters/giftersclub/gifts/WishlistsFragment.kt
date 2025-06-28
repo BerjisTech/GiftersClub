@@ -108,7 +108,7 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
                 }
                 Log.i("WishlistsFragment", "Loading page=$page size=$pageSize orFilter=${orFilter ?: "<none>"}")
                 val joined = wishlistApi.getWishlists(
-                    select   = "*,profile:profiles(id,user_id,username,name)",
+                    select   = "*,profile:profiles(id,user_id,username,name),wishlist_contributions(tokens)",
                     orFilter = orFilter,
                     order    = "created_at.desc",
                     limit    = pageSize,

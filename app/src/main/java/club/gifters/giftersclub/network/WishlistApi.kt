@@ -16,7 +16,7 @@ import club.gifters.giftersclub.model.WishlistContribution
 interface WishlistApi {
     @GET("wishlists")
     suspend fun getWishlists(
-        @Query("select",  encoded = true) select: String = "*,profile:profiles(id,user_id,username,name)",
+        @Query("select", encoded = true) select: String = "*,profile:profiles(id,user_id,username,name),wishlist_contributions(tokens)",
         @Query("user_id", encoded = true) userIdFilter: String? = null,
         @Query("or",       encoded = true) orFilter: String? = null,
         @Query("order",    encoded = true) order: String = "created_at.desc",

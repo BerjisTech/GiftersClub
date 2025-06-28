@@ -51,7 +51,7 @@ class WishlistAdapter(
             } else {
                 ivImage.setImageResource(android.R.color.darker_gray)
             }
-            val total = item.contributorsCount ?: 0
+            val total = item.tokensContributed ?: 0
             val max = item.tokens
             val percent = if (max > 0) (total * 100 / max) else 0
             val clamped = percent.coerceIn(0, 100)
