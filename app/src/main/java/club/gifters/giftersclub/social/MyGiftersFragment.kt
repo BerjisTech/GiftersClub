@@ -24,9 +24,11 @@ class MyGiftersFragment : Fragment(R.layout.fragment_my_gifters) {
         val rv = view.findViewById<RecyclerView>(R.id.rvMyGifters)
         rv.layoutManager = LinearLayoutManager(requireContext())
         val adapter = RecentGifterAdapter { entry ->
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.mainContentContainer,
-                    GifterFragment.newInstance(entry.gifterUsername ?: ""))
+            requireActivity().supportFragmentManager.beginTransaction()
+                .replace(
+                    R.id.mainContentContainer,
+                    GifterFragment.newInstance(entry.gifterUsername ?: "")
+                )
                 .addToBackStack(null)
                 .commit()
         }

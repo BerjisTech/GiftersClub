@@ -24,7 +24,7 @@ class MyFollowersFragment : Fragment(R.layout.fragment_my_followers) {
         val rv = view.findViewById<RecyclerView>(R.id.rvMyFollowers)
         rv.layoutManager = LinearLayoutManager(requireContext())
         val adapter = ProfileAdapter { profile ->
-            parentFragmentManager.beginTransaction()
+            requireActivity().supportFragmentManager.beginTransaction()
                 .replace(R.id.mainContentContainer, GifterFragment.newInstance(profile.username))
                 .addToBackStack(null)
                 .commit()
