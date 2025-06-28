@@ -31,7 +31,8 @@ interface ChatApi {
     suspend fun getMessages(
         @Query("select", encoded = true) select: String = "*",
         @Query("or",      encoded = true) orFilter: String,
-        @Query("order",   encoded = true) order: String = "created_at.asc"
+        @Query("order",   encoded = true) order: String = "created_at.asc",
+        @Query("created_at", encoded = true) createdAtFilter: String? = null
     ): List<Message>
 
     /**

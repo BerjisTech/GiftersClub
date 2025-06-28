@@ -236,18 +236,36 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         requireActivity().title = partnerName
         pollingJob?.cancel()
         pollingJob = lifecycleScope.launch {
+            var lastTimestamp: String? = null
+            // initial load of entire conversation
+            try {
+                val initialMsgs = chatApi.getMessages(
+                    select = "*",
+                    orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
+                    order = "created_at.asc"
+                )
+                msgAdapter.submitList(initialMsgs)
+                rvMessages.scrollToPosition(initialMsgs.size - 1)
+                lastTimestamp = initialMsgs.lastOrNull()?.createdAt
+            } catch (_: Exception) {
+            }
+            // poll for new messages only
             while (isActive) {
+                delay(2000)
                 try {
-                    val msgs = chatApi.getMessages(
+                    val newMsgs = chatApi.getMessages(
                         select = "*",
                         orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
-                        order = "created_at.asc"
+                        order = "created_at.asc",
+                        createdAtFilter = lastTimestamp?.let { "gt.$it" }
                     )
-                    msgAdapter.submitList(msgs)
-                    rvMessages.scrollToPosition(msgs.size - 1)
+                    if (newMsgs.isNotEmpty()) {
+                        newMsgs.forEach { msgAdapter.addMessage(it) }
+                        rvMessages.scrollToPosition(msgAdapter.itemCount - 1)
+                        lastTimestamp = newMsgs.last().createdAt
+                    }
                 } catch (_: Exception) {
                 }
-                delay(2000)
             }
         }
     }
