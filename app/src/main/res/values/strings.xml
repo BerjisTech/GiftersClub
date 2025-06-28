@@ -126,4 +126,8 @@
     <string name="connect_with_friends_and_celebrate_together">Connect with friends and celebrate together</string>
     <string name="by_continuing_you_agree_to_our_terms_of_service_and_privacy_policy">By continuing, you agree to our Terms of Service and Privacy Policy</string>
     <string name="_like_emoji">👍</string>
+    <string name="contribute_tokens">Contribute Tokens</string>
+    <string name="enter_amount">Enter amount</string>
+    <string name="contribute">Contribute</string>
+    <string name="_100">100</string>
 </resources>

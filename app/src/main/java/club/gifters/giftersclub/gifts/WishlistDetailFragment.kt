@@ -2,9 +2,9 @@ package club.gifters.giftersclub.gifts
 
 import android.content.Context
 import android.os.Bundle
-import android.text.InputType
-import android.util.Base64
 import android.util.Log.*
+import android.util.Base64
+import org.json.JSONObject
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -12,11 +12,13 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.ContributorSummary
 import club.gifters.giftersclub.model.Notification
@@ -29,7 +31,6 @@ import club.gifters.giftersclub.network.WishlistApi
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import coil.load
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import retrofit2.HttpException
 import java.text.NumberFormat
 import java.time.Instant
@@ -160,7 +161,7 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
                 // Show contribute button
                 view.findViewById<Button>(R.id.btnContribute).apply {
                     visibility = View.VISIBLE
-                    setOnClickListener { showContributeDialog(wish, total) }
+                    setOnClickListener { showContributeBottomSheet(wish, total) }
                 }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Failed to load wishlist details", Toast.LENGTH_SHORT).show()
@@ -177,32 +178,37 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
         return JSONObject(decoded).optString("sub")
     }
 
-    private fun showContributeDialog(wishlist: Wishlist, contributed: Int) {
+    private fun showContributeBottomSheet(wishlist: Wishlist, contributed: Int) {
         val remaining = wishlist.tokens - contributed
-        val input = EditText(requireContext()).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER
+        val sheet = BottomSheetDialog(requireContext())
+        val content = layoutInflater.inflate(R.layout.fragment_contribute_bottom_sheet, null)
+        sheet.setContentView(content)
+        (sheet.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet))?.let { sheetView ->
+            BottomSheetBehavior.from(sheetView).apply {
+                isFitToContents = true
+                state = BottomSheetBehavior.STATE_EXPANDED
+            }
+        }
+        val input = content.findViewById<EditText>(R.id.etContributeAmount).apply {
             hint = "Enter amount (max $remaining)"
         }
-        val dialog = AlertDialog.Builder(requireContext())
-            .setTitle("Contribute tokens")
-            .setView(input)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton("Contribute", null)
-            .create()
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val amount = input.text.toString().toIntOrNull() ?: 0
-                when {
-                    amount <= 0 -> Toast.makeText(requireContext(), "Enter a valid contribution amount.", Toast.LENGTH_SHORT).show()
-                    amount > remaining -> Toast.makeText(requireContext(), "Cannot contribute more than remaining $remaining tokens.", Toast.LENGTH_SHORT).show()
-                    else -> {
-                        dialog.dismiss()
-                        continueContributionFlow(wishlist, amount)
-                    }
+        content.findViewById<Button>(R.id.btnCancelContribute).setOnClickListener {
+            sheet.dismiss()
+        }
+        content.findViewById<Button>(R.id.btnConfirmContribute).setOnClickListener {
+            val amount = input.text.toString().toIntOrNull() ?: 0
+            when {
+                amount <= 0 -> Toast.makeText(requireContext(), 
+                    "Enter a valid contribution amount.", Toast.LENGTH_SHORT).show()
+                amount > remaining -> Toast.makeText(requireContext(), 
+                    "Cannot contribute more than $remaining tokens.", Toast.LENGTH_SHORT).show()
+                else -> {
+                    sheet.dismiss()
+                    continueContributionFlow(wishlist, amount)
                 }
             }
         }
-        dialog.show()
+        sheet.show()
     }
 
     private fun continueContributionFlow(wishlist: Wishlist, amount: Int) {

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_rounded_top"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tvContributeTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="8dp"
+        android:textSize="20sp"
+        android:text="@string/contribute_tokens" />
+
+    <EditText
+        android:id="@+id/etContributeAmount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/enter_amount"
+        android:autofillHints="@null"
+        android:inputType="number"
+        android:text="@string/_100"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/btnCancelContribute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_yellow_orange_gradient"
+            android:text="@string/cancel" />
+
+        <Button
+            android:id="@+id/btnConfirmContribute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:background="@drawable/bg_pink_indigo_gradient"
+            android:paddingHorizontal="15dp"
+            android:text="@string/contribute" />
+    </LinearLayout>
+</LinearLayout>
