@@ -103,6 +103,6 @@ interface CommentApi {
     @GET("comments")
     suspend fun searchComments(
         @Query("select", encoded = true) select: String = "post_id",
-        @Query("or",      encoded = true) orFilter: String
+        @Query("or", encoded = true) orFilter: String
     ): List<Comment>
 }

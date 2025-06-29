@@ -8,10 +8,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import club.gifters.giftersclub.R
+import android.util.Log
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.explore.ExploreUserAdapter
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.gifts.GifterFragment
+import club.gifters.giftersclub.AuthUtils
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch
 
 /**
@@ -19,14 +23,18 @@ import kotlinx.coroutines.launch
  */
 class ExploreUsersFragment : Fragment(R.layout.fragment_explore_users) {
     companion object {
+        private const val TAG = "ExploreUsersFragment"
         private const val ARG_QUERY = "query"
+        private const val ARG_LIST = "arg_list"
 
-        fun newInstance(query: String): ExploreUsersFragment {
-            return ExploreUsersFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_QUERY, query)
-                }
-            }
+        /** Instantiate with query string. */
+        fun newInstance(query: String): ExploreUsersFragment = ExploreUsersFragment().apply {
+            arguments = Bundle().apply { putString(ARG_QUERY, query) }
+        }
+
+        /** Instantiate with preloaded user list. */
+        fun newInstanceFromList(list: List<Profile>): ExploreUsersFragment = ExploreUsersFragment().apply {
+            arguments = Bundle().apply { putString(ARG_LIST, Gson().toJson(list)) }
         }
     }
 
@@ -46,13 +54,24 @@ class ExploreUsersFragment : Fragment(R.layout.fragment_explore_users) {
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = adapter
         swipe.isRefreshing = true
+        arguments?.getString(ARG_LIST)?.let { json ->
+            val type = object : TypeToken<List<Profile>>() {}.type
+            adapter.submitList(Gson().fromJson(json, type))
+            swipe.isRefreshing = false
+            return
+        }
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val wild = "*${'$'}{query}*"
-                val orFilter = "(username.ilike.${'$'}wild,name.ilike.${'$'}wild)"
-                val users = RetrofitClient.profileApi.searchProfiles("*", orFilter)
-                adapter.submitList(users)
+                // reuse GiftFragment user search logic
+                val filter = "(username.ilike.*${query}*,email.ilike.*${query}*)"
+                Log.d(TAG, "User search filter=$filter")
+                val raw = RetrofitClient.profileApi.searchProfiles("*", filter)
+                val currentUser = AuthUtils.getCurrentUserId(requireContext())
+                val results = raw.filter { it.userId != currentUser }
+                Log.d(TAG, "Users found=${results.size}")
+                adapter.submitList(results)
             } catch (e: Exception) {
+                Log.w(TAG, "User search failed", e)
                 adapter.submitList(emptyList())
             } finally {
                 swipe.isRefreshing = false

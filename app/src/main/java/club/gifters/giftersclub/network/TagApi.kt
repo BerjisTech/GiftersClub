@@ -16,6 +16,6 @@ interface TagApi {
         @Query("select", encoded = true) select: String = "*",
         @Query("name.ilike", encoded = true) nameFilter: String,
         @Query("order", encoded = true) order: String = "created_at.desc",
-        @Query("limit") limit: Int = 10
+        @Query("limit", encoded = true) limit: Int = 10
     ): List<Tag>
 }

@@ -1,6 +1,7 @@
 package club.gifters.giftersclub.network
 
 import club.gifters.giftersclub.model.Post
+import club.gifters.giftersclub.model.SearchExploreResult
 import club.gifters.giftersclub.model.PostMedia
 import club.gifters.giftersclub.model.Tag
 import club.gifters.giftersclub.model.CreatePostRequest
@@ -96,4 +97,28 @@ interface PostApi {
         @Query("limit") limit: Int,
         @Query("offset") offset: Int
     ): List<Post>
+
+    /**
+     * Fetch posts by a set of explicit post IDs, with optional media type filter.
+     */
+    @GET("posts")
+    suspend fun getPostsByIds(
+        @Query("select", encoded = true) select: String =
+            "*,profile:profiles(id,user_id,username,image)," +
+            "media:post_media(id,media_type,url,order,created_at)",
+        @Query("id", encoded = true) idFilter: String,
+        @Query("media.media_type", encoded = true) mediaTypeFilter: String? = null,
+        @Query("order", encoded = true) order: String,
+        @Query("limit") limit: Int = 50,
+        @Query("offset") offset: Int = 0
+    ): List<Post>
+
+    /**
+     * RPC for unified explore search on backend.
+     */
+    @Headers("Prefer: params=single-object")
+    @POST("rpc/search_explore")
+    suspend fun searchExploreRpc(
+        @Body params: Map<String, @JvmSuppressWildcards Any>
+    ): SearchExploreResult
 }

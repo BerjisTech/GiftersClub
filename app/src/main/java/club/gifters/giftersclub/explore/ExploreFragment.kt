@@ -17,12 +17,25 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.network.SearchQueriesApi
+import club.gifters.giftersclub.model.SearchExploreResult
 import kotlinx.coroutines.launch
+import android.util.Log
+import club.gifters.giftersclub.explore.SuggestionAdapter
+import club.gifters.giftersclub.explore.ExploreTopFragment
+import club.gifters.giftersclub.explore.ExplorePostsFragment
+import club.gifters.giftersclub.explore.ExploreUsersFragment
+import club.gifters.giftersclub.explore.ExploreLiveFragment
+import retrofit2.HttpException
 
 /**
  * Fragment for explore search with suggestions and tabbed results.
+ * Loads default explore results on initial view creation.
  */
 class ExploreFragment : Fragment(R.layout.fragment_explore) {
+    companion object {
+        private const val TAG = "ExploreFragment"
+    }
     private lateinit var etSearch: EditText
     private lateinit var rvSuggestions: RecyclerView
     private lateinit var suggestionAdapter: SuggestionAdapter
@@ -48,10 +61,14 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         etSearch.doAfterTextChanged { editable ->
             val q = editable.toString().trim()
             if (q.length >= 2) {
+                Log.d(TAG, "Suggest query='$q'")
                 viewLifecycleOwner.lifecycleScope.launch {
                     try {
-                        val tags = RetrofitClient.tagApi.searchTags("*", "*${'$'}q*")
-                        val suggestions = tags.map { it.name }
+                        val results = RetrofitClient.searchQueriesApi.searchQueries(
+                            queryFilter = "ilike.*${q}*"
+                        )
+                        val suggestions = results.map { it.query }
+                        Log.d(TAG, "Suggestions count=${suggestions.size}")
                         if (suggestions.isNotEmpty()) {
                             suggestionAdapter.submitList(suggestions)
                             rvSuggestions.visibility = View.VISIBLE
@@ -60,6 +77,7 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                             rvSuggestions.visibility = View.GONE
                         }
                     } catch (e: Exception) {
+                        Log.w(TAG, "Suggestion fetch failed", e)
                         suggestionAdapter.submitList(emptyList())
                         rvSuggestions.visibility = View.GONE
                     }
@@ -77,27 +95,72 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                 true
             } else false
         }
+
+        // Load default explore results immediately
+        performSearch("")
     }
 
     private fun performSearch(query: String) {
+        Log.d(TAG, "Perform search for='$query'")
         rvSuggestions.visibility = View.GONE
         hideKeyboard()
         tabLayout.visibility = View.VISIBLE
         viewPager.visibility = View.VISIBLE
-        viewPager.adapter = object : FragmentStateAdapter(this) {
-            override fun getItemCount() = tabTitles.size
-            override fun createFragment(position: Int) = when (position) {
-                0 -> ExplorePostsFragment.newInstance(query, null)
-                1 -> ExplorePostsFragment.newInstance(query, "video")
-                2 -> ExplorePostsFragment.newInstance(query, "photo")
-                3 -> ExploreUsersFragment.newInstance(query)
-                4 -> ExploreLiveFragment.newInstance(query)
-                else -> ExplorePostsFragment.newInstance(query, null)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val result = RetrofitClient.postApi.searchExploreRpc(mapOf("q" to query))
+                // Populate tabs from unified result
+                viewPager.adapter = object : FragmentStateAdapter(this@ExploreFragment) {
+                    override fun getItemCount() = tabTitles.size
+                    override fun createFragment(position: Int) = when (position) {
+                        0 -> ExploreTopFragment.newInstance(result.top, result.users, result.live)
+                        1 -> ExplorePostsFragment.newInstanceFromList(result.videos)
+                        2 -> ExplorePostsFragment.newInstanceFromList(result.photos)
+                        3 -> ExploreUsersFragment.newInstanceFromList(result.users)
+                        4 -> ExploreLiveFragment.newInstanceFromList(result.live)
+                        else -> ExploreTopFragment.newInstance(result.top, result.users, result.live)
+                    }
+                }
+                TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
+                    tab.text = tabTitles[pos]
+                }.attach()
+            } catch (e: Exception) {
+                Log.w(TAG, "Search RPC failed", e)
+                // If the unified RPC is not available, fall back to the per-tab search fragments
+                if (e is retrofit2.HttpException && e.code() == 404) {
+                    viewPager.adapter = object : FragmentStateAdapter(this@ExploreFragment) {
+                        override fun getItemCount() = tabTitles.size
+                        override fun createFragment(position: Int) = when (position) {
+                            0 -> ExplorePostsFragment.newInstance(query, null)
+                            1 -> ExplorePostsFragment.newInstance(query, "video")
+                            2 -> ExplorePostsFragment.newInstance(query, "photo")
+                            3 -> ExploreUsersFragment.newInstance(query)
+                            4 -> ExploreLiveFragment.newInstance(query)
+                            else -> ExplorePostsFragment.newInstance(query, null)
+                        }
+                    }
+                    TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
+                        tab.text = tabTitles[pos]
+                    }.attach()
+                } else {
+                    // On other errors, show empty lists so tabs still render
+                    viewPager.adapter = object : FragmentStateAdapter(this@ExploreFragment) {
+                        override fun getItemCount() = tabTitles.size
+                        override fun createFragment(position: Int) = when (position) {
+                            0 -> ExploreTopFragment.newInstance(emptyList(), emptyList(), emptyList())
+                            1 -> ExplorePostsFragment.newInstanceFromList(emptyList())
+                            2 -> ExplorePostsFragment.newInstanceFromList(emptyList())
+                            3 -> ExploreUsersFragment.newInstanceFromList(emptyList())
+                            4 -> ExploreLiveFragment.newInstanceFromList(emptyList())
+                            else -> ExploreTopFragment.newInstance(emptyList(), emptyList(), emptyList())
+                        }
+                    }
+                    TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
+                        tab.text = tabTitles[pos]
+                    }.attach()
+                }
             }
         }
-        TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
-            tab.text = tabTitles[pos]
-        }.attach()
     }
 
     private fun hideKeyboard() {

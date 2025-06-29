@@ -85,6 +85,17 @@ interface LiveStreamApi {
     @GET("live_streams")
     suspend fun searchLiveStreams(
         @Query("select", encoded = true) select: String = "*",
-        @Query("or", encoded = true) orFilter: String
+        @Query("or") orFilter: String,
+        @Query("status") statusFilter: String? = null
+    ): List<LiveStream>
+
+    /**
+     * Fetch live streams by host IDs, filtering for status.
+     */
+    @GET("live_streams")
+    suspend fun getLiveStreamsByHosts(
+        @Query("select", encoded = true) select: String = "*",
+        @Query("host_id") hostFilter: String,
+        @Query("status") statusFilter: String = "eq.live"
     ): List<LiveStream>
 }
