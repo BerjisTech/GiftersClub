@@ -81,4 +81,19 @@ interface PostApi {
         @Query("offset") offset: Int,
         @Query("user_id", encoded = true) userIdFilter: String
     ): List<Post>
+
+    /**
+     * Search posts by keyword in content and optional media type filter.
+     */
+    @GET("posts")
+    suspend fun searchPosts(
+        @Query("select", encoded = true) select: String =
+            "*,profile:profiles(id,user_id,username,image)," +
+            "media:post_media(id,media_type,url,order,created_at)",
+        @Query("or", encoded = true) orFilter: String,
+        @Query("media.media_type", encoded = true) mediaTypeFilter: String? = null,
+        @Query("order", encoded = true) order: String,
+        @Query("limit") limit: Int,
+        @Query("offset") offset: Int
+    ): List<Post>
 }

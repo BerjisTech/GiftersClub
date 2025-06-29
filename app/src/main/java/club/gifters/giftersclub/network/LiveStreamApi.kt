@@ -78,4 +78,13 @@ interface LiveStreamApi {
         @Query("live_stream_id", encoded = true) streamFilter: String,
         @Query("order", encoded = true) order: String = "created_at.asc"
     ): List<LiveStreamGiftGallery>
+
+    /**
+     * Search live streams by title or description keyword.
+     */
+    @GET("live_streams")
+    suspend fun searchLiveStreams(
+        @Query("select", encoded = true) select: String = "*",
+        @Query("or", encoded = true) orFilter: String
+    ): List<LiveStream>
 }

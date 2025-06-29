@@ -96,4 +96,13 @@ interface CommentApi {
     suspend fun getCommentReplyCount(
         @Query("parent_comment_id", encoded = true) parentIdFilter: String
     ): Response<Void>
+
+    /**
+     * Search comments by content keyword, returning post_id for matched comments.
+     */
+    @GET("comments")
+    suspend fun searchComments(
+        @Query("select", encoded = true) select: String = "post_id",
+        @Query("or",      encoded = true) orFilter: String
+    ): List<Comment>
 }

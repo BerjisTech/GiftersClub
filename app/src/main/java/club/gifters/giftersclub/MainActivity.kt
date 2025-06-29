@@ -27,6 +27,8 @@ import kotlinx.coroutines.launch
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.social.FriendsFragment
+import club.gifters.giftersclub.explore.ExploreFragment
+import android.widget.ImageView
 
 class MainActivity : AppCompatActivity() {
 
@@ -53,6 +55,12 @@ class MainActivity : AppCompatActivity() {
         TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
             tab.text = tabTitles[pos]
         }.attach()
+        findViewById<ImageView>(R.id.exploreIcon).setOnClickListener {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, ExploreFragment())
+                .addToBackStack(null)
+                .commit()
+        }
 
 
         // Setup bottom navigation
@@ -122,8 +130,9 @@ class MainActivity : AppCompatActivity() {
             val current = supportFragmentManager.findFragmentById(R.id.mainContentContainer)
             val isCreatePost = current is CreatePostFragment
             tabLayout.visibility = if (isRoot) View.VISIBLE else View.GONE
-            bottomNav.visibility = if (isCreatePost) View.GONE else View.VISIBLE
-            toolbar.visibility = if (isRoot || isCreatePost) View.GONE else View.VISIBLE
+            val isExplore = current is ExploreFragment
+            bottomNav.visibility = if (isCreatePost || isExplore) View.GONE else View.VISIBLE
+            toolbar.visibility = if (isRoot || isCreatePost || isExplore) View.GONE else View.VISIBLE
             // overlay container for bottom-nav screens
             findViewById<FrameLayout>(R.id.mainContentContainer).visibility = if (isRoot) View.GONE else View.VISIBLE
             supportActionBar?.setDisplayHomeAsUpEnabled(!isRoot && !isCreatePost)

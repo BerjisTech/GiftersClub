@@ -16,6 +16,7 @@ import club.gifters.giftersclub.network.WithdrawalApi
 import club.gifters.giftersclub.network.SubscriptionsApi
 import club.gifters.giftersclub.network.RecentGiftsApi
 import club.gifters.giftersclub.network.LiveStreamApi
+import club.gifters.giftersclub.network.TagApi
 
 /**
  * Singleton Retrofit client configured with Supabase REST URL and API key interceptor.
@@ -168,4 +169,8 @@ object RetrofitClient {
     val subscriptionsApi: SubscriptionsApi = retrofit.create(SubscriptionsApi::class.java)
     val functionsApi: FunctionsApi = functionsRetrofit.create(FunctionsApi::class.java)
     val commentApi: club.gifters.giftersclub.gifts.CommentApi = retrofit.create(club.gifters.giftersclub.gifts.CommentApi::class.java)
+    /**
+     * API for searching tags (hashtags) for explore suggestions.
+     */
+    val tagApi: TagApi = retrofit.create(TagApi::class.java)
 }
