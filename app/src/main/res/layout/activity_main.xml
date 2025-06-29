@@ -36,15 +36,23 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <View
+        android:id="@+id/placeholderView"
+        android:layout_width="55dp"
+        android:layout_height="55dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/topTabLayout"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="10dp"
         android:background="@android:color/transparent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@id/placeholderView"
+        app:layout_constraintEnd_toStartOf="@id/exploreIcon"
+        app:layout_constraintTop_toTopOf="@id/exploreIcon"
+        app:layout_constraintBottom_toBottomOf="@id/exploreIcon"
         app:tabGravity="center"
         app:tabIndicatorColor="@android:color/white"
         app:tabIndicatorFullWidth="false"
@@ -52,6 +60,15 @@
         app:tabMode="scrollable"
         app:tabTextAppearance="@style/TopTabsStyling"
         app:tabTextColor="@color/white" />
+
+    <ImageView
+        android:id="@+id/exploreIcon"
+        android:layout_width="55dp"
+        android:layout_height="55dp"
+        android:padding="15dp"
+        android:src="@drawable/explore"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
