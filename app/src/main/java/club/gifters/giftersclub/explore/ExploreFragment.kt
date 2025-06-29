@@ -62,26 +62,34 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
             val q = editable.toString().trim()
             if (q.length >= 2) {
                 Log.d(TAG, "Suggest query='$q'")
-                viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        val results = RetrofitClient.searchQueriesApi.searchQueries(
-                            queryFilter = "ilike.*${q}*"
-                        )
-                        val suggestions = results.map { it.query }
-                        Log.d(TAG, "Suggestions count=${suggestions.size}")
-                        if (suggestions.isNotEmpty()) {
-                            suggestionAdapter.submitList(suggestions)
-                            rvSuggestions.visibility = View.VISIBLE
-                        } else {
-                            suggestionAdapter.submitList(emptyList())
-                            rvSuggestions.visibility = View.GONE
-                        }
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Suggestion fetch failed", e)
-                        suggestionAdapter.submitList(emptyList())
-                        rvSuggestions.visibility = View.GONE
-                    }
+                Log.d("ExploreFragment", "Using BASE_URL=${RetrofitClient.BASE_URL}")
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val results = RetrofitClient.searchQueriesApi.searchQueries(
+                    queryFilter = "ilike.*${q}*"
+                )
+                val suggestions = results.map { it.query }
+                Log.d(TAG, "Suggestions count=${suggestions.size}")
+                if (suggestions.isNotEmpty()) {
+                    suggestionAdapter.submitList(suggestions)
+                    rvSuggestions.visibility = View.VISIBLE
+                } else {
+                    suggestionAdapter.submitList(emptyList())
+                    rvSuggestions.visibility = View.GONE
                 }
+            } catch (e: HttpException) {
+                val url = e.response()?.raw()?.request?.url
+                val code = e.code()
+                val errorBody = e.response()?.errorBody()?.string()
+                Log.w(TAG, "Suggestion fetch failed HTTP $code for $url: $errorBody")
+                suggestionAdapter.submitList(emptyList())
+                rvSuggestions.visibility = View.GONE
+            } catch (e: Exception) {
+                Log.w(TAG, "Suggestion fetch failed", e)
+                suggestionAdapter.submitList(emptyList())
+                rvSuggestions.visibility = View.GONE
+            }
+        }
             } else {
                 suggestionAdapter.submitList(emptyList())
                 rvSuggestions.visibility = View.GONE
@@ -106,9 +114,12 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         hideKeyboard()
         tabLayout.visibility = View.VISIBLE
         viewPager.visibility = View.VISIBLE
+        Log.d("ExploreFragment", "Using BASE_URL=${RetrofitClient.BASE_URL}")
         viewLifecycleOwner.lifecycleScope.launch {
             try {
+                Log.d(TAG, "→ RPC search_explore body={q=$query}")
                 val result = RetrofitClient.postApi.searchExploreRpc(mapOf("q" to query))
+                Log.d(TAG, "← RPC search_explore result count: top=${result.top.size}, videos=${result.videos.size}, photos=${result.photos.size}")
                 // Populate tabs from unified result
                 viewPager.adapter = object : FragmentStateAdapter(this@ExploreFragment) {
                     override fun getItemCount() = tabTitles.size
@@ -124,10 +135,13 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                 TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
                     tab.text = tabTitles[pos]
                 }.attach()
-            } catch (e: Exception) {
-                Log.w(TAG, "Search RPC failed", e)
-                // If the unified RPC is not available, fall back to the per-tab search fragments
-                if (e is retrofit2.HttpException && e.code() == 404) {
+            } catch (e: HttpException) {
+                val url = e.response()?.raw()?.request?.url
+                val code = e.code()
+                val errorBody = e.response()?.errorBody()?.string()
+                Log.w(TAG, "Search RPC failed HTTP $code for $url: $errorBody")
+                // If the unified RPC is not available (404), fall back
+                if (code == 404) {
                     viewPager.adapter = object : FragmentStateAdapter(this@ExploreFragment) {
                         override fun getItemCount() = tabTitles.size
                         override fun createFragment(position: Int) = when (position) {
