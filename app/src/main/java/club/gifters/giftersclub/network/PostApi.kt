@@ -116,7 +116,7 @@ interface PostApi {
     /**
      * RPC for unified explore search on backend.
      */
-    @Headers("Prefer: params=single-object")
+    @Headers("Prefer: params=multiple-objects")
     @POST("rpc/search_explore")
     suspend fun searchExploreRpc(
         @Body params: Map<String, @JvmSuppressWildcards Any>
