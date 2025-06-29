@@ -60,7 +60,8 @@ class ExploreLiveFragment : Fragment(R.layout.fragment_explore_live) {
                 val direct = RetrofitClient.liveStreamApi.searchLiveStreams(
                     select = "*",
                     orFilter = directFilter,
-                    statusFilter = "eq.live"
+                    statusFilter = "eq.live",
+                    order = "live_stream_viewer_count.desc,live_stream_comment_count_so_far.desc"
                 )
                 // 2) live_streams where host matches profiles and status live
                 val userFilter = "(username.ilike.*${query}*,name.ilike.*${query}*)"
@@ -71,7 +72,8 @@ class ExploreLiveFragment : Fragment(R.layout.fragment_explore_live) {
                     RetrofitClient.liveStreamApi.getLiveStreamsByHosts(
                         select = "*",
                         hostFilter = "in.(${hostIds.joinToString(",")})",
-                        statusFilter = "eq.live"
+                        statusFilter = "eq.live",
+                        order = "live_stream_viewer_count.desc,live_stream_comment_count_so_far.desc"
                     )
                 } else emptyList()
                 // merge unique, direct first then user

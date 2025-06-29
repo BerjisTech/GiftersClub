@@ -63,7 +63,7 @@ class ExploreUsersFragment : Fragment(R.layout.fragment_explore_users) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 // reuse GiftFragment user search logic
-                val filter = "(username.ilike.*${query}*,email.ilike.*${query}*)"
+                val filter = "(username.ilike.*${query}*,name.ilike.*${query}*)"
                 Log.d(TAG, "User search filter=$filter")
                 val raw = RetrofitClient.profileApi.searchProfiles("*", filter)
                 val currentUser = AuthUtils.getCurrentUserId(requireContext())
