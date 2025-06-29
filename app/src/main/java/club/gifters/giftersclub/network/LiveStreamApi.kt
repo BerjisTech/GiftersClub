@@ -85,8 +85,9 @@ interface LiveStreamApi {
     @GET("live_streams")
     suspend fun searchLiveStreams(
         @Query("select", encoded = true) select: String = "*",
-        @Query("or") orFilter: String,
-        @Query("status") statusFilter: String? = null
+        @Query("or",     encoded = true) orFilter: String,
+        @Query("status", encoded = true) statusFilter: String? = null,
+        @Query("order",  encoded = true) order: String? = null
     ): List<LiveStream>
 
     /**
@@ -96,6 +97,7 @@ interface LiveStreamApi {
     suspend fun getLiveStreamsByHosts(
         @Query("select", encoded = true) select: String = "*",
         @Query("host_id") hostFilter: String,
-        @Query("status") statusFilter: String = "eq.live"
+        @Query("status") statusFilter: String = "eq.live",
+        @Query("order", encoded = true) order: String = "live_stream_viewer_count.desc,live_stream_comment_count_so_far.desc"
     ): List<LiveStream>
 }

@@ -15,7 +15,7 @@ interface SearchQueriesApi {
     suspend fun searchQueries(
         @Query("select",   encoded = true) select: String   = "query",
         @Query("distinct", encoded = true) distinct: String = "query",
-        @Query("\"query\"", encoded = true) queryFilter: String,
+        @Query("query") queryFilter: String,
         @Query("order", encoded = true) order: String = "suggestion_index.desc,result_clicked_index.desc",
         @Query("limit") limit: Int = 10
     ): List<SearchQuery>

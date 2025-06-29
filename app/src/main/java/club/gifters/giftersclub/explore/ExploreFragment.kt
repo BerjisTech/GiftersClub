@@ -103,9 +103,6 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                 true
             } else false
         }
-
-        // Load default explore results immediately
-        performSearch("")
     }
 
     private fun performSearch(query: String) {
