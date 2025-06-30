@@ -24,8 +24,11 @@ import club.gifters.giftersclub.model.Profile
 
 /**
  * Adapter for mixed explore 'Top' feed (posts, users, live streams).
+ * @param onUserClick optional callback invoked when a user item is clicked.
  */
-class ExploreTopAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(Diff) {
+class ExploreTopAdapter(
+    private val onUserClick: (Profile) -> Unit = {}
+) : ListAdapter<Any, RecyclerView.ViewHolder>(Diff) {
     companion object {
         const val TYPE_POST = 0
         const val TYPE_USER = 1
@@ -168,10 +171,16 @@ class ExploreTopAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(Diff) {
             }
         }
     }
-    private class UserVH(view: View) : RecyclerView.ViewHolder(view) {
+    private inner class UserVH(view: View) : RecyclerView.ViewHolder(view) {
         private val iv: ImageView = view.findViewById(R.id.ivAvatar)
         private val tvName: TextView = view.findViewById(R.id.tvName)
         private val tvUsername: TextView = view.findViewById(R.id.tvUsername)
+
+        init {
+            view.setOnClickListener {
+                (getItem(bindingAdapterPosition) as? Profile)?.let { onUserClick(it) }
+            }
+        }
 
         fun bind(item: Any) {
             val profile = item as Profile
