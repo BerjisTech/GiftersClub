@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import kotlinx.coroutines.launch
@@ -59,7 +59,7 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
         val swipe = view.findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
         val rv = view.findViewById<RecyclerView>(R.id.rvPosts)
         adapter = ExplorePostAdapter()
-        rv.layoutManager = LinearLayoutManager(requireContext())
+        rv.layoutManager = GridLayoutManager(requireContext(), 2)
         rv.adapter = adapter
         swipe.isRefreshing = true
         // If created with explicit list, show it and return

@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
         // Setup ViewPager + top tabs (swipeable like TikTok)
         val tabTitles = listOf("Posts", "Gifts", "Gifters", "Wishlists")
         val tabLayout = findViewById<TabLayout>(R.id.topTabLayout)
+        val exploreIcon = findViewById<ImageView>(R.id.exploreIcon)
         val viewPager = findViewById<ViewPager2>(R.id.viewPagerMain)
         viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = tabTitles.size
@@ -130,6 +131,7 @@ class MainActivity : AppCompatActivity() {
             val current = supportFragmentManager.findFragmentById(R.id.mainContentContainer)
             val isCreatePost = current is CreatePostFragment
             tabLayout.visibility = if (isRoot) View.VISIBLE else View.GONE
+            exploreIcon.visibility = if (isRoot) View.VISIBLE else View.GONE
             val isExplore = current is ExploreFragment
             bottomNav.visibility = if (isCreatePost || isExplore) View.GONE else View.VISIBLE
             toolbar.visibility = if (isRoot || isCreatePost || isExplore) View.GONE else View.VISIBLE
