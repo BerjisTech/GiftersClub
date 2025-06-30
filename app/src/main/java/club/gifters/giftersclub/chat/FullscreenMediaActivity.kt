@@ -6,6 +6,7 @@ import android.widget.ImageView
 import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import coil.load
 import club.gifters.giftersclub.R
 
 /**
@@ -28,7 +29,7 @@ class FullscreenMediaActivity : AppCompatActivity() {
         } else {
             vv.isVisible = false
             iv.isVisible = true
-            iv.setImageURI(Uri.parse(url))
+            iv.load(url) { placeholder(android.R.color.darker_gray) }
         }
         // Tap to close fullscreen
         findViewById<ImageView>(R.id.fullscreenClose).setOnClickListener { finish() }
