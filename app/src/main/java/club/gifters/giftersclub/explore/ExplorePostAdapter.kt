@@ -6,6 +6,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import coil.load
+import coil.transform.CircleCropTransformation
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -28,7 +30,7 @@ class ExplorePostAdapter : ListAdapter<Post, ExplorePostAdapter.VH>(Diff) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_explore_post, parent, false)
-        val height = (parent.context.resources.displayMetrics.heightPixels * 0.43f).toInt()
+        val height = (parent.context.resources.displayMetrics.heightPixels * 0.47f).toInt()
         view.layoutParams = RecyclerView.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             height
@@ -41,14 +43,26 @@ class ExplorePostAdapter : ListAdapter<Post, ExplorePostAdapter.VH>(Diff) {
     }
 
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {
-        private val tvUser: TextView = view.findViewById(R.id.tvUsername)
-        private val tvContent: TextView = view.findViewById(R.id.tvContent)
+        private val avatarImage: com.google.android.material.imageview.ShapeableImageView =
+            view.findViewById(R.id.avatarImage)
+        private val usernameText: TextView = view.findViewById(R.id.usernameText)
+        private val contentText: TextView = view.findViewById(R.id.contentText)
         private val mediaPager: ViewPager2 = view.findViewById(R.id.mediaPager)
         private val mediaIndicatorLayout: LinearLayout = view.findViewById(R.id.mediaIndicatorLayout)
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         fun bind(post: Post) {
-            tvUser.text = post.profile?.username.orEmpty()
-            tvContent.text = post.content.orEmpty()
+            post.profile?.let { p ->
+                usernameText.text = p.username
+                if (p.image.isNotBlank()) {
+                    avatarImage.load(p.image) {
+                        placeholder(android.R.color.darker_gray)
+                        transformations(coil.transform.CircleCropTransformation())
+                    }
+                } else {
+                    avatarImage.setImageResource(android.R.color.darker_gray)
+                }
+            }
+            contentText.text = post.content.orEmpty()
             val mediaList = post.media ?: emptyList()
             mediaPager.adapter = PostMediaAdapter(mediaList)
             mediaIndicatorLayout.removeAllViews()

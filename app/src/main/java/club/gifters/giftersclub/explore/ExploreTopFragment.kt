@@ -5,6 +5,7 @@ import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import club.gifters.giftersclub.explore.ExploreTopAdapter
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.LiveStream
 import club.gifters.giftersclub.model.Post
@@ -36,7 +37,12 @@ class ExploreTopFragment : Fragment(R.layout.fragment_explore_top) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val rv = view.findViewById<RecyclerView>(R.id.rvTop)
-        rv.layoutManager = GridLayoutManager(requireContext(), 2)
+        val grid = GridLayoutManager(requireContext(), 2)
+        grid.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int =
+                if (rv.adapter?.getItemViewType(position) == ExploreTopAdapter.TYPE_POST) 1 else 2
+        }
+        rv.layoutManager = grid
         val adapter = ExploreTopAdapter()
         rv.adapter = adapter
 

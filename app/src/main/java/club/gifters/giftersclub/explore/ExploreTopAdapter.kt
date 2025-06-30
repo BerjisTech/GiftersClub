@@ -6,6 +6,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import coil.load
+import coil.transform.CircleCropTransformation
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -21,9 +23,9 @@ import club.gifters.giftersclub.model.Profile
  */
 class ExploreTopAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(Diff) {
     companion object {
-        private const val TYPE_POST = 0
-        private const val TYPE_USER = 1
-        private const val TYPE_LIVE = 2
+        const val TYPE_POST = 0
+        const val TYPE_USER = 1
+        const val TYPE_LIVE = 2
 
         private val Diff = object : DiffUtil.ItemCallback<Any>() {
             override fun areItemsTheSame(old: Any, new: Any) = when {
@@ -54,10 +56,24 @@ class ExploreTopAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(Diff) {
             )
             PostVH(view)
         }
-        TYPE_USER -> UserVH(LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_search_user, parent, false))
-        TYPE_LIVE -> LiveVH(LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_explore_live, parent, false))
+        TYPE_USER -> {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_search_user, parent, false)
+            view.layoutParams = RecyclerView.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            UserVH(view)
+        }
+        TYPE_LIVE -> {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_explore_live, parent, false)
+            view.layoutParams = RecyclerView.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            LiveVH(view)
+        }
         else      -> PostVH(LayoutInflater.from(parent.context)
             .inflate(R.layout.item_explore_post, parent, false))
     }
@@ -71,14 +87,28 @@ class ExploreTopAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(Diff) {
     }
 
     private class PostVH(view: View) : RecyclerView.ViewHolder(view) {
-        private val tv = view.findViewById<TextView>(R.id.tvContent)
+        private val avatarImage: com.google.android.material.imageview.ShapeableImageView =
+            view.findViewById(R.id.avatarImage)
+        private val usernameText: TextView = view.findViewById(R.id.usernameText)
+        private val contentText: TextView = view.findViewById(R.id.contentText)
         private val mediaPager: ViewPager2 = view.findViewById(R.id.mediaPager)
         private val mediaIndicatorLayout: LinearLayout = view.findViewById(R.id.mediaIndicatorLayout)
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
 
         fun bind(item: Any) {
             val post = item as Post
-            tv.text = post.content.orEmpty()
+            post.profile?.let { p ->
+                usernameText.text = p.username
+                if (p.image.isNotBlank()) {
+                    avatarImage.load(p.image) {
+                        placeholder(android.R.color.darker_gray)
+                        transformations(CircleCropTransformation())
+                    }
+                } else {
+                    avatarImage.setImageResource(android.R.color.darker_gray)
+                }
+            }
+            contentText.text = post.content.orEmpty()
             val mediaList = post.media ?: emptyList()
             mediaPager.adapter = PostMediaAdapter(mediaList)
             mediaIndicatorLayout.removeAllViews()
