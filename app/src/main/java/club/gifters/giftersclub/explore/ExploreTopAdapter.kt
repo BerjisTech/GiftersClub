@@ -8,6 +8,10 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import coil.load
 import coil.transform.CircleCropTransformation
+import android.text.format.DateUtils
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -94,6 +98,7 @@ class ExploreTopAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(Diff) {
         private val mediaPager: ViewPager2 = view.findViewById(R.id.mediaPager)
         private val mediaIndicatorLayout: LinearLayout = view.findViewById(R.id.mediaIndicatorLayout)
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
+        private val timestampText: TextView = view.findViewById(R.id.timestampText)
 
         fun bind(item: Any) {
             val post = item as Post
@@ -108,6 +113,7 @@ class ExploreTopAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(Diff) {
                     avatarImage.setImageResource(android.R.color.darker_gray)
                 }
             }
+            timestampText.text = formatRelativeTime(post.createdAt)
             contentText.text = post.content.orEmpty()
             val mediaList = post.media ?: emptyList()
             mediaPager.adapter = PostMediaAdapter(mediaList)
@@ -145,13 +151,62 @@ class ExploreTopAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(Diff) {
                 pageChangeCallback = callback
             }
         }
+
+        private fun formatRelativeTime(iso: String?): String {
+            if (iso.isNullOrBlank()) return ""
+            return try {
+                val trimmed = iso.replace(Regex("\\.(\\d{3})\\d*"), ".$1")
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", java.util.Locale.US)
+                sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                val then = sdf.parse(trimmed)?.time ?: return iso
+                DateUtils.getRelativeTimeSpanString(
+                    then, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS,
+                    DateUtils.FORMAT_ABBREV_RELATIVE
+                ).toString()
+            } catch (_: Exception) {
+                iso
+            }
+        }
     }
     private class UserVH(view: View) : RecyclerView.ViewHolder(view) {
-        private val tv = view.findViewById<TextView>(R.id.tvName)
-        fun bind(item: Any) { tv.text = (item as Profile).username }
+        private val iv: ImageView = view.findViewById(R.id.ivAvatar)
+        private val tvName: TextView = view.findViewById(R.id.tvName)
+        private val tvUsername: TextView = view.findViewById(R.id.tvUsername)
+
+        fun bind(item: Any) {
+            val profile = item as Profile
+            tvName.text = profile.name.orEmpty()
+            tvUsername.text = "@${profile.username}"
+            if (profile.image.isNotBlank()) {
+                iv.load(profile.image) {
+                    transformations(CircleCropTransformation())
+                    placeholder(android.R.color.darker_gray)
+                }
+            } else {
+                iv.setImageResource(android.R.color.darker_gray)
+            }
+        }
     }
     private class LiveVH(view: View) : RecyclerView.ViewHolder(view) {
         private val tv = view.findViewById<TextView>(R.id.tvTitle)
         fun bind(item: Any) { tv.text = (item as LiveStream).title }
+    }
+    private fun formatRelativeTime(iso: String?): String {
+        if (iso.isNullOrBlank()) return ""
+        return try {
+            val trimmed = iso.replace(Regex("\\.(\\d{3})\\d*"), ".$1")
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+            val then = sdf.parse(trimmed)?.time ?: return iso
+            DateUtils.getRelativeTimeSpanString(
+                then,
+                System.currentTimeMillis(),
+                DateUtils.MINUTE_IN_MILLIS,
+                DateUtils.FORMAT_ABBREV_RELATIVE
+            ).toString()
+        } catch (_: Exception) {
+            iso
+        }
     }
 }

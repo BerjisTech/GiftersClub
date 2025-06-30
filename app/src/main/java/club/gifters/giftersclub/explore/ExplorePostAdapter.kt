@@ -8,6 +8,10 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import coil.load
 import coil.transform.CircleCropTransformation
+import android.text.format.DateUtils
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -50,6 +54,7 @@ class ExplorePostAdapter : ListAdapter<Post, ExplorePostAdapter.VH>(Diff) {
         private val mediaPager: ViewPager2 = view.findViewById(R.id.mediaPager)
         private val mediaIndicatorLayout: LinearLayout = view.findViewById(R.id.mediaIndicatorLayout)
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
+        private val timestampText: TextView = view.findViewById(R.id.timestampText)
         fun bind(post: Post) {
             post.profile?.let { p ->
                 usernameText.text = p.username
@@ -62,6 +67,7 @@ class ExplorePostAdapter : ListAdapter<Post, ExplorePostAdapter.VH>(Diff) {
                     avatarImage.setImageResource(android.R.color.darker_gray)
                 }
             }
+            timestampText.text = formatRelativeTime(post.createdAt)
             contentText.text = post.content.orEmpty()
             val mediaList = post.media ?: emptyList()
             mediaPager.adapter = PostMediaAdapter(mediaList)
@@ -98,6 +104,24 @@ class ExplorePostAdapter : ListAdapter<Post, ExplorePostAdapter.VH>(Diff) {
                 mediaPager.registerOnPageChangeCallback(callback)
                 pageChangeCallback = callback
             }
+        }
+    }
+    private fun formatRelativeTime(iso: String?): String {
+        if (iso.isNullOrBlank()) return ""
+        return try {
+            val trimmed = iso.replace(Regex("\\.(\\d{3})\\d*"), ".$1")
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+            val then = sdf.parse(trimmed)?.time ?: return iso
+            DateUtils.getRelativeTimeSpanString(
+                then,
+                System.currentTimeMillis(),
+                DateUtils.MINUTE_IN_MILLIS,
+                DateUtils.FORMAT_ABBREV_RELATIVE
+            ).toString()
+        } catch (_: Exception) {
+            iso
         }
     }
 }
