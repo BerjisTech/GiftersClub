@@ -1,133 +1,238 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="16dp">
+    android:layout_height="match_parent">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <!-- Available Balance -->
-        <TextView
-            android:id="@+id/tvAvailableBalanceTitle"
-            android:layout_width="wrap_content"
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Available Balance"
-            android:textStyle="bold"
-            android:textSize="18sp"
-            android:layout_marginBottom="8dp" />
-        <TextView
-            android:id="@+id/tvAvailableBalanceTokens"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0 tokens"
-            android:textSize="24sp" />
-        <TextView
-            android:id="@+id/tvAvailableBalanceCurrency"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="$0.00"
-            android:textSize="24sp" />
+            android:layout_margin="10dp"
+            android:elevation="20dp"
+            app:cardCornerRadius="10dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_green_emerald_gradient"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <!-- Available Balance -->
+                <TextView
+                    android:id="@+id/tvAvailableBalanceTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/available_balance"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="20dp"
+                    android:gravity="bottom"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginBottom="10dp"
+                        android:contentDescription="@string/token_icon"
+                        android:src="@drawable/token" />
+
+                    <TextView
+                        android:id="@+id/tvAvailableBalanceTokens"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/_0"
+                        android:textColor="@color/white"
+                        android:textSize="44sp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvAvailableBalanceCurrency"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/_0_00"
+                    android:textColor="@color/white"
+                    android:textSize="24sp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+
         <TextView
             android:id="@+id/tvAvailableBalanceSummary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginBottom="16dp"
             android:text=""
-            android:layout_marginBottom="16dp" />
+            android:textColor="@color/slate_300"
+            android:textSize="16sp" />
 
         <!-- Request Withdrawal -->
-        <TextView
-            android:id="@+id/tvRequestWithdrawalTitle"
-            android:layout_width="wrap_content"
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Request Withdrawal"
-            android:textStyle="bold"
-            android:textSize="18sp"
-            android:layout_marginBottom="8dp" />
-        <TextView
-            android:id="@+id/tvRequestWithdrawalInfo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Withdraw your earnings to your preferred payment method"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginHorizontal="10dp"
+            android:elevation="20dp"
+            app:cardCornerRadius="10dp">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Amount (KES)"
-            android:layout_marginTop="8dp" />
-        <EditText
-            android:id="@+id/etWithdrawAmount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:hint="0"
-            android:layout_marginBottom="8dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_half_transparent_white"
+                android:gravity="start"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Payment Method"
-            android:layout_marginTop="8dp" />
-        <Spinner
-            android:id="@+id/spinnerPaymentMethod"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp" />
+                <TextView
+                    android:id="@+id/tvRequestWithdrawalTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/request_withdrawal"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tvPaymentDetailsLabel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Details"
-            android:visibility="gone" />
-        <EditText
-            android:id="@+id/etPaymentDetails"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:hint="Enter details"
-            android:inputType="text"
-            android:layout_marginBottom="8dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="8dp"
+                    android:layout_margin="8dp"
+                    android:text="@string/amount_kes"
+                    android:textStyle="bold" />
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/bg_half_transparent_white"
+                    app:cardCornerRadius="10dp">
+
+                    <EditText
+                        android:id="@+id/etWithdrawAmount"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@null"
+                        android:hint="@string/_0"
+                        android:inputType="number"
+                        android:padding="8dp" />
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="8dp"
+                    android:layout_margin="8dp"
+                    android:text="@string/payment_method"
+                    android:textStyle="bold" />
+
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="5dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/bg_half_transparent_white"
+                    app:cardCornerRadius="10dp">
+
+                    <Spinner
+                        android:id="@+id/spinnerPaymentMethod"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="10dp" />
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:id="@+id/tvPaymentDetailsLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="8dp"
+                    android:layout_margin="8dp"
+                    android:text="@string/details"
+                    android:textStyle="bold"
+                    android:visibility="gone"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/bg_half_transparent_white"
+                    app:cardCornerRadius="10dp">
+
+                    <EditText
+                        android:id="@+id/etPaymentDetails"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@null"
+                        android:hint="@string/enter_details"
+                        android:inputType="text"
+                        android:padding="8dp"
+                        android:visibility="gone"/>
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/bg_half_transparent_white"
+                    app:cardCornerRadius="10dp">
+
+                    <Button
+                        android:id="@+id/btnSubmitWithdrawal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_pink_rose_gradient"
+                        android:text="@string/request_withdrawal"
+                        android:textColor="@color/white" />
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
 
         <TextView
             android:id="@+id/tvWithdrawalSummary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text=""
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="8dp"
+            android:text="" />
 
-        <Button
-            android:id="@+id/btnSubmitWithdrawal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Request Withdrawal" />
 
         <!-- History -->
         <TextView
             android:id="@+id/tvHistoryTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Your recent withdrawal requests"
-            android:textStyle="bold"
+            android:layout_marginHorizontal="10dp"
             android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="8dp"
+            android:text="@string/your_recent_withdrawal_requests"
+            android:textStyle="bold" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvWithdrawals"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="10dp" />
 
         <TextView
             android:id="@+id/tvEmptyWithdrawals"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="No withdrawal requests yet."
-            android:visibility="gone"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="8dp" />
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginVertical="20dp"
+            android:text="@string/no_withdrawal_requests_yet"
+            android:visibility="gone" />
 
     </LinearLayout>
 </ScrollView>

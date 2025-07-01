@@ -64,9 +64,9 @@ class WithdrawalAdapter(
             tvStatus.text = wr.status.replaceFirstChar { it.uppercase() }
             val ctx = tvStatus.context
             val colorRes = when (wr.status) {
-                "disbursed" -> android.R.color.holo_green_light
-                "requested", "processing" -> android.R.color.holo_orange_light
-                "rejected" -> android.R.color.holo_red_light
+                "disbursed" -> R.color.green_300
+                "requested", "processing" -> R.color.orange_300
+                "rejected" -> R.color.red_400
                 else -> android.R.color.darker_gray
             }
             tvStatus.setBackgroundColor(ContextCompat.getColor(ctx, colorRes))

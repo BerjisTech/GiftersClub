@@ -135,4 +135,19 @@
     <string name="message_content">Message content</string>
     <string name="profile_image">Profile Image</string>
     <string name="dashboard">Dashboard</string>
+    <string name="available_balance">Available Balance</string>
+    <string name="_0_tokens">0 tokens</string>
+    <string name="_0_00">$0.00</string>
+    <string name="_0">0</string>
+    <string name="request_withdrawal">Request Withdrawal</string>
+    <string name="payment_method">Payment Method</string>
+    <string name="details">Details</string>
+    <string name="amount_kes">Amount (KES)</string>
+    <string name="no_withdrawal_requests_yet">No withdrawal requests yet.</string>
+    <string name="your_recent_withdrawal_requests">Your recent withdrawal requests</string>
+    <string name="withdraw_your_earnings_to_your_preferred_payment_method">Withdraw your earnings to your preferred payment method</string>
+    <string name="_0_kes_usd_0_00_via_method">0 KES (~ USD 0.00) via Method</string>
+    <string name="_2025_01_01">2025-01-01</string>
+    <string name="reason">Reason: ...</string>
+    <string name="enter_details">Enter details</string>
 </resources>
