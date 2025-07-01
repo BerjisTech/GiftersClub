@@ -13,7 +13,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            app:cardCornerRadius="20dp">
+            app:cardCornerRadius="10dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -54,9 +54,10 @@
 
                 <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/ivProfileImage"
-                    android:layout_width="100dp"
-                    android:layout_height="100dp"
-                    android:contentDescription="Profile Image"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:layout_marginEnd="10dp"
+                    android:contentDescription="@string/profile_image"
                     android:scaleType="centerCrop"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
 
@@ -71,11 +72,11 @@
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="0dp"
+                android:gravity="center_vertical"
                 android:orientation="vertical"
-                android:gravity="start"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toEndOf="@id/userImageFrame"
                 app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/userImageFrame"
                 app:layout_constraintTop_toTopOf="parent">
 
                 <!-- Full name section -->
@@ -122,6 +123,26 @@
                         android:text="🖍" />
                 </LinearLayout>
 
+                <!-- Share profile -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:elevation="5dp"
+                    app:cardCornerRadius="3dp">
+
+                    <Button
+                        android:id="@+id/btnShareProfile"
+                        android:layout_width="wrap_content"
+                        android:layout_height="20dp"
+                        android:background="@drawable/bg_purple_fuchsia_gradient"
+                        android:paddingHorizontal="10dp"
+                        android:text="@string/share_profile"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Small"
+                        android:textColor="@color/white"
+                        android:textStyle="normal" />
+                </androidx.cardview.widget.CardView>
+
             </LinearLayout>
 
 
@@ -129,37 +150,38 @@
 
 
         <!-- Stats section -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="24dp"
-            android:background="#CCCCCC" />
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="10dp">
+            android:layout_margin="10dp"
+            app:cardCornerRadius="10dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@drawable/bg_sky_blue_gradient"
                 android:gravity="center"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:padding="30dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:text="@string/tokens"
+                    android:textColor="@color/white"
+                    android:textSize="30sp"
                     android:textStyle="bold" />
 
                 <LinearLayout
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical">
 
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
                         android:contentDescription="@string/token_icon"
                         android:src="@drawable/token" />
 
@@ -167,13 +189,16 @@
                         android:id="@+id/tvTokenBalance"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0" />
+                        android:text="0"
+                        android:textColor="@color/white"
+                        android:textSize="40sp" />
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/balance" />
+                    android:text="@string/balance"
+                    android:textColor="@color/white" />
 
                 <View
                     android:layout_width="match_parent"
@@ -185,7 +210,7 @@
                     android:id="@+id/tokensBalanceNumbers"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginVertical="20dp"
                     android:gravity="center"
                     android:orientation="horizontal">
 
@@ -200,6 +225,18 @@
                         app:layout_constraintEnd_toStartOf="@id/tokensNumbersDivider"
                         app:layout_constraintStart_toStartOf="@id/tokensBalanceNumbers"
                         app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="9dp"
+                            android:text="@string/received"
+                            android:textAlignment="center"
+                            android:textColor="@color/white"
+                            app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
+                            app:layout_constraintEnd_toStartOf="@id/tokensNumbersDivider"
+                            app:layout_constraintStart_toStartOf="@id/tokensBalanceNumbers"
+                            app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -219,6 +256,7 @@
                                 android:layout_marginHorizontal="9dp"
                                 android:text="0"
                                 android:textAlignment="textEnd"
+                                android:textColor="@color/white"
                                 app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
                                 app:layout_constraintEnd_toStartOf="@id/tokensNumbersDivider"
                                 app:layout_constraintStart_toStartOf="@id/tokensBalanceNumbers"
@@ -226,16 +264,6 @@
                         </LinearLayout>
 
 
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginHorizontal="9dp"
-                            android:text="@string/received"
-                            android:textAlignment="center"
-                            app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
-                            app:layout_constraintEnd_toStartOf="@id/tokensNumbersDivider"
-                            app:layout_constraintStart_toStartOf="@id/tokensBalanceNumbers"
-                            app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers" />
                     </LinearLayout>
 
                     <View
@@ -261,6 +289,18 @@
                         app:layout_constraintStart_toEndOf="@id/tokensNumbersDivider"
                         app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers">
 
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="9dp"
+                            android:text="@string/sent"
+                            android:textColor="@color/white"
+                            app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
+                            app:layout_constraintEnd_toEndOf="@id/tokensBalanceNumbers"
+                            app:layout_constraintStart_toEndOf="@id/tokensNumbersDivider"
+                            app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers" />
+
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -278,21 +318,12 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginHorizontal="9dp"
                                 android:text="0"
+                                android:textColor="@color/white"
                                 app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
                                 app:layout_constraintEnd_toEndOf="@id/tokensBalanceNumbers"
                                 app:layout_constraintStart_toEndOf="@id/tokensNumbersDivider"
                                 app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers" />
                         </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginHorizontal="9dp"
-                            android:text="@string/sent"
-                            app:layout_constraintBottom_toBottomOf="@id/tokensBalanceNumbers"
-                            app:layout_constraintEnd_toEndOf="@id/tokensBalanceNumbers"
-                            app:layout_constraintStart_toEndOf="@id/tokensNumbersDivider"
-                            app:layout_constraintTop_toTopOf="@id/tokensBalanceNumbers" />
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -302,16 +333,25 @@
                     android:layout_height="wrap_content"
                     android:gravity="center">
 
-                    <Button
-                        android:id="@+id/btnBuyTokens"
+                    <androidx.cardview.widget.CardView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="7dp"
-                        android:text="@string/buy_tokens"
+                        app:cardCornerRadius="5dp"
                         app:layout_constraintBottom_toBottomOf="@id/tokenButtons"
                         app:layout_constraintEnd_toStartOf="@id/tokenButtonsDivider"
                         app:layout_constraintStart_toStartOf="@id/tokenButtons"
-                        app:layout_constraintTop_toTopOf="@id/tokenButtons" />
+                        app:layout_constraintTop_toTopOf="@id/tokenButtons">
+
+                        <Button
+                            android:id="@+id/btnBuyTokens"
+                            android:layout_width="match_parent"
+                            android:layout_height="20dp"
+                            android:background="@drawable/bg_yellow_orange_gradient"
+                            android:text="@string/buy_tokens"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Small"
+                            android:textColor="@color/white" />
+                    </androidx.cardview.widget.CardView>
 
 
                     <View
@@ -325,240 +365,227 @@
                         app:layout_constraintStart_toStartOf="@id/tokenButtons"
                         app:layout_constraintTop_toTopOf="@id/tokenButtons" />
                     <!-- Withdrawal link -->
-                    <Button
-                        android:id="@+id/btnWithdrawals"
+                    <androidx.cardview.widget.CardView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="7dp"
-                        android:text="Withdrawals"
+                        app:cardCornerRadius="5dp"
                         app:layout_constraintBottom_toBottomOf="@id/tokenButtons"
                         app:layout_constraintEnd_toEndOf="@id/tokenButtons"
                         app:layout_constraintStart_toEndOf="@id/tokenButtonsDivider"
-                        app:layout_constraintTop_toTopOf="@id/tokenButtons" />
+                        app:layout_constraintTop_toTopOf="@id/tokenButtons">
+
+                        <Button
+                            android:id="@+id/btnWithdrawals"
+                            android:layout_width="match_parent"
+                            android:layout_height="20dp"
+                            android:background="@drawable/bg_yellow_orange_gradient"
+                            android:text="@string/withdrawals"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Small"
+                            android:textColor="@color/white" />
+                    </androidx.cardview.widget.CardView>
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </LinearLayout>
 
         </androidx.cardview.widget.CardView>
 
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/giftsAndWishlistsCard"
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center">
+            android:layout_margin="10dp"
+            app:cardCornerRadius="10dp">
 
-            <androidx.cardview.widget.CardView
-                android:id="@+id/giftsCard"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="10dp"
-                app:layout_constraintBottom_toBottomOf="@id/giftsAndWishlistsCard"
-                app:layout_constraintEnd_toStartOf="@id/giftsAndWishlistsCardDivider"
-                app:layout_constraintStart_toStartOf="@id/giftsAndWishlistsCard"
-                app:layout_constraintTop_toTopOf="@id/giftsAndWishlistsCard">
+                android:background="@drawable/bg_rose_amber_gradient"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="30dp">
 
-                <LinearLayout
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:contentDescription="@string/gift_icon"
+                    android:src="@drawable/gift" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Gifts"
+                    android:textColor="@color/white"
+                    android:textStyle="bold" />
+
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="9dp">
+                    android:layout_height="wrap_content">
 
-                    <ImageView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:contentDescription="@string/gift_icon"
-                        android:src="@drawable/gift" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:id="@+id/giftsReceivedBox"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Gifts"
-                        android:textStyle="bold" />
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/giftBoxesDivider"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
 
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-
-                        <LinearLayout
-                            android:id="@+id/giftsReceivedBox"
-                            android:layout_width="0dp"
+                        <TextView
+                            android:id="@+id/tvGiftsReceived"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toStartOf="@id/giftBoxesDivider"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent">
+                            android:text="0"
+                            android:textColor="@color/white" />
 
-                            <TextView
-                                android:id="@+id/tvGiftsReceived"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/received" />
-                        </LinearLayout>
-
-                        <View
-                            android:id="@+id/giftBoxesDivider"
-                            android:layout_width="1dp"
+                        <TextView
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
+                            android:text="@string/received"
+                            android:textColor="@color/white" />
+                    </LinearLayout>
 
-                        <LinearLayout
-                            android:id="@+id/giftsSentBox"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toEndOf="@id/giftBoxesDivider"
-                            app:layout_constraintTop_toTopOf="parent">
-
-                            <TextView
-                                android:id="@+id/tvGiftsSent"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/sent" />
-                        </LinearLayout>
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-
-            <View
-                android:id="@+id/giftsAndWishlistsCardDivider"
-                android:layout_width="1dp"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="9dp"
-                android:background="#CCCCCC"
-                app:layout_constraintBottom_toBottomOf="@id/giftsAndWishlistsCard"
-                app:layout_constraintEnd_toEndOf="@id/giftsAndWishlistsCard"
-                app:layout_constraintStart_toStartOf="@id/giftsAndWishlistsCard"
-                app:layout_constraintTop_toTopOf="@id/giftsAndWishlistsCard" />
-
-            <androidx.cardview.widget.CardView
-                android:id="@+id/wishlistsCard"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_margin="10dp"
-                app:layout_constraintBottom_toBottomOf="@id/giftsAndWishlistsCard"
-                app:layout_constraintEnd_toEndOf="@id/giftsAndWishlistsCard"
-                app:layout_constraintStart_toEndOf="@id/giftsAndWishlistsCardDivider"
-                app:layout_constraintTop_toTopOf="@id/giftsAndWishlistsCard">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="9dp">
-
-                    <ImageView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:contentDescription="@string/wishlist_icon"
-                        android:src="@drawable/wishlist" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <View
+                        android:id="@+id/giftBoxesDivider"
+                        android:layout_width="1dp"
                         android:layout_height="wrap_content"
-                        android:text="Wishlists"
-                        android:textStyle="bold" />
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
 
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:id="@+id/giftsSentBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/giftBoxesDivider"
+                        app:layout_constraintTop_toTopOf="parent">
 
-                        <LinearLayout
-                            android:id="@+id/wishlistReceivedBox"
-                            android:layout_width="0dp"
+                        <TextView
+                            android:id="@+id/tvGiftsSent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toStartOf="@id/wishlistBoxesDivider"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent">
+                            android:text="0"
+                            android:textColor="@color/white" />
 
-                            <TextView
-                                android:id="@+id/tvWishlistsOpen"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/open" />
-                        </LinearLayout>
-
-                        <View
-                            android:id="@+id/wishlistBoxesDivider"
-                            android:layout_width="1dp"
+                        <TextView
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
+                            android:text="@string/sent"
+                            android:textColor="@color/white" />
+                    </LinearLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
-                        <LinearLayout
-                            android:id="@+id/wishlistSentBox"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toEndOf="@id/wishlistBoxesDivider"
-                            app:layout_constraintTop_toTopOf="parent">
-
-                            <TextView
-                                android:id="@+id/tvWishlistsFulfilled"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/fulfilled" />
-                        </LinearLayout>
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <!-- Gifts and wishlists -->
-
-
-        <!-- Share profile -->
-        <Button
-            android:id="@+id/btnShareProfile"
-            android:layout_width="wrap_content"
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/share_profile" />
+            android:layout_margin="10dp"
+            app:cardCornerRadius="10dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_purple_fuchsia_gradient"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="30dp">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:contentDescription="@string/wishlist_icon"
+                    android:src="@drawable/wishlist" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Wishlists"
+                    android:textColor="@color/white"
+                    android:textStyle="bold" />
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:id="@+id/wishlistReceivedBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/wishlistBoxesDivider"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <TextView
+                            android:id="@+id/tvWishlistsOpen"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="@color/white" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/open"
+                            android:textColor="@color/white" />
+                    </LinearLayout>
+
+                    <View
+                        android:id="@+id/wishlistBoxesDivider"
+                        android:layout_width="1dp"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <LinearLayout
+                        android:id="@+id/wishlistSentBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/wishlistBoxesDivider"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <TextView
+                            android:id="@+id/tvWishlistsFulfilled"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="@color/white" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/fulfilled"
+                            android:textColor="@color/white" />
+                    </LinearLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+
 
         <!-- Logout -->
         <Button
             android:id="@+id/btnLogout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_red_orange_gradient"
             android:layout_marginTop="8dp"
+            android:textColor="@color/white"
             android:text="@string/logout" />
 
     </LinearLayout>

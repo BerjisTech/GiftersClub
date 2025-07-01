@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -107,7 +108,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
                 }
 
                 // Settings button for account owner
-                val btnSettings = view.findViewById<ImageView>(R.id.btnSettings)
+                val btnSettings = view.findViewById<LinearLayout>(R.id.btnSettings)
                 if (currentUserId != null && currentUserId == prof.userId) {
                     btnSettings.isVisible = true
                     btnSettings.setOnClickListener {

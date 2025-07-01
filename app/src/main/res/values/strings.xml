@@ -133,4 +133,6 @@
     <string name="contribute">Contribute</string>
     <string name="_100">100</string>
     <string name="message_content">Message content</string>
+    <string name="profile_image">Profile Image</string>
+    <string name="dashboard">Dashboard</string>
 </resources>
