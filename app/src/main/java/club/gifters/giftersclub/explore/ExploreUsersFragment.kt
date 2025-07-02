@@ -46,7 +46,7 @@ class ExploreUsersFragment : Fragment(R.layout.fragment_explore_users) {
         val swipe = view.findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
         val rv = view.findViewById<RecyclerView>(R.id.rvUsers)
         adapter = ExploreUserAdapter { profile: Profile ->
-            parentFragmentManager.beginTransaction()
+            requireActivity().supportFragmentManager.beginTransaction()
                 .replace(R.id.mainContentContainer, GifterFragment.newInstance(profile.username))
                 .addToBackStack(null)
                 .commit()

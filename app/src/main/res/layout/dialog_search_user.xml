@@ -10,7 +10,7 @@
         android:id="@+id/etSearch"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Search username or email"
+        android:hint="@string/search_user_to_gift"
         android:inputType="text"
         />
 

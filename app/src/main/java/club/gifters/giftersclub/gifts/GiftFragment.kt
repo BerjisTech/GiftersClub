@@ -273,6 +273,11 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
             }
         }
         dialog.setContentView(view)
+        dialog.setOnShowListener {
+            (dialog as BottomSheetDialog)
+                .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
+                ?.setBackgroundResource(android.R.color.transparent)
+        }
         dialog.show()
         // Auto-focus search field and show keyboard
         et.requestFocus()

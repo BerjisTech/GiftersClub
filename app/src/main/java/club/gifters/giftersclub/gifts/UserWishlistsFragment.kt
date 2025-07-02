@@ -35,7 +35,12 @@ class UserWishlistsFragment : Fragment(R.layout.fragment_wishlists) {
 
         val rv = view.findViewById<RecyclerView>(R.id.rvWishlists)
         rv.layoutManager = LinearLayoutManager(requireContext())
-        val adapter = WishlistAdapter { /* no-op */ }
+        val adapter = WishlistAdapter { wishlist ->
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, WishlistDetailFragment.newInstance(wishlist.id))
+                .addToBackStack(null)
+                .commit()
+        }
         rv.adapter = adapter
 
         // hide create button

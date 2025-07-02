@@ -11,14 +11,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginVertical="20dp"
-        app:cardCornerRadius="10dp">
+        app:cardCornerRadius="50dp">
 
         <ImageView
             android:layout_width="150dp"
             android:layout_height="150dp"
             android:background="@drawable/bg_pink_indigo_gradient"
             android:contentDescription="@string/favicon"
-            android:src="@drawable/ic_heart_red" />
+            android:src="@drawable/token" />
     </androidx.cardview.widget.CardView>
 
     <TextView
@@ -102,7 +102,7 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@color/slate_200"
+            android:background="@drawable/bg_sky_blue_gradient"
             android:gravity="center_vertical"
             android:paddingHorizontal="30dp"
             android:paddingVertical="10dp">
@@ -118,6 +118,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
+                android:textColor="@color/white"
                 android:background="@android:color/transparent"
                 android:text="@string/continue_with_google" />
         </LinearLayout>

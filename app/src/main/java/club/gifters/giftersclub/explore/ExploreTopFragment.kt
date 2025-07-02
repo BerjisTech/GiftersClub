@@ -45,7 +45,7 @@ class ExploreTopFragment : Fragment(R.layout.fragment_explore_top) {
         }
         rv.layoutManager = grid
         val adapter = ExploreTopAdapter { profile ->
-            parentFragmentManager.beginTransaction()
+            requireActivity().supportFragmentManager.beginTransaction()
                 .replace(R.id.mainContentContainer, GifterFragment.newInstance(profile.username))
                 .addToBackStack(null)
                 .commit()
