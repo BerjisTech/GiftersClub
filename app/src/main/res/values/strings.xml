@@ -82,6 +82,16 @@
     <string name="open">Open</string>
     <string name="subscribe_to_view">Subscribe to view</string>
     <string name="purchase_to_view">Purchase to view</string>
+    <string name="login_to_proceed">Please login to proceed.</string>
+    <string name="subscription_successful">Subscription successful!</string>
+    <string name="subscription_failed">Subscription failed</string>
+    <string name="purchase_successful">Purchase successful!</string>
+    <string name="purchase_failed">Purchase failed</string>
+    <string name="subscribe_to_creator">Subscribe to creator</string>
+    <string name="subscription_type_hint">Subscription type (one_time, monthly, annual)</string>
+    <string name="subscribe">Subscribe</string>
+    <string name="purchase_access">Purchase access</string>
+    <string name="purchase_for_tokens">Purchase access for %1$d tokens?</string>
     <string name="balance">Balance</string>
     <string name="gift_icon">Gift Icon</string>
     <string name="wishlist_icon">Wishlist Icon</string>
@@ -94,7 +104,7 @@
     <string name="toggle_photo_video">Toggle photo/video</string>
     <string name="enter_text">Enter text</string>
     <string name="colors">Colors</string>
-    <string name="text_color">Text Color</string>
+    <string name="text_color">A</string>
     <string name="background_color">BG Color</string>
     <string name="bg_image">BG Image</string>
     <string name="font">Font</string>

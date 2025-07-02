@@ -17,6 +17,11 @@ import androidx.appcompat.app.AlertDialog
 import android.widget.EditText
 import android.widget.LinearLayout
 import club.gifters.giftersclub.AuthUtils
+import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.TextView
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import android.content.DialogInterface
 import retrofit2.HttpException
 import club.gifters.giftersclub.gifts.PostAdapter
 import kotlinx.coroutines.launch
@@ -110,64 +115,65 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     private fun onLocked(post: Post) {
         val userId = AuthUtils.getCurrentUserId(requireContext())
             ?: run {
-                Toast.makeText(requireContext(), "Please login to proceed.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.login_to_proceed), Toast.LENGTH_SHORT).show()
                 return
             }
         if (post.accessType == "subscription") {
-            // prompt for subscription parameters
-            val durationInput = EditText(requireContext()).apply {
-                hint = "Subscription type (one_time, monthly, annual)"
+            val sheet = BottomSheetDialog(requireContext())
+            sheet.setOnShowListener { dialogInterface: android.content.DialogInterface ->
+                (dialogInterface as BottomSheetDialog)
+                    .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
+                    ?.setBackgroundResource(R.drawable.bg_rounded_top)
             }
-            val tokensInput = EditText(requireContext()).apply {
-                hint = "Price in tokens"
-                inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            }
-            LinearLayout(requireContext()).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(50, 20, 50, 0)
-                addView(durationInput)
-                addView(tokensInput)
-            }.let { layout ->
-                AlertDialog.Builder(requireContext())
-                    .setTitle("Subscribe to creator")
-                    .setView(layout)
-                    .setPositiveButton("Subscribe") { _, _ ->
-                        val durationType = durationInput.text.toString().trim()
-                        val tokens = tokensInput.text.toString().toIntOrNull() ?: 0
-                        val txRef = "sub_${userId}_${System.currentTimeMillis()}"
-                        lifecycleScope.launch {
-                            val ok = SubscriptionApiHolder.subscribeToCreator(
-                                post.userId, userId, tokens, durationType, txRef
-                            )
-                            Toast.makeText(
-                                requireContext(),
-                                if (ok) "Subscription successful!" else "Subscription failed",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show()
-            }
-        } else if (post.accessType == "paid") {
-            AlertDialog.Builder(requireContext())
-                .setTitle("Purchase access")
-                .setMessage("Purchase access for ${post.price ?: 0} tokens?")
-                .setPositiveButton("Buy") { _, _ ->
-                    val txRef = "post_${userId}_${post.id}_${System.currentTimeMillis()}"
-                    lifecycleScope.launch {
-                        val ok = SubscriptionApiHolder.purchasePostAccess(
-                            post.id, userId, post.price ?: 0, txRef
-                        )
-                        Toast.makeText(
-                            requireContext(),
-                            if (ok) "Purchase successful!" else "Purchase failed",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+            val view = layoutInflater.inflate(R.layout.dialog_subscribe_creator, null)
+            val etDur = view.findViewById<EditText>(R.id.etDurationType)
+            val etTok = view.findViewById<EditText>(R.id.etSubscriptionTokens)
+            view.findViewById<Button>(R.id.btnSubscribeConfirm).setOnClickListener {
+                val durationType = etDur.text.toString().trim()
+                val tokens = etTok.text.toString().toIntOrNull() ?: 0
+                val txRef = "sub_${userId}_${System.currentTimeMillis()}"
+                sheet.dismiss()
+                lifecycleScope.launch {
+                    val ok = SubscriptionApiHolder.subscribeToCreator(
+                        post.userId, userId, tokens, durationType, txRef
+                    )
+                    Toast.makeText(
+                        requireContext(),
+                        if (ok) getString(R.string.subscription_successful) else getString(R.string.subscription_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
+            }
+            view.findViewById<Button>(R.id.btnSubscribeCancel).setOnClickListener { sheet.dismiss() }
+            sheet.setContentView(view)
+            sheet.show()
+        } else if (post.accessType == "paid") {
+            val sheet = BottomSheetDialog(requireContext())
+            sheet.setOnShowListener { dialogInterface: android.content.DialogInterface ->
+                (dialogInterface as BottomSheetDialog)
+                    .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
+                    ?.setBackgroundResource(R.drawable.bg_rounded_top)
+            }
+            val view = layoutInflater.inflate(R.layout.dialog_purchase_post_access, null)
+            val tvMsg = view.findViewById<TextView>(R.id.tvPurchaseMessage)
+            tvMsg.text = getString(R.string.purchase_for_tokens, post.price ?: 0)
+            view.findViewById<Button>(R.id.btnPurchaseConfirm).setOnClickListener {
+                val txRef = "post_${userId}_${post.id}_${System.currentTimeMillis()}"
+                sheet.dismiss()
+                lifecycleScope.launch {
+                    val ok = SubscriptionApiHolder.purchasePostAccess(
+                        post.id, userId, post.price ?: 0, txRef
+                    )
+                    Toast.makeText(
+                        requireContext(),
+                        if (ok) getString(R.string.purchase_successful) else getString(R.string.purchase_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            view.findViewById<Button>(R.id.btnPurchaseCancel).setOnClickListener { sheet.dismiss() }
+            sheet.setContentView(view)
+            sheet.show()
         }
     }
 

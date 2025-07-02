@@ -20,7 +20,7 @@ import coil.load
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import club.gifters.giftersclub.social.SubscriptionApiHolder
-import kotlinx.coroutines.launch
+import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.gifts.CommentApiHolder
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -179,20 +179,24 @@ class PostAdapter(
             val postDetails = itemView.findViewById<View>(R.id.postDetails)
             overlay.visibility = View.GONE
             scope.launch {
-                val hasAccess = when (post.accessType) {
+            val hasAccess = if (AuthUtils.getCurrentUserId(itemView.context) == post.userId) {
+                true
+            } else {
+                when (post.accessType) {
                     "subscription" -> SubscriptionApiHolder.hasSubscription(post.userId)
-                    "paid" -> SubscriptionApiHolder.hasPostAccess(post.id)
-                    else -> true
+                    "paid"         -> SubscriptionApiHolder.hasPostAccess(post.id)
+                    else            -> true
                 }
+            }
                 if (!hasAccess) {
                     mediaPager.visibility = View.GONE
                     indicatorLayout.visibility = View.GONE
                     postDetails.visibility = View.GONE
                     overlay.visibility = View.VISIBLE
                     lockAction.text = if (post.accessType == "subscription")
-                        itemView.context.getString(R.string.subscribe_to_view)
+                        itemView.context.getString(R.string.subscribe_to_creator)
                     else
-                        itemView.context.getString(R.string.purchase_to_view)
+                        itemView.context.getString(R.string.purchase_access)
                     overlay.setOnClickListener { onLocked(post) }
                     return@launch
                 }
