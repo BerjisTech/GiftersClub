@@ -23,15 +23,14 @@
             android:visibility="gone">
 
             <!-- Editable canvas (rendered to bitmap) -->
-            <FrameLayout
-                android:id="@+id/flTextCanvas"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintDimensionRatio="1:1"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                <FrameLayout
+                    android:id="@+id/flTextCanvas"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
 
                 <EditText
                     android:id="@+id/etTextPost"
@@ -115,6 +114,19 @@
 
                     <LinearLayout
                         android:id="@+id/llTextStyles"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal" />
+                </HorizontalScrollView>
+
+                <HorizontalScrollView
+                    android:id="@+id/hsvFontSizes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:id="@+id/llFontSizes"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal" />
@@ -662,3 +674,5 @@
         android:visibility="gone" />
 
 </LinearLayout>
+
+<!--TODO: Add is_story_time, is_tea and other customized post type to make it more social more vibrant-->

@@ -1,43 +1,53 @@
 package club.gifters.giftersclub.gifts
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
-import android.os.Bundle
-import android.util.Base64
-import android.util.Log
-import android.view.View
-import android.Manifest
-import android.content.pm.PackageManager
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Typeface
+import android.net.Uri
+import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
+import android.util.Log
+import android.util.TypedValue
+import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
-import android.widget.RadioGroup
+import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
-import com.google.android.material.progressindicator.CircularProgressIndicator
+import android.widget.ProgressBar
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.ToggleButton
-import android.graphics.Typeface
-import android.widget.FrameLayout
-import com.google.android.material.tabs.TabLayout
-import android.view.inputmethod.InputMethodManager
-import yuku.ambilwarna.AmbilWarnaDialog
 import androidx.appcompat.app.AlertDialog
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
+import androidx.camera.core.VideoCapture
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.model.CreatePostMediaRequest
@@ -45,38 +55,23 @@ import club.gifters.giftersclub.model.CreatePostRequest
 import club.gifters.giftersclub.model.PostTagUpsertRequest
 import club.gifters.giftersclub.model.TagUpsertRequest
 import club.gifters.giftersclub.network.RetrofitClient
-import kotlinx.coroutines.launch
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import android.widget.SeekBar
-import android.widget.ProgressBar
-import jp.co.cyberagent.android.gpuimage.GPUImageView
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageGrayscaleFilter
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageColorInvertFilter
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageContrastFilter
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageBrightnessFilter
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilterGroup
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import android.util.TypedValue
-import android.view.ViewGroup
 import com.akaita.android.circularseekbar.CircularSeekBar
 import com.akaita.android.circularseekbar.CircularSeekBar.OnCircularSeekBarChangeListener
+import com.google.android.material.progressindicator.CircularProgressIndicator
+import com.google.android.material.tabs.TabLayout
 import com.yalantis.ucrop.UCrop
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageBrightnessFilter
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageColorInvertFilter
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageContrastFilter
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilterGroup
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageGrayscaleFilter
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import club.gifters.giftersclub.gifts.FilterAdapter
-import club.gifters.giftersclub.gifts.FilterItem
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.VideoCapture
-import androidx.camera.core.Camera
-import androidx.camera.view.PreviewView
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.content.ContextCompat
+import yuku.ambilwarna.AmbilWarnaDialog
 import java.io.File
 import java.io.FileOutputStream
 import java.util.regex.Pattern
@@ -164,6 +159,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var llColorPickers: LinearLayout
     private lateinit var hsvBgImages: HorizontalScrollView
     private lateinit var llBgImages: LinearLayout
+    private lateinit var hsvFontSizes: HorizontalScrollView
+    private lateinit var llFontSizes: LinearLayout
     private lateinit var hsvFonts: HorizontalScrollView
     private lateinit var llFonts: LinearLayout
     private lateinit var tabTextTools: TabLayout
@@ -302,45 +299,95 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             llTextStyles.addView(toggle)
         }
         // Text & background color selectors: launch a full color picker
+        // Text color picker: square button with 'A', background sky-blue gradient, text colored to match!
+        val pickerSize = (48 * resources.displayMetrics.density).toInt()
         val btnTextColorPicker = Button(requireContext()).apply {
-            text = getString(R.string.text_color)
+            text = "A"
+            setBackgroundResource(R.drawable.bg_sky_blue_gradient)
+            setTextColor(etTextPost.currentTextColor)
+            layoutParams = LinearLayout.LayoutParams(pickerSize, pickerSize).apply {
+                val m = (8 * resources.displayMetrics.density).toInt()
+                setMargins(m, 0, m, 0)
+            }
             setOnClickListener {
                 AmbilWarnaDialog(
                     requireContext(),
-                    Color.BLACK,
+                    etTextPost.currentTextColor,
                     true,
                     object : AmbilWarnaDialog.OnAmbilWarnaListener {
                         override fun onOk(dialog: AmbilWarnaDialog, color: Int) {
                             etTextPost.setTextColor(color)
+                            setTextColor(color)
                         }
-
                         override fun onCancel(dialog: AmbilWarnaDialog) {}
                     }).show()
             }
         }
+        // Background color picker: square button with 'A', text always white, background tinted to canvas color
+        var currentBg = Color.WHITE
         val btnBgColorPicker = Button(requireContext()).apply {
-            text = getString(R.string.background_color)
+            text = "A"
+            setTextColor(Color.WHITE)
+            setBackgroundColor(currentBg)
+            layoutParams = LinearLayout.LayoutParams(pickerSize, pickerSize).apply {
+                val m = (8 * resources.displayMetrics.density).toInt()
+                setMargins(m, 0, m, 0)
+            }
             setOnClickListener {
                 AmbilWarnaDialog(
                     requireContext(),
-                    Color.WHITE,
+                    currentBg,
                     true,
                     object : AmbilWarnaDialog.OnAmbilWarnaListener {
                         override fun onOk(dialog: AmbilWarnaDialog, color: Int) {
+                            currentBg = color
                             flTextCanvas.setBackgroundColor(color)
+                            setBackgroundColor(color)
                         }
-
                         override fun onCancel(dialog: AmbilWarnaDialog) {}
                     }).show()
             }
         }
         llColorPickers.addView(btnTextColorPicker)
         llColorPickers.addView(btnBgColorPicker)
+        // Font size pickers
+        hsvFontSizes = view.findViewById(R.id.hsvFontSizes)
+        llFontSizes = view.findViewById(R.id.llFontSizes)
+        listOf(24, 32, 40, 48).forEach { sizeSp ->
+            val sizeBtn = TextView(requireContext()).apply {
+                text = "A"
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp.toFloat())
+                setTextColor(Color.WHITE)
+                setPadding(16, 8, 16, 8)
+                setOnClickListener { etTextPost.setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp.toFloat()) }
+            }
+            llFontSizes.addView(sizeBtn)
+        }
         listOf(
             R.drawable.black_hole, R.drawable.galaxy, R.drawable.nebula, R.drawable.solar_system,
             R.drawable.universe, R.drawable.supernova, R.drawable.castle, R.drawable.dragon,
             R.drawable.phoenix, R.drawable.mermaid, R.drawable.treasure_chest, R.drawable.unicorn,
-            R.drawable.infinity, R.drawable.time_machine
+            R.drawable.infinity, R.drawable.time_machine,
+            // Gradient backgrounds
+            R.drawable.bg_amber_indigo_gradient, R.drawable.bg_amber_yellow_gradient,
+            R.drawable.bg_blue_gray_gradient, R.drawable.bg_cyan_rose_gradient,
+            R.drawable.bg_cyan_sky_gradient, R.drawable.bg_emerald_fuchsia_gradient,
+            R.drawable.bg_emerald_teal_gradient, R.drawable.bg_fuchsia_pink_gradient,
+            R.drawable.bg_gray_indigo_gradient, R.drawable.bg_green_emerald_gradient,
+            R.drawable.bg_green_purple_gradient, R.drawable.bg_indigo_zinc_gradient,
+            R.drawable.bg_lime_green_gradient, R.drawable.bg_lime_violet_gradient,
+            R.drawable.bg_neutral_orange_gradient, R.drawable.bg_neutral_slate_gradient,
+            R.drawable.bg_orange_blue_gradient, R.drawable.bg_orange_stone_gradient,
+            R.drawable.bg_pink_indigo_gradient, R.drawable.bg_pink_rose_gradient,
+            R.drawable.bg_post_details_gradient, R.drawable.bg_purple_fuchsia_gradient,
+            R.drawable.bg_red_neutral_gradient, R.drawable.bg_red_orange_gradient,
+            R.drawable.bg_red_sky_gradient, R.drawable.bg_rose_amber_gradient,
+            R.drawable.bg_sky_blue_gradient, R.drawable.bg_sky_slate_gradient,
+            R.drawable.bg_slate_blue_gradient, R.drawable.bg_stone_amber_gradient,
+            R.drawable.bg_stone_gray_gradient, R.drawable.bg_teal_cyan_gradient,
+            R.drawable.bg_teal_pink_gradient, R.drawable.bg_violet_purple_gradient,
+            R.drawable.bg_yellow_lime_gradient, R.drawable.bg_yellow_orange_gradient,
+            R.drawable.bg_yellow_zinc_gradient, R.drawable.bg_zinc_violet_gradient
         ).forEach { resId ->
             val iv = ImageView(requireContext()).apply {
                 layoutParams = LinearLayout.LayoutParams(120, 120).apply { setMargins(8, 8, 8, 8) }
@@ -369,11 +416,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         tabTextTools = view.findViewById(R.id.tabTextTools)
         // Tab‐driven switch between text styling controls
         val groups = listOf<View>(
-            hsvTextStyles, hsvColorPickers, hsvBgImages, hsvFonts
+            hsvTextStyles, hsvColorPickers, hsvFontSizes, hsvBgImages, hsvFonts
         )
         val labels = listOf(
             "Style",
             getString(R.string.colors),
+            "Size",
             getString(R.string.bg_image),
             getString(R.string.font)
         )
@@ -392,9 +440,11 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             showStep(layoutMedia)
         }
         btnDoneTextPost.setOnClickListener {
-            // Hide keyboard
+            // Hide keyboard and cursor
             (requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
                 .hideSoftInputFromWindow(etTextPost.windowToken, 0)
+            etTextPost.clearFocus()
+            etTextPost.isCursorVisible = false
             // Render editor view to bitmap
             val bmp = Bitmap.createBitmap(
                 flTextCanvas.width,
@@ -405,6 +455,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             flTextCanvas.draw(canvas)
             val file = File(requireContext().cacheDir, "TXT_${System.currentTimeMillis()}.jpg")
             FileOutputStream(file).use { out -> bmp.compress(Bitmap.CompressFormat.JPEG, 90, out) }
+            // Restore cursor visibility
+            etTextPost.isCursorVisible = true
             handleSelectedMedia(listOf(Uri.fromFile(file)))
         }
         btnCapture = view.findViewById(R.id.btnCapture)

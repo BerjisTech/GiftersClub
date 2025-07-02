@@ -1,34 +1,32 @@
 package club.gifters.giftersclub.gifts
 
+import android.content.Context
+import android.content.DialogInterface
 import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.Fragment
-import android.content.Context
 import androidx.lifecycle.lifecycleScope
-import androidx.viewpager2.widget.ViewPager2
-import club.gifters.giftersclub.R
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import androidx.viewpager2.widget.ViewPager2
+import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.gifts.GifterFragment
-import club.gifters.giftersclub.gifts.CommentsBottomSheetFragment
-import android.util.Log
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
-import android.widget.EditText
-import android.widget.LinearLayout
-import club.gifters.giftersclub.AuthUtils
-import android.widget.Button
-import android.widget.FrameLayout
-import android.widget.TextView
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import android.content.DialogInterface
-import retrofit2.HttpException
-import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import club.gifters.giftersclub.gifts.PostAdapter
-import kotlinx.coroutines.launch
 import club.gifters.giftersclub.gifts.CommentApiHolder
 import club.gifters.giftersclub.model.Post
+import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import club.gifters.giftersclub.social.SubscriptionApiHolder
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import android.util.Log
+import android.widget.Button
+import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
 
 
 /**
