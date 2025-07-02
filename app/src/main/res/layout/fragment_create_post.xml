@@ -309,8 +309,8 @@
                     <View
                         android:layout_width="2dp"
                         android:layout_height="match_parent"
-                        android:background="@color/white"
-                        android:layout_marginHorizontal="4dp"/>
+                        android:layout_marginHorizontal="4dp"
+                        android:background="@color/white" />
 
                     <!-- Bottom controls: timers, mode switches -->
                     <LinearLayout
@@ -463,7 +463,7 @@
                 android:clipToPadding="false"
                 android:orientation="horizontal"
                 android:overScrollMode="never"
-                app:layout_constraintBottom_toTopOf="@id/btnApplyFilter"
+                app:layout_constraintBottom_toTopOf="@id/btnApplyFilterCard"
                 app:layout_constraintEnd_toEndOf="@id/layoutEdit" />
 
             <SeekBar
@@ -472,18 +472,26 @@
                 android:layout_height="wrap_content"
                 android:max="100"
                 android:progress="50"
-                app:layout_constraintBottom_toTopOf="@id/btnApplyFilter"
+                app:layout_constraintBottom_toTopOf="@id/btnApplyFilterCard"
                 app:layout_constraintEnd_toEndOf="@id/layoutEdit" />
 
-            <Button
-                android:id="@+id/btnApplyFilter"
+            <androidx.cardview.widget.CardView
+                android:id="@+id/btnApplyFilterCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="@string/apply_filter"
                 app:layout_constraintBottom_toBottomOf="@id/layoutEdit"
                 app:layout_constraintEnd_toEndOf="@id/layoutEdit"
-                app:layout_constraintStart_toStartOf="@id/layoutEdit" />
+                app:layout_constraintStart_toStartOf="@id/layoutEdit">
+
+                <Button
+                    android:id="@+id/btnApplyFilter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white"
+                    android:background="@drawable/bg_cyan_sky_gradient"
+                    android:text="@string/apply_filter" />
+            </androidx.cardview.widget.CardView>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -551,18 +559,34 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent">
 
-                <Button
-                    android:id="@+id/btnEditMedia"
+                <androidx.cardview.widget.CardView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/edit_media" />
+                    app:cardCornerRadius="7dp">
 
-                <Button
-                    android:id="@+id/btnPost"
+                    <Button
+                        android:id="@+id/btnEditMedia"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_rose_amber_gradient"
+                        android:text="@string/edit_media"
+                        android:textColor="@color/white" />
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:text="@string/post" />
+                    app:cardCornerRadius="7dp">
+
+                    <Button
+                        android:id="@+id/btnPost"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_green_emerald_gradient"
+                        android:text="@string/post"
+                        android:textColor="@color/white" />
+                </androidx.cardview.widget.CardView>
 
             </LinearLayout>
 
