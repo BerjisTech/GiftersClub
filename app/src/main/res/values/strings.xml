@@ -104,6 +104,10 @@
     <string name="who_can_view_this_post">Who can view this post</string>
     <string name="crop">Crop</string>
     <string name="scale">Scale</string>
+    <string name="free">Free</string>
+    <string name="subscriber_only">Subscriber Only</string>
+    <string name="paid">Paid</string>
+    <string name="price_tokens">Price (tokens)</string>
     <string name="create_text_post">Create text post</string>
     <string name="_60s">60s</string>
     <string name="_10m">10m</string>

@@ -18,6 +18,7 @@ import club.gifters.giftersclub.network.RecentGiftsApi
 import club.gifters.giftersclub.network.LiveStreamApi
 import club.gifters.giftersclub.network.TagApi
 import club.gifters.giftersclub.network.SearchQueriesApi
+import club.gifters.giftersclub.network.PostAccessApi
 
 /**
  * Singleton Retrofit client configured with Supabase REST URL and API key interceptor.
@@ -130,6 +131,10 @@ object RetrofitClient {
     val leaderboardApi: LeaderboardApi = retrofit.create(LeaderboardApi::class.java)
     val profileApi: ProfileApi = retrofit.create(ProfileApi::class.java)
     val postApi:    PostApi    = retrofit.create(PostApi::class.java)
+    /**
+     * API for checking purchased post access.
+     */
+    val postAccessApi: PostAccessApi = retrofit.create(PostAccessApi::class.java)
     /**
      * Supabase Storage API client for uploading to public buckets.
      */

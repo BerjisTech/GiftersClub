@@ -54,6 +54,18 @@ object SubscriptionApiHolder {
     }
 
     /**
+     * Returns true if the current user has purchased pay-per-post access.
+     */
+    suspend fun hasPostAccess(postId: String): Boolean = withContext(Dispatchers.IO) {
+        val userId = AuthUtils.getCurrentUserId(RetrofitClient.context) ?: return@withContext false
+        val resp = RetrofitClient.postAccessApi.getPostAccesses(
+            postFilter = "eq.$postId",
+            userFilter = "eq.$userId"
+        )
+        resp.isNotEmpty()
+    }
+
+    /**
      * Returns true if the current user has an active subscription to the given creator.
      */
     suspend fun hasSubscription(creatorId: String): Boolean = withContext(Dispatchers.IO) {

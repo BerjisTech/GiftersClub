@@ -9,7 +9,9 @@ data class CreatePostRequest(
     @SerializedName("user_id") val userId: String,
     val content: String,
     @SerializedName("quote_post_id") val quotePostId: String? = null,
-    @SerializedName("reply_comment_id") val replyCommentId: String? = null
+    @SerializedName("reply_comment_id") val replyCommentId: String? = null,
+    @SerializedName("access_type") val accessType: String? = null,
+    val price: Int? = null
 )
 
 /**

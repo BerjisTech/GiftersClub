@@ -105,12 +105,12 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 sendMessage(msgAdapter, rvMessages, etMessage, partnerIdArg)
             }
 
-            selectConversation(
-                partnerIdArg,
-                partnerNameArg,
-                msgAdapter,
-                rvMessages
-            )
+        selectConversation(
+            partnerIdArg!!,
+            partnerNameArg!!,
+            msgAdapter,
+            rvMessages
+        )
             return
         }
         // Otherwise show conversation list as usual

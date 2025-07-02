@@ -20,6 +20,7 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Button
 import android.widget.EditText
+import android.widget.RadioGroup
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -84,6 +85,8 @@ import java.util.regex.Pattern
  * Fragment for creating a new post in two steps: select media, then add details.
  */
 class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
+    private lateinit var rgAccessType: android.widget.RadioGroup
+    private lateinit var etPrice: EditText
     private val postApi = RetrofitClient.postApi
     private val storageApi = RetrofitClient.storageApi
 
@@ -233,6 +236,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnPost.setOnClickListener {
             submitPost()
         }
+    // Access type (free/subscription/paid) and pricing
+    rgAccessType = view.findViewById(R.id.rgAccessType)
+    etPrice = view.findViewById(R.id.etPrice)
+    rgAccessType.setOnCheckedChangeListener { _, checkedId ->
+        etPrice.visibility = if (checkedId == R.id.rbPaid) View.VISIBLE else View.GONE
+    }
 
         // CameraX UI setup and start camera preview
         previewView = view.findViewById(R.id.previewView)
@@ -853,10 +862,21 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         lifecycleScope.launch {
             progressBar.isVisible = true
             try {
+                val selectedAccessType = when (rgAccessType.checkedRadioButtonId) {
+                    R.id.rbFree -> "free"
+                    R.id.rbSubscriberOnly -> "subscription"
+                    R.id.rbPaid -> "paid"
+                    else -> "free"
+                }
+                val priceValue = if (selectedAccessType == "paid") {
+                    etPrice.text.toString().toIntOrNull() ?: 0
+                } else null
                 val postResp = postApi.createPost(
                     createPost = CreatePostRequest(
                         userId = userId,
-                        content = content
+                        content = content,
+                        accessType = selectedAccessType,
+                        price = priceValue
                     )
                 )
                 if (!postResp.isSuccessful) {

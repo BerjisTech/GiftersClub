@@ -19,6 +19,8 @@ import club.gifters.giftersclub.model.Post
 import coil.load
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import club.gifters.giftersclub.social.SubscriptionApiHolder
+import kotlinx.coroutines.launch
 import club.gifters.giftersclub.gifts.CommentApiHolder
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -169,23 +171,40 @@ class PostAdapter(
             }
             timestamp.text = formatRelativeTime(post.createdAt)
             content.text = post.content ?: ""
-            // Setup paywall overlay for subscription/paid posts
+            // Gate subscription/paid posts: show placeholder if no access
             val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
             val lockAction = itemView.findViewById<TextView>(R.id.tvLockAction)
-            if (post.accessType != "free") {
-                overlay.visibility = View.VISIBLE
-                lockAction.text = if (post.accessType == "subscription")
-                    itemView.context.getString(R.string.subscribe_to_view)
-                else
-                    itemView.context.getString(R.string.purchase_to_view)
-                overlay.setOnClickListener { onLocked(post) }
-            } else {
+            val mediaPager = itemView.findViewById<ViewPager2>(R.id.mediaPager)
+            val indicatorLayout = itemView.findViewById<LinearLayout>(R.id.mediaIndicatorLayout)
+            val postDetails = itemView.findViewById<View>(R.id.postDetails)
+            overlay.visibility = View.GONE
+            scope.launch {
+                val hasAccess = when (post.accessType) {
+                    "subscription" -> SubscriptionApiHolder.hasSubscription(post.userId)
+                    "paid" -> SubscriptionApiHolder.hasPostAccess(post.id)
+                    else -> true
+                }
+                if (!hasAccess) {
+                    mediaPager.visibility = View.GONE
+                    indicatorLayout.visibility = View.GONE
+                    postDetails.visibility = View.GONE
+                    overlay.visibility = View.VISIBLE
+                    lockAction.text = if (post.accessType == "subscription")
+                        itemView.context.getString(R.string.subscribe_to_view)
+                    else
+                        itemView.context.getString(R.string.purchase_to_view)
+                    overlay.setOnClickListener { onLocked(post) }
+                    return@launch
+                }
+                // user has access: restore normal UI
+                mediaPager.visibility = View.VISIBLE
+                postDetails.visibility = View.VISIBLE
                 overlay.visibility = View.GONE
             }
             // Setup media carousel (images/videos)
             val mediaList = post.media ?: emptyList()
             mediaPager.adapter = PostMediaAdapter(mediaList)
-            val indicatorLayout = itemView.findViewById<LinearLayout>(R.id.mediaIndicatorLayout)
+//            val indicatorLayout = itemView.findViewById<LinearLayout>(R.id.mediaIndicatorLayout)
             indicatorLayout.removeAllViews()
             if (mediaList.size <= 1) {
                 indicatorLayout.visibility = View.GONE
