@@ -23,6 +23,7 @@ import android.widget.TextView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.content.DialogInterface
 import retrofit2.HttpException
+import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import club.gifters.giftersclub.gifts.PostAdapter
 import kotlinx.coroutines.launch
 import club.gifters.giftersclub.gifts.CommentApiHolder
@@ -34,6 +35,7 @@ import club.gifters.giftersclub.social.SubscriptionApiHolder
  * Fragment for displaying posts in a vertical, swipeable view (one post per screen).
  */
 class PostsFragment : Fragment(R.layout.fragment_posts) {
+    private lateinit var pager: ViewPager2
     companion object {
         private const val TAG = "PostsFragment"
     }
@@ -50,7 +52,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         swipeRefresh = view.findViewById(R.id.swipeRefresh)
-        val pager = view.findViewById<ViewPager2>(R.id.viewPagerPosts)
+        pager = view.findViewById(R.id.viewPagerPosts)
         adapter = PostAdapter(
             lifecycleScope,
             onLike = { post ->
@@ -158,17 +160,33 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             val tvMsg = view.findViewById<TextView>(R.id.tvPurchaseMessage)
             tvMsg.text = getString(R.string.purchase_for_tokens, post.price ?: 0)
             view.findViewById<Button>(R.id.btnPurchaseConfirm).setOnClickListener {
-                val txRef = "post_${userId}_${post.id}_${System.currentTimeMillis()}"
                 sheet.dismiss()
                 lifecycleScope.launch {
+                    val profList = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$userId")
+                    val prof = profList.firstOrNull()
+                    val balance = prof?.tokenBalance ?: 0
+                    val price = post.price ?: 0
+                    if (balance < price) {
+                        val needed = price - balance
+                        val topupRef = "topup_${userId}_${System.currentTimeMillis()}"
+                        PaymentWebViewActivity.start(
+                            requireContext(), userId, prof?.email.orEmpty(), needed, topupRef, ""
+                        )
+                        return@launch
+                    }
+                    val txRef = "post_${userId}_${post.id}_${System.currentTimeMillis()}"
                     val ok = SubscriptionApiHolder.purchasePostAccess(
-                        post.id, userId, post.price ?: 0, txRef
+                        post.id, userId, price, txRef
                     )
                     Toast.makeText(
                         requireContext(),
                         if (ok) getString(R.string.purchase_successful) else getString(R.string.purchase_failed),
                         Toast.LENGTH_SHORT
                     ).show()
+                    if (ok) {
+                        // remove lock overlay and show post immediately
+                        pager.adapter?.notifyDataSetChanged()
+                    }
                 }
             }
             view.findViewById<Button>(R.id.btnPurchaseCancel).setOnClickListener { sheet.dismiss() }
