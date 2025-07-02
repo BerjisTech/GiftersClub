@@ -155,4 +155,5 @@
     <string name="reason">Reason: ...</string>
     <string name="enter_details">Enter details</string>
     <string name="search_user_to_gift">Search user to gift</string>
+    <string name="_lock">🔒</string>
 </resources>

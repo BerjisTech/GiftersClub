@@ -10,9 +10,8 @@
         android:id="@+id/lockOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@android:color/white"
-        android:alpha="0.9"
-        android:visibility="gone">
+        android:background="@drawable/bg_indigo_zinc_gradient"
+        android:alpha="0.9">
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -23,16 +22,17 @@
                 android:id="@+id/tvLockIcon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🔒"
+                android:text="@string/_lock"
+                android:textColor="@color/white"
                 android:textSize="36sp" />
             <TextView
                 android:id="@+id/tvLockAction"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:textColor="@android:color/black"
+                android:textColor="@color/white"
                 android:textSize="16sp"
-                android:text="Subscribe to view" />
+                android:text="@string/subscribe_to_view" />
         </LinearLayout>
     </FrameLayout>
 

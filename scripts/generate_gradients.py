@@ -61,7 +61,7 @@ def main():
 
     xml_template = '''<shape xmlns:android="http://schemas.android.com/apk/res/android">
     <gradient
-        android:angle="45"
+        android:angle="90"
         android:startColor="@color/{start}_SHADE"
         android:endColor="@color/{end}_SHADE"
         android:type="linear" />
