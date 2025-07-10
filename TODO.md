@@ -3,3 +3,4 @@
 - [x] Add app:tint="@color/yellow_500" and android:tintMode="multiply" to btnCapture when in photo mode and remove tint when in video mode
 - [x] Add 5s to predefined timers
 - [x] Replace the custom timer dialog background with drawable/bg_sky_blue_gradient and make its corners rounded
+- [ ] Long press to autorecord only works in isvideopmode, make it so that if in photo mode and user long presses they're automatically switch to video mode and the rest of the long press process goes on as usual
