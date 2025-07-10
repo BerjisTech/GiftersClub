@@ -166,4 +166,6 @@
     <string name="enter_details">Enter details</string>
     <string name="search_user_to_gift">Search user to gift</string>
     <string name="_lock">🔒</string>
+    <string name="_cancel">❌</string>
+    <string name="_ok">✔️</string>
 </resources>

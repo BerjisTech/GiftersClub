@@ -40,7 +40,7 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.core.VideoCapture
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
+import club.gifters.giftersclub.gifts.SafePreviewView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -70,6 +70,7 @@ import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilterGroup
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageGrayscaleFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
+import club.gifters.giftersclub.gifts.SafeGPUImageView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -80,6 +81,7 @@ import yuku.ambilwarna.AmbilWarnaDialog
 import java.io.File
 import java.io.FileOutputStream
 import java.util.regex.Pattern
+import java.io.InputStream
 
 /**
  * Fragment for creating a new post in two steps: select media, then add details.
@@ -95,7 +97,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var layoutDetails: ConstraintLayout
     private lateinit var rvFilters: RecyclerView
     private lateinit var sbFilterLevel: SeekBar
-    private lateinit var gpuImageView: jp.co.cyberagent.android.gpuimage.GPUImageView
+    private lateinit var gpuImageView: SafeGPUImageView
     private lateinit var baseFilter: GPUImageFilter
     private lateinit var contrastFilter: GPUImageContrastFilter
     private lateinit var brightnessFilter: GPUImageBrightnessFilter
@@ -117,7 +119,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private val REQUEST_CAMERA_PERM = 2001
 
     // CameraX variables
-    private lateinit var previewView: PreviewView
+    private lateinit var previewView: SafePreviewView
     private lateinit var btnSwitchCamera: ImageView
     private lateinit var btnToggleFlash: ImageView
     private lateinit var btnSetTimer: ImageView
@@ -879,10 +881,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     private fun loadImageForEditing() {
         val uri = selectedUris.firstOrNull() ?: return
-        requireContext().contentResolver.openInputStream(uri)?.use { stream ->
+        requireContext().contentResolver.openInputStream(uri)?.use { stream: InputStream ->
             originalBitmap = BitmapFactory.decodeStream(stream)
             editedBitmap = originalBitmap
-            gpuImageView.setImage(editedBitmap)
+            editedBitmap?.let { gpuImageView.setImage(it) }
         }
         initialCameraFilter?.let { baseFilter = it }
         applyFilters()

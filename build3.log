@@ -1,0 +1,48 @@
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/C:/Users/bokou/.gradle/wrapper/dists/gradle-8.13-bin/5xuhj0ry160q40clulazy9h7d/gradle-8.13/lib/native-platform-0.22-milestone-28.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+> Task :app:clean
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:mergeDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugResources
+
+> Task :app:compileDebugKotlin
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/AuthActivity.kt:16:53 'static field FLAG_FULLSCREEN: Int' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/AuthActivity.kt:17:53 'static field FLAG_FULLSCREEN: Int' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/chat/ChatFragment.kt:282:9 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/chat/ChatFragment.kt:285:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/chat/ChatFragment.kt:286:15 'fun onActivityResult(p0: Int, p1: Int, p2: Intent?): Unit' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/AccountFragment.kt:246:9 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/AccountFragment.kt:249:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/AccountFragment.kt:250:15 'fun onActivityResult(p0: Int, p1: Int, p2: Intent?): Unit' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:41:8 'class VideoCapture : UseCase' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:176:31 'class VideoCapture : UseCase' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:207:28 'class VideoCapture : UseCase' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:482:13 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:497:13 'fun requestPermissions(p0: (Array<String!>..Array<out String!>), p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:723:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:728:15 'fun onRequestPermissionsResult(p0: Int, p1: (Array<String!>..Array<out String!>), p2: IntArray): Unit' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:779:29 'class VideoCapture : UseCase' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:963:48 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'kotlin.String?'.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:1047:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/CreatePostFragment.kt:1048:15 'fun onActivityResult(p0: Int, p1: Int, p2: Intent?): Unit' is deprecated. Deprecated in Java.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/FilterAdapter.kt:45:53 Check for instance is always 'true'.
+w: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/gifts/GiftFragment.kt:341:27 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+
+BUILD SUCCESSFUL in 7s
+15 actionable tasks: 15 executed
