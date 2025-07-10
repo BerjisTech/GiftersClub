@@ -1,6 +1,5 @@
-- [ ] Longpress to switch between video and photo mode. Phoito by default. Lonbg press starts recording a video with a default timer of 5s but also works with set timers from custom times or predefined timers. The progress bar runs for the duration of the timer while longpress is active and stops when user lifts finger. Then they're sent automatically to the next step
-- [ ] Replace drawable/record with drawable/stop_record respectively. drawable/record shows when user is not recording and draawable/stop_record shows when user is recording
-- [ ] Add app:tint="@color/yellow_500" and android:tintMode="multiply" to btnCapture isVideoMode is false ie when is in photo mopde and remove tint when isVideoMode is true
-- [ ] Add 5s to predefined timers
-- [ ] Replace the custyom timer dialog background with drawable/bg+sky_blue_gradient and make it's corners rounded
-- [ ] 
+- [x] Longpress to switch between video and photo mode. Photo by default. Long press starts recording a video with a default timer of 5s but also works with set timers from custom times or predefined timers. The progress bar runs for the duration of the timer while longpress is active and stops when user lifts finger. Then they're sent automatically to the next step
+- [x] Replace drawable/record with drawable/stop_record respectively. drawable/record shows when user is not recording and drawable/stop_record shows when user is recording
+- [x] Add app:tint="@color/yellow_500" and android:tintMode="multiply" to btnCapture when in photo mode and remove tint when in video mode
+- [x] Add 5s to predefined timers
+- [x] Replace the custom timer dialog background with drawable/bg_sky_blue_gradient and make its corners rounded

@@ -368,6 +368,14 @@
                             android:text="@string/_15s"
                             android:textColor="@color/white" />
 
+                        <TextView
+                            android:id="@+id/btnTimer5s"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="8dp"
+                            android:text="@string/_5s"
+                            android:textColor="@color/white" />
+
 
                     </LinearLayout>
 
@@ -406,7 +414,9 @@
                         android:layout_height="100dp"
                         android:layout_gravity="center"
                         android:contentDescription="@string/capture"
-                        android:src="@drawable/record" />
+                        android:src="@drawable/record"
+                        app:tint="@color/yellow_500"
+                        android:tintMode="multiply" />
 
                     <com.google.android.material.progressindicator.CircularProgressIndicator
                         android:id="@+id/pbRecordProgress"

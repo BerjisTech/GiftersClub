@@ -78,6 +78,8 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import yuku.ambilwarna.AmbilWarnaDialog
+import android.view.MotionEvent
+import android.graphics.PorterDuff
 import java.io.File
 import java.io.FileOutputStream
 import java.util.regex.Pattern
@@ -126,6 +128,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var btnShowFilters: ImageView
     private lateinit var btnTimer10m: TextView
     private lateinit var btnTimer60s: TextView
+    private lateinit var btnTimer5s: TextView
     private lateinit var btnTimer15s: TextView
     private lateinit var btnModeToggle: ImageView
     private lateinit var btnTextMode: ImageView
@@ -254,6 +257,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnShowFilters = view.findViewById(R.id.btnShowFilters)
         btnTimer10m = view.findViewById(R.id.btnTimer10m)
         btnTimer60s = view.findViewById(R.id.btnTimer60s)
+        btnTimer5s = view.findViewById(R.id.btnTimer5s)
         btnTimer15s = view.findViewById(R.id.btnTimer15s)
         btnModeToggle = view.findViewById(R.id.btnModeToggle)
         // initialize photo/video icon
@@ -537,36 +541,39 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             layoutFilterOptions.addView(tv)
         }
 
-        // Mode toggle and capture
         btnModeToggle.setOnClickListener {
             isVideoMode = !isVideoMode
             btnModeToggle.setImageResource(if (isVideoMode) R.drawable.video else R.drawable.camera)
+            if (isVideoMode) {
+                btnCapture.clearColorFilter()
+            } else {
+                btnCapture.setColorFilter(
+                    ContextCompat.getColor(requireContext(), R.color.yellow_500),
+                    PorterDuff.Mode.MULTIPLY
+                )
+            }
         }
         btnTextMode.setOnClickListener {
             showStep(layoutTextEditor)
         }
-        btnCapture.setOnClickListener {
+        btnCapture.setOnTouchListener { v, event ->
             if (!isVideoMode) {
-                takePhoto()
-            } else {
-                if (!isRecording) {
+                if (event.action == MotionEvent.ACTION_DOWN) {
+                    takePhoto()
+                }
+                return@setOnTouchListener false
+            }
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    // start video recording with current timer (default 5s if unset)
+                    if (recordLimitMs == null) recordLimitMs = 5 * 1000L
                     startRecording()
-                    recordStartTimeMs = System.currentTimeMillis()
-                    tvElapsedTime.isVisible = true
-                    elapsedHandler = Handler(Looper.getMainLooper())
-                    elapsedRunnable = object : Runnable {
-                        override fun run() {
-                            val secs = ((System.currentTimeMillis() - recordStartTimeMs) / 1000).toInt()
-                            tvElapsedTime.text = String.format("%02d:%02d", secs / 60, secs % 60)
-                            elapsedHandler?.postDelayed(this, 1000)
-                        }
-                    }.also { it.run() }
-                } else {
-                    stopRecording()
-                    tvElapsedTime.isVisible = false
-                    elapsedHandler?.removeCallbacks(elapsedRunnable!!)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (isRecording) stopRecording()
                 }
             }
+            true
         }
 
         // Preset timers
@@ -576,6 +583,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
         btnTimer60s.setOnClickListener {
             recordLimitMs = 60 * 1000L
+            startRecording()
+        }
+        btnTimer5s.setOnClickListener {
+            recordLimitMs = 5 * 1000L
             startRecording()
         }
         btnTimer15s.setOnClickListener {
@@ -794,6 +805,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
         )
         isRecording = true
+        btnCapture.setImageResource(R.drawable.stop_record)
         pbRecordProgress.isVisible = true
         recordTimer?.cancel()
         recordLimitMs?.let { limit ->
@@ -815,6 +827,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         if (!isRecording) return
         videoCapture?.stopRecording()
         isRecording = false
+        btnCapture.setImageResource(R.drawable.record)
         recordTimer?.cancel()
         pbRecordProgress.isVisible = false
     }
@@ -843,6 +856,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             .setView(LinearLayout(requireContext()).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(48, 16, 48, 16)
+                setBackgroundResource(R.drawable.bg_sky_blue_gradient)
                 addView(tv)
                 addView(sb)
             })
