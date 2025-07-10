@@ -38,7 +38,9 @@ import club.gifters.giftersclub.chat.MessageAdapter
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CancellationException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -307,24 +309,28 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                         val type = requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
                         val ext = type.substringAfterLast('/', "bin")
                         val filename = "${System.currentTimeMillis()}-${UUID.randomUUID()}.$ext"
-                        requireContext().contentResolver.openInputStream(uri)?.use { stream ->
-                            val bytes = stream.readBytes()
-                            val body = bytes.toRequestBody(type.toMediaTypeOrNull())
-                            val presignResp = RetrofitClient.functionsApi.uploadMedia(
+                        val bytes = withContext(Dispatchers.IO) {
+                            requireContext().contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                        } ?: throw Exception("Failed to read attachment data")
+                        val body = bytes.toRequestBody(type.toMediaTypeOrNull())
+                        val presignResp = withContext(Dispatchers.IO) {
+                            RetrofitClient.functionsApi.uploadMedia(
                                 PresignRequest(fileName = filename, fileType = type, bucket = "post")
                             )
-                            if (!presignResp.isSuccessful) throw HttpException(presignResp)
-                            val presignData = presignResp.body()!!
-                            val putReq = Request.Builder()
-                                .url(presignData.uploadUrl)
-                                .put(body)
-                                .build()
-                            val putResp = RetrofitClient.awsClient.newCall(putReq).execute()
-                            if (!putResp.isSuccessful) throw Exception("Upload failed: ${putResp.code}")
-                            val publicUrl = presignData.publicUrl
-                            val mediaType = if (type.startsWith("image/")) "image" else "video"
-                            attachmentsPayload.add(mapOf("url" to publicUrl, "type" to mediaType))
                         }
+                        if (!presignResp.isSuccessful) throw HttpException(presignResp)
+                        val presignData = presignResp.body()!!
+                        val putReq = Request.Builder()
+                            .url(presignData.uploadUrl)
+                            .put(body)
+                            .build()
+                        val putResp = withContext(Dispatchers.IO) {
+                            RetrofitClient.awsClient.newCall(putReq).execute()
+                        }
+                        if (!putResp.isSuccessful) throw Exception("Upload failed: ${putResp.code}")
+                        val publicUrl = presignData.publicUrl
+                        val mediaType = if (type.startsWith("image/")) "image" else "video"
+                        attachmentsPayload.add(mapOf("url" to publicUrl, "type" to mediaType))
                     } catch (_: CancellationException) {
                     } catch (_: Exception) {
                     }
