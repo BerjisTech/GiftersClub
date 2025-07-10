@@ -47,6 +47,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.camera.core.ZoomState
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.PresignRequest
@@ -149,7 +150,6 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     // Camera zoom controls
     private lateinit var zoomControl: CircularSeekBar
-    private lateinit var zoom05: TextView
     private lateinit var zoom1: TextView
     private lateinit var zoom2: TextView
     private lateinit var zoom4: TextView
@@ -625,7 +625,6 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
         // Camera zoom controls
         zoomControl = view.findViewById(R.id.zoomControl)
-        zoom05 = view.findViewById(R.id.zoom05)
         zoom1 = view.findViewById(R.id.zoom1)
         zoom2 = view.findViewById(R.id.zoom2)
         zoom4 = view.findViewById(R.id.zoom4)
@@ -644,7 +643,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             override fun onStartTrackingTouch(seekBar: CircularSeekBar?) {}
             override fun onStopTrackingTouch(seekBar: CircularSeekBar?) {}
         })
-        zoom05.setOnClickListener { setZoomRatio(0.5f) }
+
         zoom1.setOnClickListener  { setZoomRatio(1f) }
         zoom2.setOnClickListener  { setZoomRatio(2f) }
         zoom4.setOnClickListener  { setZoomRatio(4f) }
@@ -758,12 +757,22 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     }
 
     /**
-     * Set camera zoom via zoom wheel or preset.
+     * Set camera zoom via zoom wheel or preset, clamped to supported range.
      */
     private fun setZoomRatio(ratio: Float) {
-        currentZoomRatio = ratio
-        zoomControl.progress = (ratio * 100)
-        camera?.cameraControl?.setZoomRatio(ratio)
+        camera?.cameraInfo?.zoomState?.value?.let { state ->
+            val clamped = ratio.coerceIn(state.minZoomRatio, state.maxZoomRatio)
+            camera?.cameraControl?.setZoomRatio(clamped)
+            currentZoomRatio = clamped
+            zoomControl.progress = clamped * 100f
+            if (clamped != ratio) {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.zoom_not_supported, ratio),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
     }
 
 
@@ -842,8 +851,18 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private fun showTimerDialog() {
         val maxSec = 10 * 60
         var chosen = customTimerSec.coerceIn(1, maxSec)
+        fun formatDuration(sec: Int): String {
+            val h = sec / 3600
+            val m = (sec % 3600) / 60
+            val s = sec % 60
+            return when {
+                h > 0 -> String.format("%d:%02d:%02d", h, m, s)
+                m > 0 -> String.format("%d:%02d", m, s)
+                else -> String.format("%d sec", s)
+            }
+        }
         val tv = TextView(requireContext()).apply {
-            text = String.format("%d sec", chosen)
+            text = formatDuration(chosen)
             setPadding(0, 0, 0, 16)
         }
         val sb = SeekBar(requireContext()).apply {
@@ -852,7 +871,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(s: SeekBar, p: Int, fromUser: Boolean) {
                     chosen = p.coerceAtLeast(1)
-                    tv.text = String.format("%d sec", chosen)
+                    tv.text = formatDuration(chosen)
                 }
                 override fun onStartTrackingTouch(s: SeekBar) {}
                 override fun onStopTrackingTouch(s: SeekBar) {}

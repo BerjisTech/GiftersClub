@@ -123,6 +123,7 @@
     <string name="_15s">15s</string>
     <string name="_5s">5s</string>
     <string name="_10m">10m</string>
+    <string name="zoom_not_supported">Zoom %1$.1fx not supported</string>
     <string name="write_a_comment">Write a comment...</string>
     <string name="recharge">Recharge</string>
     <string name="streamer_name">Streamer Name</string>

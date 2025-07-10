@@ -291,14 +291,6 @@
                     app:layout_constraintStart_toStartOf="parent">
 
                     <TextView
-                        android:id="@+id/zoom05"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:padding="8dp"
-                        android:text="0.5x"
-                        android:textColor="@android:color/white" />
-
-                    <TextView
                         android:id="@+id/zoom1"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
