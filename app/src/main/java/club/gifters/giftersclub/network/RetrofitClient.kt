@@ -1,6 +1,7 @@
 package club.gifters.giftersclub.network
 
 import android.content.Context
+import club.gifters.giftersclub.AwsConfig
 import club.gifters.giftersclub.SupabaseConfig
 import okhttp3.OkHttpClient
 import okhttp3.Authenticator
@@ -13,6 +14,7 @@ import org.json.JSONObject
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import club.gifters.giftersclub.network.WithdrawalApi
+import club.gifters.giftersclub.network.PresignApi
 import club.gifters.giftersclub.network.SubscriptionsApi
 import club.gifters.giftersclub.network.RecentGiftsApi
 import club.gifters.giftersclub.network.LiveStreamApi
@@ -101,8 +103,9 @@ object RetrofitClient {
             response
         }
         .addInterceptor { chain ->
-            val prefs = context?.getSharedPreferences("supabase", Context.MODE_PRIVATE)
-            val accessToken = prefs?.getString("access_token", null)
+            val accessToken = context
+                ?.getSharedPreferences("supabase", Context.MODE_PRIVATE)
+                ?.getString("access_token", null)
             val authHeader = if (!accessToken.isNullOrBlank()) {
                 "Bearer $accessToken"
             } else {
@@ -135,15 +138,6 @@ object RetrofitClient {
      * API for checking purchased post access.
      */
     val postAccessApi: PostAccessApi = retrofit.create(PostAccessApi::class.java)
-    /**
-     * Supabase Storage API client for uploading to public buckets.
-     */
-    private val storageRetrofit = Retrofit.Builder()
-        .baseUrl("${SupabaseConfig.SUPABASE_URL}/storage/v1/")
-        .client(client)
-        .build()
-
-    val storageApi: StorageApi = storageRetrofit.create(StorageApi::class.java)
     /**
      * Chat API for sending and retrieving messages and conversations.
      */
@@ -179,6 +173,34 @@ object RetrofitClient {
      * API client for search query suggestions.
      */
     val searchQueriesApi: SearchQueriesApi = retrofit.create(SearchQueriesApi::class.java)
+
+    // AWS S3 presigned URL API for media uploads (requires Supabase JWT auth)
+    val awsClient = client.newBuilder()
+        .addInterceptor { chain ->
+            // Inject Supabase access token for Lambda authentication
+            val original = chain.request()
+            val accessToken = context
+                ?.getSharedPreferences("supabase", Context.MODE_PRIVATE)
+                ?.getString("access_token", null)
+            val builder = original.newBuilder()
+            if (!accessToken.isNullOrBlank()) {
+                builder.addHeader("Authorization", "Bearer $accessToken")
+            }
+            val request = builder.build()
+            println("AWS → ${request.method} ${request.url}")
+            val response = chain.proceed(request)
+            println("AWS ← ${response.code} ${response.request.url}")
+            response
+        }
+        .build()
+
+    private val awsRetrofit = Retrofit.Builder()
+        .baseUrl(club.gifters.giftersclub.AwsConfig.API_URL)
+        .client(awsClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val presignApi: PresignApi = awsRetrofit.create(PresignApi::class.java)
     /**
      * API for searching tags (hashtags) for explore suggestions.
      */
