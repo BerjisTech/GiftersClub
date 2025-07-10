@@ -20,10 +20,12 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.network.ChatApi
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.network.StorageApi
+import club.gifters.giftersclub.AwsConfig
+import club.gifters.giftersclub.network.PresignRequest
+import okhttp3.Request
+import retrofit2.HttpException
 import club.gifters.giftersclub.chat.ConversationAdapter
 import club.gifters.giftersclub.chat.ConversationUi
 import androidx.recyclerview.widget.ConcatAdapter
@@ -49,7 +51,6 @@ import java.util.UUID
  */
 class ChatFragment : Fragment(R.layout.fragment_chat) {
     private val chatApi: ChatApi = RetrofitClient.chatApi
-    private val storageApi: StorageApi = RetrofitClient.storageApi
 
     private var userId: String = ""
     private var selectedAttachment: Uri? = null
@@ -309,12 +310,20 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                         requireContext().contentResolver.openInputStream(uri)?.use { stream ->
                             val bytes = stream.readBytes()
                             val body = bytes.toRequestBody(type.toMediaTypeOrNull())
-                            val resp = storageApi.uploadChatMedia(filename, body, type)
-                            if (resp.isSuccessful) {
-                                val publicUrl = "${SupabaseConfig.SUPABASE_URL}/storage/v1/object/public/${SupabaseConfig.CHAT_MEDIA_BUCKET}/$filename"
-                                val mediaType = if (type.startsWith("image/")) "image" else "video"
-                                attachmentsPayload.add(mapOf("url" to publicUrl, "type" to mediaType))
-                            }
+                            val presignResp = RetrofitClient.functionsApi.uploadMedia(
+                                PresignRequest(fileName = filename, fileType = type, bucket = "post")
+                            )
+                            if (!presignResp.isSuccessful) throw HttpException(presignResp)
+                            val presignData = presignResp.body()!!
+                            val putReq = Request.Builder()
+                                .url(presignData.uploadUrl)
+                                .put(body)
+                                .build()
+                            val putResp = RetrofitClient.awsClient.newCall(putReq).execute()
+                            if (!putResp.isSuccessful) throw Exception("Upload failed: ${putResp.code}")
+                            val publicUrl = presignData.publicUrl
+                            val mediaType = if (type.startsWith("image/")) "image" else "video"
+                            attachmentsPayload.add(mapOf("url" to publicUrl, "type" to mediaType))
                         }
                     } catch (_: CancellationException) {
                     } catch (_: Exception) {

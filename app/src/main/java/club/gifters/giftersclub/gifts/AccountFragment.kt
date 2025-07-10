@@ -17,17 +17,23 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import club.gifters.giftersclub.AuthActivity
 import club.gifters.giftersclub.R
+import club.gifters.giftersclub.network.PresignRequest
+import club.gifters.giftersclub.network.PresignResponse
+import okhttp3.Request
 import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.model.WishlistItem
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import coil.load
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 import java.text.NumberFormat
+import androidx.core.content.edit
 
 /**
  * Fragment displaying the user's account info and stats.
@@ -111,7 +117,7 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
         btnLogout.setOnClickListener {
             // clear stored Supabase tokens and return to AuthActivity
             requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
-                .edit().remove("access_token").remove("refresh_token").apply()
+                .edit { remove("access_token").remove("refresh_token") }
             startActivity(Intent(requireContext(), AuthActivity::class.java))
             requireActivity().finish()
         }
@@ -129,7 +135,7 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                 if (e.code() == 401 && !hasRetry) {
                     hasRetry = true
                     requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
-                        .edit().remove("access_token").remove("refresh_token").apply()
+                        .edit { remove("access_token").remove("refresh_token") }
                     loadProfile()
                 } else Log.e(TAG, "Failed to load profile", e)
             } catch (e: Exception) {
@@ -253,17 +259,36 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
     private fun uploadProfileImage(uri: Uri) {
         lifecycleScope.launch {
             try {
-                // Upload image to storage
                 val type = requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
                 val ext = type.substringAfterLast('/', "bin")
                 val filename = "profile-${userId}.${ext}"
-                requireContext().contentResolver.openInputStream(uri)?.use { stream ->
-                    val bytes = stream.readBytes()
-                    val body = bytes.toRequestBody(type.toMediaTypeOrNull())
-                    RetrofitClient.storageApi.uploadPostMedia(filename, body, type)
+                val bytes = withContext(Dispatchers.IO) {
+                    requireContext().contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                } ?: throw Exception("Failed to read image data")
+
+                val body = bytes.toRequestBody(type.toMediaTypeOrNull())
+                val presignResp = withContext(Dispatchers.IO) {
+                    RetrofitClient.functionsApi.uploadMedia(
+                        PresignRequest(fileName = filename, fileType = type, bucket = "profile", overwrite = true)
+                    )
                 }
-                val publicUrl = "${SupabaseConfig.SUPABASE_URL}/storage/v1/object/public/${SupabaseConfig.AVATARS_BUCKET}/$filename"
-                // Update profile.image
+                if (!presignResp.isSuccessful) throw HttpException(presignResp)
+                val presignData = presignResp.body()!!
+
+                val putReq = Request.Builder()
+                    .url(presignData.uploadUrl)
+                    .put(body)
+                    .build()
+                val putResp = withContext(Dispatchers.IO) {
+                    RetrofitClient.awsClient.newCall(putReq).execute()
+                }
+                if (!putResp.isSuccessful) {
+                    val errorBody = withContext(Dispatchers.IO) { putResp.body?.string().orEmpty() }
+                    Log.e(TAG, "S3 profile upload failed: HTTP ${putResp.code} body=$errorBody")
+                    throw Exception("Upload failed: ${putResp.code} body=$errorBody")
+                }
+
+                val publicUrl = presignData.publicUrl
                 updateProfileField(mapOf("image" to publicUrl))
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to upload profile image", e)

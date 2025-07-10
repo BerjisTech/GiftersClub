@@ -49,7 +49,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.SupabaseConfig
+import club.gifters.giftersclub.network.PresignRequest
+import club.gifters.giftersclub.network.PresignResponse
+import retrofit2.HttpException
+import okhttp3.Request
 import club.gifters.giftersclub.model.CreatePostMediaRequest
 import club.gifters.giftersclub.model.CreatePostRequest
 import club.gifters.giftersclub.model.PostTagUpsertRequest
@@ -67,7 +70,9 @@ import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilterGroup
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageGrayscaleFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -83,7 +88,6 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var rgAccessType: android.widget.RadioGroup
     private lateinit var etPrice: EditText
     private val postApi = RetrofitClient.postApi
-    private val storageApi = RetrofitClient.storageApi
 
     // Media selection preview and next step removed; using camera UI by default
     private lateinit var layoutMedia: ConstraintLayout
@@ -978,19 +982,39 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     val ext = if (isVideo) "bin" else type.substringAfterLast('/', "bin")
                     val ts = System.currentTimeMillis()
                     val filename = "${post.id}-$ts-$index.$ext"
-                    requireContext().contentResolver.openInputStream(uri)?.use { stream ->
-                        val bytes = if (index == 0 && editedBitmap != null && !isVideo) {
-                            java.io.ByteArrayOutputStream().apply {
-                                editedBitmap!!.compress(Bitmap.CompressFormat.JPEG, 90, this)
-                            }.toByteArray()
-                        } else {
-                            stream.readBytes()
-                        }
-                        val body = bytes.toRequestBody(type.toMediaTypeOrNull())
-                        storageApi.uploadPostMedia(filename, body, type)
+                    val bytes = withContext(Dispatchers.IO) {
+                        requireContext().contentResolver.openInputStream(uri)?.use { stream ->
+                            if (index == 0 && editedBitmap != null && !isVideo) {
+                                java.io.ByteArrayOutputStream().apply {
+                                    editedBitmap!!.compress(Bitmap.CompressFormat.JPEG, 90, this)
+                                }.toByteArray()
+                            } else {
+                                stream.readBytes()
+                            }
+                        } ?: throw Exception("Failed to read media data")
                     }
-                    val publicUrl =
-                        "${SupabaseConfig.SUPABASE_URL}/storage/v1/object/public/${SupabaseConfig.POSTS_BUCKET}/$filename"
+                    val body = bytes.toRequestBody(type.toMediaTypeOrNull())
+                    val presignResp = withContext(Dispatchers.IO) {
+                        RetrofitClient.functionsApi.uploadMedia(
+                            PresignRequest(fileName = filename, fileType = type, bucket = "post", overwrite = false)
+                        )
+                    }
+                    if (!presignResp.isSuccessful) throw HttpException(presignResp)
+                    val presignData = presignResp.body()!!
+
+                    val putReq = Request.Builder()
+                        .url(presignData.uploadUrl)
+                        .put(body)
+                        .build()
+                    val putResp = withContext(Dispatchers.IO) {
+                        RetrofitClient.awsClient.newCall(putReq).execute()
+                    }
+                    if (!putResp.isSuccessful) {
+                        val errorBody = withContext(Dispatchers.IO) { putResp.body?.string().orEmpty() }
+                        Log.e(TAG, "S3 post upload failed: HTTP ${putResp.code} body=$errorBody")
+                        throw Exception("Upload failed: ${putResp.code} body=$errorBody")
+                    }
+                    val publicUrl = presignData.publicUrl
                     val mediaResp = postApi.createPostMedia(
                         createMedia = CreatePostMediaRequest(
                             post.id,
@@ -1002,9 +1026,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     if (!mediaResp.isSuccessful) {
                         Log.e(
                             TAG,
-                            "Failed to save post media: HTTP ${mediaResp.code()} ${
-                                mediaResp.errorBody()?.string()
-                            }"
+                            "Failed to save post media: HTTP ${mediaResp.code()} ${mediaResp.errorBody()?.string()}"
                         )
                     }
                 }

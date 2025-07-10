@@ -177,15 +177,25 @@ object RetrofitClient {
     // AWS S3 presigned URL API for media uploads (requires Supabase JWT auth)
     val awsClient = client.newBuilder()
         .addInterceptor { chain ->
-            // Inject Supabase access token for Lambda authentication
             val original = chain.request()
-            val accessToken = context
-                ?.getSharedPreferences("supabase", Context.MODE_PRIVATE)
-                ?.getString("access_token", null)
+            // Host for our presign-Lambda endpoint (API Gateway)
+            val presignHost = AwsConfig.API_URL
+                .removePrefix("https://").removePrefix("http://").substringBefore('/')
+
+            // Start with a clean builder (strip any supabase headers)
             val builder = original.newBuilder()
-            if (!accessToken.isNullOrBlank()) {
-                builder.addHeader("Authorization", "Bearer $accessToken")
+                .removeHeader("apikey")
+                .removeHeader("Authorization")
+
+            // Only re-add the Supabase JWT when requesting a presigned URL
+            if (original.url.host == presignHost) {
+                context
+                    ?.getSharedPreferences("supabase", Context.MODE_PRIVATE)
+                    ?.getString("access_token", null)
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { builder.addHeader("Authorization", "Bearer $it") }
             }
+
             val request = builder.build()
             println("AWS → ${request.method} ${request.url}")
             val response = chain.proceed(request)

@@ -6,7 +6,7 @@ package club.gifters.giftersclub
 object AwsConfig {
     /**
      * S3 presign URL API endpoint (AWS Lambda + API Gateway).
-     * Must include the resource path (getS3PresignedUrl) and end with '/'.
+     * Should point to the getS3PresignedUrl resource.
      * Requests must include a valid Supabase JWT in the Authorization header.
      */
     const val API_URL = "https://u9kqe9rqlj.execute-api.us-east-1.amazonaws.com/prod/getS3PresignedUrl/"

@@ -1,6 +1,8 @@
 package club.gifters.giftersclub.network
 
 import retrofit2.Response
+import club.gifters.giftersclub.network.PresignRequest
+import club.gifters.giftersclub.network.PresignResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
 
@@ -44,4 +46,12 @@ interface FunctionsApi {
     suspend fun purchasePostAccessRpc(
         @Body body: Map<String, @JvmSuppressWildcards Any>
     ): Response<Unit>
+
+    /**
+     * Obtain S3 presigned URLs for media uploads via Supabase Edge Function.
+     */
+    @POST("upload-media")
+    suspend fun uploadMedia(
+        @Body request: PresignRequest
+    ): Response<PresignResponse>
 }
