@@ -545,12 +545,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             isVideoMode = !isVideoMode
             btnModeToggle.setImageResource(if (isVideoMode) R.drawable.video else R.drawable.camera)
             if (isVideoMode) {
-                btnCapture.clearColorFilter()
-            } else {
                 btnCapture.setColorFilter(
                     ContextCompat.getColor(requireContext(), R.color.yellow_500),
                     PorterDuff.Mode.MULTIPLY
                 )
+            } else {
+                btnCapture.clearColorFilter()
             }
         }
         btnTextMode.setOnClickListener {
@@ -565,12 +565,19 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    // auto-switch to video mode on long press
+                    if (!isVideoMode) {
+                        isVideoMode = true
+                        btnModeToggle.setImageResource(R.drawable.video)
+                        btnCapture.clearColorFilter()
+                    }
                     // start video recording with current timer (default 5s if unset)
                     if (recordLimitMs == null) recordLimitMs = 5 * 1000L
                     startRecording()
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    if (isRecording) stopRecording()
+                    // only stop early if no timer set
+                    if (isRecording && recordLimitMs == null) stopRecording()
                 }
             }
             true
@@ -851,7 +858,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 override fun onStopTrackingTouch(s: SeekBar) {}
             })
         }
-        AlertDialog.Builder(requireContext())
+        val dialog = AlertDialog.Builder(requireContext())
             .setTitle(R.string.set_recording_timer)
             .setView(LinearLayout(requireContext()).apply {
                 orientation = LinearLayout.VERTICAL
@@ -866,7 +873,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 startRecording()
             }
             .setNegativeButton(R.string.cancel, null)
-            .show()
+            .create()
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(R.drawable.bg_sky_blue_gradient)
     }
 
     private fun handleSelectedMedia(uris: List<Uri>) {

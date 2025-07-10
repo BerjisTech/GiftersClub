@@ -414,9 +414,7 @@
                         android:layout_height="100dp"
                         android:layout_gravity="center"
                         android:contentDescription="@string/capture"
-                        android:src="@drawable/record"
-                        app:tint="@color/yellow_500"
-                        android:tintMode="multiply" />
+                        android:src="@drawable/record" />
 
                     <com.google.android.material.progressindicator.CircularProgressIndicator
                         android:id="@+id/pbRecordProgress"
@@ -429,8 +427,8 @@
                         android:visibility="gone"
                         app:indicatorColor="@color/pink_500"
                         app:indicatorDirectionCircular="clockwise"
-                        app:indicatorSize="60dp"
-                        app:trackThickness="4dp" />
+                        app:indicatorSize="130dp"
+                        app:trackThickness="10dp" />
                 </FrameLayout>
 
                 <ImageView
