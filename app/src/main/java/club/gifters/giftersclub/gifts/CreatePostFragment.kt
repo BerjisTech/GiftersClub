@@ -183,6 +183,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var isRecording = false
     private var camera: Camera? = null
     private var recordTimer: CountDownTimer? = null
+    private val longPressHandler = Handler(Looper.getMainLooper())
+    private var longPressRunnable: Runnable? = null
+    private var isLongPress = false
 
 
     companion object {
@@ -557,27 +560,34 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             showStep(layoutTextEditor)
         }
         btnCapture.setOnTouchListener { v, event ->
-            if (!isVideoMode) {
-                if (event.action == MotionEvent.ACTION_DOWN) {
-                    takePhoto()
-                }
-                return@setOnTouchListener false
-            }
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    // auto-switch to video mode on long press
-                    if (!isVideoMode) {
-                        isVideoMode = true
-                        btnModeToggle.setImageResource(R.drawable.video)
-                        btnCapture.clearColorFilter()
+                    if (isVideoMode) {
+                        // start video recording with current timer (default 5s if unset)
+                        if (recordLimitMs == null) recordLimitMs = 5 * 1000L
+                        startRecording()
+                    } else {
+                        // Photo mode, potential long press
+                        isLongPress = false
+                        longPressRunnable = Runnable {
+                            isLongPress = true
+                            isVideoMode = true
+                            btnModeToggle.setImageResource(R.drawable.video)
+                            btnCapture.clearColorFilter()
+                            // start video recording with current timer (default 5s if unset)
+                            if (recordLimitMs == null) recordLimitMs = 5 * 1000L
+                            startRecording()
+                        }
+                        longPressHandler.postDelayed(longPressRunnable!!, 500) // 500ms for long press
                     }
-                    // start video recording with current timer (default 5s if unset)
-                    if (recordLimitMs == null) recordLimitMs = 5 * 1000L
-                    startRecording()
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    // only stop early if no timer set
-                    if (isRecording && recordLimitMs == null) stopRecording()
+                    longPressRunnable?.let { longPressHandler.removeCallbacks(it) }
+                    if (isRecording && recordLimitMs == null) {
+                        stopRecording()
+                    } else if (!isLongPress && !isVideoMode) {
+                        takePhoto()
+                    }
                 }
             }
             true
