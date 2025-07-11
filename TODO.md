@@ -3,5 +3,5 @@
 - [x] Add app:tint="@color/yellow_500" and android:tintMode="multiply" to btnCapture when in photo mode and remove tint when in video mode
 - [x] Add 5s to predefined timers
 - [x] Replace the custom timer dialog background with drawable/bg_sky_blue_gradient and make its corners rounded
-- [ ] Long press to autorecord only works in isvideopmode, make it so that if in photo mode and user long presses they're automatically switch to video mode and the rest of the long press process goes on as usual
-- [ ] In posts, make the share button display the share dialog with share options like whatsapp, message, etc and when the suer shjares the photo, whoever gets the link should be able to click on it and a: be sent directly to that post in the app if they have the app or b: be sent to the post in gifters.club website
+- [x] Long press to autorecord only works in isvideopmode, make it so that if in photo mode and user long presses they're automatically switch to video mode and the rest of the long press process goes on as usual
+- [x] In posts, make the share button display the share dialog with share options like whatsapp, message, etc and when the suer shjares the photo, whoever gets the link should be able to click on it and a: be sent directly to that post in the app if they have the app or b: be sent to the post in gifters.club website
