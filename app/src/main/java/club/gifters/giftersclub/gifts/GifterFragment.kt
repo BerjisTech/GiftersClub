@@ -22,6 +22,8 @@ import club.gifters.giftersclub.chat.ChatFragment
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.network.ProfileApi
 import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.gifts.PostsFragment
+import club.gifters.giftersclub.model.Post
 import coil.load
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
@@ -32,7 +34,7 @@ import kotlinx.coroutines.launch
 /**
  * Fragment showing a user's profile and their gift page.
  */
-class GifterFragment : Fragment(R.layout.fragment_gifter) {
+class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnSelectionModeChangeListener {
 
     private val profileApi: ProfileApi = RetrofitClient.profileApi
     private var username: String? = null
@@ -45,6 +47,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
     private var isFollowing = false
     private var isFollowedBy = false
     private var isFriend     = false
+    private var isOwner      = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -108,8 +111,9 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
                 }
 
                 // Settings button for account owner
+                isOwner = currentUserId != null && currentUserId == prof.userId
                 val btnSettings = view.findViewById<LinearLayout>(R.id.btnSettings)
-                if (currentUserId != null && currentUserId == prof.userId) {
+                if (isOwner) {
                     btnSettings.isVisible = true
                     btnSettings.setOnClickListener {
                         parentFragmentManager.beginTransaction()
@@ -121,14 +125,26 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
                 // Setup tabs and viewpager
                 val tabLayout = view.findViewById<TabLayout>(R.id.tabLayout)
                 val viewPager = view.findViewById<ViewPager2>(R.id.viewPager)
+                val btnDeleteSelectedPosts = view.findViewById<MaterialButton>(R.id.btnDeleteSelectedPosts)
+                val gifterActions = view.findViewById<LinearLayout>(R.id.gifterActions)
+
+                var userPostsFragment: UserPostsFragment? = null
+
                 viewPager.adapter = object : FragmentStateAdapter(this@GifterFragment) {
                     override fun getItemCount() = 3
                     override fun createFragment(position: Int) = when (position) {
                         0 -> GiftFragment.newInstance(prof.userId, prof.username)
                         1 -> UserWishlistsFragment.newInstance(prof.userId)
-                        2 -> UserPostsFragment.newInstance(prof.userId)
+                        2 -> {
+                            userPostsFragment = UserPostsFragment.newInstance(prof.userId)
+                            userPostsFragment!!
+                        }
                         else -> GiftFragment.newInstance(prof.userId, prof.username)
                     }
+                }
+
+                btnDeleteSelectedPosts.setOnClickListener {
+                    userPostsFragment?.deleteSelectedPosts()
                 }
                 TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
                     tab.text = when (pos) {
@@ -182,5 +198,22 @@ class GifterFragment : Fragment(R.layout.fragment_gifter) {
             btn.setBackgroundResource(R.drawable.bg_yellow_orange_gradient)
         }
         btn.setTextColor(Color.WHITE)
+    }
+
+    override fun onSelectionModeChanged(inSelectionMode: Boolean) {
+        if (!isOwner) return
+        val gifterActions = requireView().findViewById<LinearLayout>(R.id.gifterActions)
+        val btnDeleteSelectedPosts = requireView().findViewById<MaterialButton>(R.id.btnDeleteSelectedPosts)
+        gifterActions.isVisible = inSelectionMode
+        btnDeleteSelectedPosts.isVisible = inSelectionMode
+    }
+
+    override fun onDeleteSelectedPosts(selectedPosts: Set<Post>) {
+        if (!isOwner) return
+        val gifterActions = requireView().findViewById<LinearLayout>(R.id.gifterActions)
+        val btnDeleteSelectedPosts = requireView().findViewById<MaterialButton>(R.id.btnDeleteSelectedPosts)
+        gifterActions.isVisible = true
+        btnDeleteSelectedPosts.isVisible = true
+        btnDeleteSelectedPosts.text = "Delete ${selectedPosts.size} Posts"
     }
 }

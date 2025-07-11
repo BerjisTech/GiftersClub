@@ -37,6 +37,12 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     private lateinit var pager: ViewPager2
     companion object {
         private const val TAG = "PostsFragment"
+        private const val ARG_POST_ID = "post_id"
+
+        fun newInstance(postId: String): PostsFragment {
+            val args = Bundle().apply { putString(ARG_POST_ID, postId) }
+            return PostsFragment().apply { arguments = args }
+        }
     }
 
     private val api = RetrofitClient.postApi
@@ -251,7 +257,8 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         isLoading = true
         lifecycleScope.launch {
             try {
-                val post = api.getPostById(postId)
+                // Use PostgREST eq filter so PostApi expects id=eq.<uuid>
+                val post = api.getPostById("eq.$postId")
                 adapter.submitList(listOf(post))
                 // Now load the rest of the posts
                 page = 0

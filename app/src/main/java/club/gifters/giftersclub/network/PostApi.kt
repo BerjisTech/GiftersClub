@@ -13,6 +13,7 @@ import retrofit2.http.POST
 import retrofit2.http.Body
 import retrofit2.http.Query
 import retrofit2.http.Headers
+import retrofit2.http.DELETE
 import retrofit2.Response
 
 /**
@@ -130,4 +131,13 @@ interface PostApi {
     suspend fun searchExploreRpc(
         @Body params: Map<String, @JvmSuppressWildcards Any>
     ): SearchExploreResult
+
+    /**
+     * Delete a post by moving it to the deleted_posts archive table via a database trigger.
+     */
+    @Headers("Prefer: return=minimal")
+    @DELETE("posts")
+    suspend fun deletePost(
+        @Query("id", encoded = true) idFilter: String
+    ): Response<Void>
 }
