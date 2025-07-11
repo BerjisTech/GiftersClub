@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import club.gifters.giftersclub.gifts.CreateWishlistFragment
 import kotlinx.coroutines.launch
 
 /**
@@ -41,7 +42,8 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
         val rv = view.findViewById<RecyclerView>(R.id.rvWishlists)
         rv.layoutManager = LinearLayoutManager(requireContext())
         val adapter = WishlistAdapter { wishlist ->
-            parentFragmentManager.beginTransaction()
+            // Use Activity's FragmentManager for navigating to detail
+            requireActivity().supportFragmentManager.beginTransaction()
                 .replace(R.id.mainContentContainer,
                     WishlistDetailFragment.newInstance(wishlist.id)
                 )
@@ -70,8 +72,9 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
         val tvEmpty = view.findViewById<TextView>(R.id.tvEmptyWishlists)
         val fab = view.findViewById<FloatingActionButton>(R.id.fabCreateWishlist)
         fab.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.mainContentContainer, CreateWishlistFragment())
+            // Use unified newInstance and Activity's manager
+            requireActivity().supportFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, CreateWishlistFragment.newInstance())
                 .addToBackStack(null)
                 .commit()
         }

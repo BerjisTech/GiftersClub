@@ -38,10 +38,13 @@ class UserWishlistsFragment : Fragment(R.layout.fragment_wishlists) {
         val rv = view.findViewById<RecyclerView>(R.id.rvWishlists)
         rv.layoutManager = LinearLayoutManager(requireContext())
         val adapter = WishlistAdapter { wishlist ->
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.mainContentContainer, WishlistDetailFragment.newInstance(wishlist.id))
-                .addToBackStack(null)
-                .commit()
+        // Use Activity's FragmentManager so the mainContentContainer exists
+        requireActivity().supportFragmentManager.beginTransaction()
+            .replace(R.id.mainContentContainer,
+                WishlistDetailFragment.newInstance(wishlist.id)
+            )
+            .addToBackStack(null)
+            .commit()
         }
         rv.adapter = adapter
 

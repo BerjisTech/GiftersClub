@@ -95,7 +95,9 @@ class CreateWishlistFragment : Fragment(R.layout.fragment_create_wishlist) {
         // Currency conversion based on locale
         val isKenya = Locale.getDefault().country.equals("KE", true)
         etTokens.doAfterTextChanged { editable ->
-            val tokens = editable?.toString()?.toIntOrNull() ?: 0
+            val raw = editable?.toString().orEmpty()
+            val digits = raw.filter { it.isDigit() }
+            val tokens = digits.toIntOrNull() ?: 0
             if (tokens > 0) {
                 tvCost.visibility = View.VISIBLE
                 if (isKenya) {
@@ -114,7 +116,9 @@ class CreateWishlistFragment : Fragment(R.layout.fragment_create_wishlist) {
             val description = etDescription.text.toString().trim()
             val link = etLink.text.toString().trim()
             val image = etImage.text.toString().trim()
-            val tokens = etTokens.text.toString().toIntOrNull() ?: 0
+            val rawInput = etTokens.text.toString().orEmpty()
+            val digitsOnly = rawInput.filter { it.isDigit() }
+            val tokens = digitsOnly.toIntOrNull() ?: 0
             if (name.isEmpty() || description.isEmpty()) {
                 Toast.makeText(requireContext(), "Name and description are required", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
