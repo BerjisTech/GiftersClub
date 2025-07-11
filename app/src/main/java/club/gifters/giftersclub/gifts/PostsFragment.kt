@@ -1,5 +1,6 @@
 package club.gifters.giftersclub.gifts
 
+import android.content.Intent
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
@@ -77,7 +78,18 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 CommentsBottomSheetFragment.newInstance(post.id)
                     .show(parentFragmentManager, "comments")
             },
-            onShare = { /* TODO: handle share */ },
+            onShare = { post ->
+                val deepLink = "giftersclub://post/${post.id}"
+                val webLink = "https://gifters.club/post/${post.id}"
+                val shareText = "Check out this post on Gifters Club!\n$webLink"
+
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND)
+                intent.type = "text/plain"
+                intent.putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+
+                val chooser = android.content.Intent.createChooser(intent, "Share Post")
+                startActivity(chooser)
+            },
             onProfileClick = { uname ->
                 parentFragmentManager.beginTransaction()
                     .replace(R.id.mainContentContainer, GifterFragment.newInstance(uname))
@@ -97,18 +109,26 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             hasRetry401 = false
             loadPosts(clear = true)
         }
-        // Load initial posts
-        swipeRefresh.isRefreshing = true
-        loadPosts(clear = true)
+
+        val postId = arguments?.getString("post_id")
+        if (postId != null) {
+            loadPostById(postId)
+        } else {
+            // Load initial posts
+            swipeRefresh.isRefreshing = true
+            loadPosts(clear = true)
+        }
 
         // Listen for scroll to end to load more
         pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
-                super.onPageSelected(position)
                 if (!isLoading && !isLastPage && position >= adapter.itemCount - 1) {
                     loadPosts(clear = false)
                 }
             }
+
+            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
+            override fun onPageScrollStateChanged(state: Int) {}
         })
     }
 
@@ -220,6 +240,26 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load posts", e)
                 Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
+            } finally {
+                isLoading = false
+                swipeRefresh.isRefreshing = false
+            }
+        }
+    }
+
+    private fun loadPostById(postId: String) {
+        isLoading = true
+        lifecycleScope.launch {
+            try {
+                val post = api.getPostById(postId)
+                adapter.submitList(listOf(post))
+                // Now load the rest of the posts
+                page = 0
+                isLastPage = false
+                loadPosts(clear = false)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load post", e)
+                Toast.makeText(requireContext(), "Failed to load post", Toast.LENGTH_SHORT).show()
             } finally {
                 isLoading = false
                 swipeRefresh.isRefreshing = false

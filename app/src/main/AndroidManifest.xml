@@ -33,7 +33,14 @@
         </activity>
 
         <activity android:name=".MainActivity"/>
-        <activity android:name=".PostsActivity"/>
+        <activity android:name=".PostsActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="giftersclub" android:host="post"/>
+            </intent-filter>
+        </activity>
         <activity android:name=".payments.PaymentWebViewActivity"/>
         <activity android:name=".chat.FullscreenMediaActivity"
             android:exported="false"

@@ -113,6 +113,15 @@ interface PostApi {
         @Query("offset") offset: Int = 0
     ): List<Post>
 
+    @GET("posts")
+    suspend fun getPostById(
+        @Query("id", encoded = true) id: String,
+        @Query("select", encoded = true)
+        select: String =
+            "*,profile:profiles(id,user_id,username,image)," +
+            "media:post_media(id,media_type,url,order,created_at)"
+    ): Post
+
     /**
      * RPC for unified explore search on backend.
      */
