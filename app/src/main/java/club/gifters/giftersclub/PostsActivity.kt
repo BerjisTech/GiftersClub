@@ -11,6 +11,7 @@ class PostsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_posts)
 
         val uri = intent.data
+        // Validate the URI scheme and host to prevent deep link hijacking
         if (uri != null && uri.scheme == "giftersclub" && uri.host == "post") {
             val postId = uri.lastPathSegment
             if (postId != null) {

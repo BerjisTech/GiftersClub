@@ -34,10 +34,12 @@
 
         <activity android:name=".MainActivity"/>
         <activity android:name=".PostsActivity" android:exported="true">
-            <intent-filter>
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="http" android:host="gifters.club" android:pathPrefix="/post"/>
+                <data android:scheme="https" android:host="gifters.club" android:pathPrefix="/post"/>
                 <data android:scheme="giftersclub" android:host="post"/>
             </intent-filter>
         </activity>

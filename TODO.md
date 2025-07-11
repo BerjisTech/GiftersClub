@@ -1,7 +1,90 @@
-- [x] Longpress to switch between video and photo mode. Photo by default. Long press starts recording a video with a default timer of 5s but also works with set timers from custom times or predefined timers. The progress bar runs for the duration of the timer while longpress is active and stops when user lifts finger. Then they're sent automatically to the next step
-- [x] Replace drawable/record with drawable/stop_record respectively. drawable/record shows when user is not recording and drawable/stop_record shows when user is recording
-- [x] Add app:tint="@color/yellow_500" and android:tintMode="multiply" to btnCapture when in photo mode and remove tint when in video mode
-- [x] Add 5s to predefined timers
-- [x] Replace the custom timer dialog background with drawable/bg_sky_blue_gradient and make its corners rounded
-- [x] Long press to autorecord only works in isvideopmode, make it so that if in photo mode and user long presses they're automatically switch to video mode and the rest of the long press process goes on as usual
-- [x] In posts, make the share button display the share dialog with share options like whatsapp, message, etc and when the suer shjares the photo, whoever gets the link should be able to click on it and a: be sent directly to that post in the app if they have the app or b: be sent to the post in gifters.club website
+1. Authentication and Token Management:
+
+
+   * Concern: Unencrypted `SharedPreferences` for Tokens
+       * Mitigation: Implement EncryptedSharedPreferences from AndroidX Security library. This encrypts keys and values automatically.
+       * Action:
+           1. Add implementation "androidx.security:security-crypto:1.1.0-alpha06" to app/build.gradle.kts.
+           2. Modify AuthActivity.kt and AuthUtils.kt to use EncryptedSharedPreferences instead of plain SharedPreferences.
+
+
+   * Concern: Hardcoded API Keys (`SUPABASE_ANON_KEY`, `FLUTTERWAVE_PUBLIC_KEY`)
+       * Mitigation: Store sensitive keys outside of version control and inject them at build time.
+       * Action:
+           1. Define these keys in local.properties (which is .gitignored) or as environment variables.
+           2. In app/build.gradle.kts, read these properties and expose them as BuildConfig fields.
+           3. Update SupabaseConfig.kt to retrieve these values from BuildConfig.
+
+
+   * Concern: Client-side JWT Decoding for `user_id` without Backend Re-verification
+       * Mitigation: Ensure the backend always re-verifies the JWT and performs authorization checks based on the server-side validated user ID.
+       * Action: (This is a backend-side fix, but crucial for overall security)
+           1. Backend Development: Confirm that all API endpoints requiring authentication validate the JWT's signature and expiration, and extract the
+              user ID from the validated token for authorization decisions. Do not trust the user_id sent directly from the client in request bodies for
+              sensitive operations.
+
+
+  2. Deep Link Handling:
+
+
+   * Concern: Vulnerable to Deep Link Hijacking
+       * Mitigation: Implement strict validation of incoming deep link URIs and consider using Android App Links for verified ownership.
+       * Action:
+           1. In `AuthActivity.kt` and `PostsActivity.kt`: Before processing any data from intent.data, add checks to verify the uri.host and uri.scheme
+              against expected values.
+           2. Consider Android App Links: For production, implement Android App Links (Digital Asset Links) to verify ownership of gifters.club domain,
+              preventing other apps from intercepting your web links. This involves hosting a assetlinks.json file on your domain.
+
+  3. Network Communication:
+
+
+   * Concern: Logging Sensitive Data to `System.out.println`
+       * Mitigation: Remove or conditionally enable logging for debug builds only.
+       * Action:
+           1. In `RetrofitClient.kt`: Wrap the println statements within a debug check (e.g., if (BuildConfig.DEBUG) { ... }).
+           2. Best Practice: For more robust logging, integrate a dedicated logging library (e.g., Timber, Logcat) that allows for different logging levels
+              and can be easily disabled or configured for release builds.
+
+  4. Input Validation and Sanitization:
+
+
+   * Concern: No Client-side Validation/Sanitization for User-Generated Content
+       * Mitigation: Add client-side validation to provide immediate feedback to users and reduce invalid requests to the backend.
+       * Action:
+           1. In `CreatePostFragment.kt` (for `etContent`): Add length constraints and potentially basic regex patterns if specific content formats are
+              expected.
+           2. In `CommentsBottomSheetFragment.kt` (for `etComment`): Similar to posts, add length checks and basic sanitization if needed.
+
+
+   * Concern: Mass Assignment Vulnerability with `Map<String, Any>`
+       * Mitigation: Use specific data classes for API request bodies to enforce expected fields.
+       * Action:
+           1. In `CommentApiHolder.kt`: Instead of Map<String, @JvmSuppressWildcards Any>, define a data class CommentReactionRequest(val comment_id:
+              String, val user_id: String, val type: String) and use that for reactToComment. Similarly for createComment.
+           2. Refactor: Review all API calls that use Map<String, Any> for request bodies and replace them with strongly typed data classes.
+
+  5. Access Control and Authorization:
+
+
+   * Concern: Client-side Enforcement Not Clear; Backend Must Be Robust
+       * Mitigation: This is primarily a backend responsibility, but the client should never assume access.
+       * Action: (Reinforce existing good practices and ensure backend alignment)
+           1. Backend Development: Ensure that the Supabase Row Level Security (RLS) policies are correctly configured and strictly enforced for all tables
+              (e.g., posts, post_media, comments, subscriptions, post_access).
+           2. Client-side: Continue to use the onLocked callback and UI elements to guide users, but understand that the ultimate access decision rests with
+              the backend.
+
+  6. Third-Party Libraries:
+
+
+   * Concern: Outdated Libraries
+       * Mitigation: Regularly update dependencies and use dependency scanning tools.
+       * Action:
+           1. Regular Updates: Periodically check for newer versions of all libraries in app/build.gradle.kts and build.gradle.kts and update them.
+           2. Dependency Scanning: Integrate a dependency vulnerability scanner (e.g., OWASP Dependency-Check, Snyk) into your CI/CD pipeline to
+              automatically detect known vulnerabilities in your dependencies.
+
+  7. Android App Links:
+
+ - [ ] After generating a signed APK, obtain the SHA256 fingerprint from the release signing key and update the `sha256_cert_fingerprints` in `assetlinks.json` accordingly.
+ - [ ] 

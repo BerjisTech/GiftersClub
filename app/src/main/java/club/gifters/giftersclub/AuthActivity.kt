@@ -45,6 +45,11 @@ class AuthActivity : AppCompatActivity() {
     }
 
     private fun handleAuthRedirect(uri: Uri) {
+        // Validate the URI scheme and host to prevent deep link hijacking
+        if (uri.scheme != "gifterclub" || uri.host != "login-callback") {
+            return
+        }
+
         val fragment = uri.fragment ?: return
         val params = fragment.split("&").associate { part ->
             val (key, value) = part.split("=", limit = 2)
