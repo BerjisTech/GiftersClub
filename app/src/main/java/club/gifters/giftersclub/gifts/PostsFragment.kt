@@ -257,8 +257,9 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         isLoading = true
         lifecycleScope.launch {
             try {
-                // Use PostgREST eq filter so PostApi expects id=eq.<uuid>
-                val post = api.getPostById("eq.$postId")
+                // Use PostgREST eq filter so getPostById returns a List<Post>
+                val list = api.getPostById("eq.$postId")
+                val post = list.firstOrNull() ?: return@launch
                 adapter.submitList(listOf(post))
                 // Now load the rest of the posts
                 page = 0

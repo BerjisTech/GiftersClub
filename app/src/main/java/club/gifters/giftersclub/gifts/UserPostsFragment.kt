@@ -146,6 +146,9 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
                 selectedPosts.forEach { post ->
                     api.deletePost("eq.${post.id}")
                 }
+                // Optimistically remove deleted posts from UI before reloading
+                val remaining = adapter.currentList.filterNot { selectedPosts.contains(it) }
+                adapter.submitList(remaining)
                 Toast.makeText(requireContext(), "Selected posts deleted", Toast.LENGTH_SHORT).show()
                 selectedPosts.clear()
                 isSelectionMode = false

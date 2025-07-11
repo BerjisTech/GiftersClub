@@ -121,7 +121,7 @@ interface PostApi {
         select: String =
             "*,profile:profiles(id,user_id,username,image)," +
             "media:post_media(id,media_type,url,order,created_at)"
-    ): Post
+    ): List<Post>
 
     /**
      * RPC for unified explore search on backend.

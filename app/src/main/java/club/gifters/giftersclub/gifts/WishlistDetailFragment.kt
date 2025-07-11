@@ -19,7 +19,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.button.MaterialButton
+import club.gifters.giftersclub.gifts.CreateWishlistFragment
 import android.widget.FrameLayout
+import androidx.core.view.isVisible
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.ContributorSummary
 import club.gifters.giftersclub.model.Notification
@@ -168,6 +171,28 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
                 } else {
                     contributeBtn.visibility = View.VISIBLE
                     contributeBtn.setOnClickListener { showContributeBottomSheet(wish, total) }
+                }
+                // Edit/Delete actions only for owner
+                val btnEdit = view.findViewById<MaterialButton>(R.id.btnEditWishlist)
+                val btnDelete = view.findViewById<MaterialButton>(R.id.btnDeleteWishlist)
+                if (currentUser != null && currentUser == wish.userId) {
+                    btnEdit.isVisible = true
+                    btnDelete.isVisible = true
+                    btnEdit.setOnClickListener {
+                        requireActivity().supportFragmentManager.beginTransaction()
+                            .replace(R.id.mainContentContainer, CreateWishlistFragment.newInstance(wish.id))
+                            .addToBackStack(null)
+                            .commit()
+                    }
+                    btnDelete.setOnClickListener {
+                        lifecycleScope.launch {
+                            try {
+                                wishlistApi.deleteWishlist("eq.${wish.id}")
+                            } catch (_: Exception) {}
+                            Toast.makeText(requireContext(), "Wishlist deleted", Toast.LENGTH_SHORT).show()
+                            parentFragmentManager.popBackStack()
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Failed to load wishlist details", Toast.LENGTH_SHORT).show()

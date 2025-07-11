@@ -178,6 +178,27 @@
                 android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false" />
 
+            <!-- Edit and Delete actions for wishlist owner -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEditWishlist"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/edit_wishlist"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDeleteWishlist"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="@android:color/holo_red_dark"
+                android:text="@string/delete_wishlist"
+                android:textColor="@android:color/white"
+                android:visibility="gone" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

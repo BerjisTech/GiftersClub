@@ -9,6 +9,9 @@
     <string name="whats_on_your_mind">What is on your mind?</string>
     <string name="close">Close</string>
     <string name="create_wishlist">Create Wishlist</string>
+    <string name="edit_wishlist">Edit Wishlist</string>
+    <string name="save_changes">Save Changes</string>
+    <string name="delete_wishlist">Delete Wishlist</string>
     <string name="wishlist_name_hint">Wishlist Name</string>
     <string name="wishlist_description_hint">Description</string>
     <string name="wishlist_link_hint">External Link (Optional)</string>

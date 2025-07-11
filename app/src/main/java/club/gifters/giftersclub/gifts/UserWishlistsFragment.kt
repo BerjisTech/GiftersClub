@@ -12,6 +12,8 @@ import club.gifters.giftersclub.model.Wishlist
 import club.gifters.giftersclub.network.RetrofitClient
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
+import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.gifts.CreateWishlistFragment
 
 private const val ARG_USER_ID = "user_id"
 
@@ -43,8 +45,21 @@ class UserWishlistsFragment : Fragment(R.layout.fragment_wishlists) {
         }
         rv.adapter = adapter
 
-        // hide create button
-        view.findViewById<FloatingActionButton>(R.id.fabCreateWishlist).visibility = View.GONE
+        // Show create button only for list owner
+        val fab = view.findViewById<FloatingActionButton>(R.id.fabCreateWishlist)
+        val currentUser = AuthUtils.getCurrentUserId(requireContext())
+        if (currentUser != null && currentUser == userId) {
+            fab.visibility = View.VISIBLE
+            fab.setOnClickListener {
+                // Use Activity's FragmentManager to swap into main content
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .replace(R.id.mainContentContainer, CreateWishlistFragment.newInstance())
+                    .addToBackStack(null)
+                    .commit()
+            }
+        } else {
+            fab.visibility = View.GONE
+        }
         val tvEmpty = view.findViewById<TextView>(R.id.tvEmptyWishlists)
 
         lifecycleScope.launch {

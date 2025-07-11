@@ -23,10 +23,34 @@ import java.util.Locale
  * Fragment for creating a new wishlist.
  */
 class CreateWishlistFragment : Fragment(R.layout.fragment_create_wishlist) {
+    companion object {
+        private const val ARG_WISHLIST_ID = "wishlist_id"
+
+        /**
+         * Create mode (no args) or edit mode (with wishlistId)
+         */
+        fun newInstance(wishlistId: String? = null): CreateWishlistFragment {
+            return CreateWishlistFragment().apply {
+                arguments = Bundle().apply {
+                    wishlistId?.let { putString(ARG_WISHLIST_ID, it) }
+                }
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // Update toolbar title
-        requireActivity().title = getString(R.string.create_wishlist)
+        // Title and button label for create vs edit modes
+        val tvTitle = view.findViewById<TextView>(R.id.tvTitle)
+        val btnCreate = view.findViewById<Button>(R.id.btnCreateWishlist)
+        val editId = arguments?.getString(ARG_WISHLIST_ID)
+        if (editId.isNullOrBlank()) {
+            tvTitle.text = getString(R.string.create_wishlist)
+            btnCreate.text = getString(R.string.create_wishlist)
+        } else {
+            tvTitle.text = getString(R.string.edit_wishlist)
+            btnCreate.text = getString(R.string.save_changes)
+        }
         // Remove fragment-level cancel button; use toolbar back arrow only
         val etName = view.findViewById<EditText>(R.id.etWishlistName)
         val etDescription = view.findViewById<EditText>(R.id.etWishlistDescription)
@@ -35,8 +59,24 @@ class CreateWishlistFragment : Fragment(R.layout.fragment_create_wishlist) {
         val etTokens = view.findViewById<EditText>(R.id.etWishlistTokens)
         val tvCost = view.findViewById<TextView>(R.id.tvWishlistCost)
         val tvNote = view.findViewById<TextView>(R.id.tvWishlistNote)
-        val btnCreate = view.findViewById<Button>(R.id.btnCreateWishlist)
 
+        // Prefill fields when editing existing wishlist
+        if (!editId.isNullOrBlank()) {
+            lifecycleScope.launch {
+                try {
+                    val existing = RetrofitClient.wishlistApi.getWishlistById(
+                        select = "*", idFilter = "eq.$editId"
+                    ).firstOrNull()
+                    existing?.let {
+                        etName.setText(it.name)
+                        etDescription.setText(it.description)
+                        etLink.setText(it.link)
+                        etImage.setText(it.image)
+                        etTokens.setText(it.tokens.toString())
+                    }
+                } catch (_: Exception) {}
+            }
+        }
 
         // Decode current user ID from stored JWT
         var userId = ""
@@ -79,31 +119,43 @@ class CreateWishlistFragment : Fragment(R.layout.fragment_create_wishlist) {
                 Toast.makeText(requireContext(), "Name and description are required", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+        
             lifecycleScope.launch {
                 try {
-                    val request = CreateWishlistRequest(
-                        userId = userId,
-                        name = name,
-                        description = description,
-                        link = link,
-                        image = image,
-                        tokens = tokens,
-                        isFulfilled = false
-                    )
-                    val resp = RetrofitClient.wishlistApi.createWishlist(createWishlist = request)
-                    if (!resp.isSuccessful) {
-                        Toast.makeText(requireContext(), "Failed to create wishlist", Toast.LENGTH_SHORT).show()
-                        return@launch
-                    }
-                    val createdList = resp.body().orEmpty()
-                    if (createdList.isNotEmpty()) {
-                        Toast.makeText(requireContext(), "Wishlist created", Toast.LENGTH_SHORT).show()
-                        parentFragmentManager.popBackStack()
+                    if (editId.isNullOrBlank()) {
+                        // Create new wishlist
+                        val request = CreateWishlistRequest(
+                            userId = userId,
+                            name = name,
+                            description = description,
+                            link = link,
+                            image = image,
+                            tokens = tokens,
+                            isFulfilled = false
+                        )
+                        val resp = RetrofitClient.wishlistApi.createWishlist(createWishlist = request)
+                        if (resp.isSuccessful && resp.body().orEmpty().isNotEmpty()) {
+                            Toast.makeText(requireContext(), "Wishlist created", Toast.LENGTH_SHORT).show()
+                            parentFragmentManager.popBackStack()
+                        } else {
+                            Toast.makeText(requireContext(), "Failed to create wishlist", Toast.LENGTH_SHORT).show()
+                        }
                     } else {
-                        Toast.makeText(requireContext(), "Failed to create wishlist", Toast.LENGTH_SHORT).show()
+                        // Update existing wishlist
+                        val updates = mapOf(
+                            "name" to name,
+                            "description" to description,
+                            "link" to link,
+                            "image" to image,
+                            "tokens" to tokens,
+                            "is_fulfilled" to false
+                        )
+                        RetrofitClient.wishlistApi.updateWishlist("eq.$editId", updates)
+                        Toast.makeText(requireContext(), "Wishlist updated", Toast.LENGTH_SHORT).show()
+                        parentFragmentManager.popBackStack()
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(requireContext(), "Error creating wishlist", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Error saving wishlist", Toast.LENGTH_SHORT).show()
                 }
             }
         }

@@ -8,6 +8,8 @@ import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Query
+import retrofit2.http.DELETE
+import retrofit2.http.PATCH
 import club.gifters.giftersclub.model.WishlistContribution
 
 /**
@@ -51,4 +53,23 @@ interface WishlistApi {
         @Query("select", encoded = true) select: String = "*",
         @Query("wishlist_id", encoded = true) wishlistIdFilter: String
     ): List<WishlistContribution>
+
+    /**
+     * Update a wishlist (soft fields) by ID.
+     */
+    @Headers("Prefer: return=minimal")
+    @PATCH("wishlists")
+    suspend fun updateWishlist(
+        @Query("id", encoded = true) idFilter: String,
+        @Body updates: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Void>
+
+    /**
+     * Delete a wishlist by moving it to the deleted_wishlists archive via a DB trigger.
+     */
+    @Headers("Prefer: return=minimal")
+    @DELETE("wishlists")
+    suspend fun deleteWishlist(
+        @Query("id", encoded = true) idFilter: String
+    ): Response<Void>
 }
