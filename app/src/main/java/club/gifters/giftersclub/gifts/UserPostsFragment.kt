@@ -132,6 +132,7 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
             if (isSelectionMode) {
                 isSelectionMode = false
                 selectionModeChangeListener?.onSelectionModeChanged(false)
+                adapter.notifyDataSetChanged()
             }
         } else {
             selectionModeChangeListener?.onDeleteSelectedPosts(selectedPosts)
@@ -153,6 +154,7 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
                 selectedPosts.clear()
                 isSelectionMode = false
                 selectionModeChangeListener?.onSelectionModeChanged(false)
+                adapter.notifyDataSetChanged()
                 loadPosts(clear = true) // Reload posts after deletion
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Failed to delete posts", Toast.LENGTH_SHORT).show()
