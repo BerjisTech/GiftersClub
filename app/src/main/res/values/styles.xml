@@ -9,6 +9,6 @@
     <style name="TopTabsStyling" parent="TextAppearance.Design.Tab">
         <item name="android:textAllCaps">true</item>
         <item name="android:textSize">8sp</item>
-        <item name="color">@color/white</item>
+        <item name="color">@color/gray_500</item>
     </style>
 </resources>

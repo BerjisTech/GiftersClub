@@ -55,12 +55,12 @@
         app:layout_constraintTop_toTopOf="@id/exploreIcon"
         app:layout_constraintBottom_toBottomOf="@id/exploreIcon"
         app:tabGravity="center"
-        app:tabIndicatorColor="@android:color/white"
+        app:tabIndicatorColor="@color/gray_500"
         app:tabIndicatorFullWidth="false"
         app:tabIndicatorHeight="2dp"
         app:tabMode="scrollable"
         app:tabTextAppearance="@style/TopTabsStyling"
-        app:tabTextColor="@color/white" />
+        app:tabTextColor="@color/gray_500" />
 
     <ImageView
         android:id="@+id/exploreIcon"
