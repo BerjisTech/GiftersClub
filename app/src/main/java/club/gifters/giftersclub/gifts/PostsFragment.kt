@@ -16,6 +16,7 @@ import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.gifts.PostAdapter
 import club.gifters.giftersclub.gifts.CommentApiHolder
 import club.gifters.giftersclub.model.Post
+import club.gifters.giftersclub.model.FeedPost
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import club.gifters.giftersclub.social.SubscriptionApiHolder
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -50,6 +51,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     private lateinit var adapter: PostAdapter
     private var page = 0
     private val limit = 10
+    private val perAuthorLimit = 3
     private var isLoading = false
     private var hasRetry401 = false
     private var isLastPage = false
@@ -224,11 +226,30 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         isLoading = true
         lifecycleScope.launch {
             try {
-                val items = api.getPosts(
-                    order = "created_at.desc",
-                    limit = limit,
-                    offset = page * limit
+                val currentUser = AuthUtils.getCurrentUserId(requireContext())
+                val feedParams = mapOf(
+                    "_user_id"           to currentUser,
+                    "_limit"             to limit,
+                    "_offset"            to page * limit,
+                    // "_per_author_limit"  to perAuthorLimit
                 )
+                val feedItems = api.getFeedPosts(feedParams)
+                val items = feedItems.map { f ->
+                    Post(
+                        id = f.id,
+                        userId = f.userId,
+                        content = f.content,
+                        quotePostId = null,
+                        replyCommentId = null,
+                        createdAt = f.createdAt,
+                        profile = f.profile,
+                        media = f.media,
+                        reactionCounts = null,
+                        accessType = f.accessType,
+                        price = f.price,
+                        tags = null
+                    )
+                }
                 if (clear) adapter.submitList(items)
                 else adapter.submitList(adapter.currentList + items)
                 if (items.size < limit) isLastPage = true else page++

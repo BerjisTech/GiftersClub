@@ -2,6 +2,7 @@ package club.gifters.giftersclub.network
 
 import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.model.SearchExploreResult
+import club.gifters.giftersclub.model.FeedPost
 import club.gifters.giftersclub.model.PostMedia
 import club.gifters.giftersclub.model.Tag
 import club.gifters.giftersclub.model.CreatePostRequest
@@ -131,6 +132,15 @@ interface PostApi {
     suspend fun searchExploreRpc(
         @Body params: Map<String, @JvmSuppressWildcards Any>
     ): SearchExploreResult
+
+    /**
+     * RPC for relevance-ranked home feed of posts.
+     */
+    @Headers("Prefer: params=multiple-objects")
+    @POST("rpc/get_feed_posts")
+    suspend fun getFeedPosts(
+        @Body params: Map<String, @JvmSuppressWildcards Any?>
+    ): List<FeedPost>
 
     /**
      * Delete a post by moving it to the deleted_posts archive table via a database trigger.

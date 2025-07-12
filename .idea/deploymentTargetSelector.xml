@@ -3,11 +3,11 @@
   <component name="deploymentTargetSelector">
     <selectionStates>
       <SelectionState runConfigName="app">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-07-12T13:41:40.218250Z">
+        <option name="selectionMode" value="DIALOG" />
+        <DropdownSelection timestamp="2025-07-12T15:05:33.592185700Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\bokou\.android\avd\Medium_Tablet.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\bokou\.android\avd\Medium_Phone.avd" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -16,6 +16,11 @@
             <Target type="DEFAULT_BOOT">
               <handle>
                 <DeviceId pluginId="PhysicalDevice" identifier="serial=126224048K005216" />
+              </handle>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <handle>
+                <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\bokou\.android\avd\Medium_Tablet.avd" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">

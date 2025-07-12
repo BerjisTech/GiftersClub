@@ -13,6 +13,8 @@ import androidx.recyclerview.widget.RecyclerView
 import android.util.Log
 import club.gifters.giftersclub.explore.ExplorePostAdapter
 import club.gifters.giftersclub.model.Post
+import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.social.SubscriptionApiHolder
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -50,6 +52,21 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
         }
     }
 
+    /**
+     * Remove posts the current user cannot access (subscription or paywalled).
+     */
+    private suspend fun filterAccessible(posts: List<Post>): List<Post> {
+        val userId = AuthUtils.getCurrentUserId(requireContext())
+        return posts.filter { post ->
+            when {
+                post.accessType == "free" || post.userId == userId -> true
+                post.accessType == "subscription" -> SubscriptionApiHolder.hasSubscription(post.userId)
+                post.accessType == "paid"         -> SubscriptionApiHolder.hasPostAccess(post.id)
+                else                                -> true
+            }
+        }
+    }
+
     private val query: String by lazy { requireArguments().getString(ARG_QUERY).orEmpty() }
     private val mediaType: String? by lazy { requireArguments().getString(ARG_MEDIA_TYPE) }
     private lateinit var adapter: ExplorePostAdapter
@@ -62,11 +79,14 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
         rv.layoutManager = GridLayoutManager(requireContext(), 2)
         rv.adapter = adapter
         swipe.isRefreshing = true
-        // If created with explicit list, show it and return
+        // If created with explicit list, apply access filter, show it and return
         arguments?.getString(ARG_LIST)?.let { json ->
             val type = object : TypeToken<List<Post>>() {}.type
-            adapter.submitList(Gson().fromJson(json, type))
-            swipe.isRefreshing = false
+            val list: List<Post> = Gson().fromJson(json, type)
+            viewLifecycleOwner.lifecycleScope.launch {
+                adapter.submitList(filterAccessible(list))
+                swipe.isRefreshing = false
+            }
             return
         }
         viewLifecycleOwner.lifecycleScope.launch {
@@ -117,8 +137,10 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
                 commentPosts.filter { seen.add(it.id) }.let { merged += it }
                 userPosts.filter { seen.add(it.id) }.let { merged += it }
                 Log.d(TAG, "Merged total=${merged.size} posts")
-                if (merged.isEmpty()) {
-                    Log.d(TAG, "Merged empty, falling back to direct content search")
+                // filter out posts the user cannot access
+                val accessibleMerged = filterAccessible(merged)
+                if (accessibleMerged.isEmpty()) {
+                    Log.d(TAG, "Merged empty or inaccessible, falling back to direct content search")
                     val fallbackFilter = "(content.ilike.*${query}*)"
                     val fallback = RetrofitClient.postApi.searchPosts(
                         orFilter = fallbackFilter,
@@ -127,14 +149,10 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
                         limit = 50,
                         offset = 0
                     )
-                    try {
-                        adapter.submitList(fallback)
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Fallback content search failed", e)
-                        adapter.submitList(emptyList())
-                    }
+                    val accessibleFallback = filterAccessible(fallback)
+                    adapter.submitList(accessibleFallback)
                 } else {
-                    adapter.submitList(merged)
+                    adapter.submitList(accessibleMerged)
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Post search failed", e)

@@ -15,6 +15,7 @@ import club.gifters.giftersclub.gifts.PostsFragment
 import club.gifters.giftersclub.gifts.PostGridAdapter
 import kotlinx.coroutines.launch
 import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.social.SubscriptionApiHolder
 
 private const val ARG_USER_ID = "user_id"
 
@@ -175,12 +176,29 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
                         offset = page * limit, userIdFilter = "eq.$userId"
                     )
                 }
-                if (clear) adapter.submitList(items) else adapter.submitList(adapter.currentList + items)
+                // filter posts the user cannot access
+                val visible = filterAccessible(items)
+                if (clear) adapter.submitList(visible) else adapter.submitList(adapter.currentList + visible)
                 if (items.size < limit) isLastPage = true else page++
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
             } finally {
                 isLoading = false
+            }
+        }
+    }
+
+    /**
+     * Remove posts the current user cannot access (subscription or paywalled).
+     */
+    private suspend fun filterAccessible(posts: List<Post>): List<Post> {
+        val userId = AuthUtils.getCurrentUserId(requireContext())
+        return posts.filter { post ->
+            when {
+                post.accessType == "free" || post.userId == userId -> true
+                post.accessType == "subscription" -> SubscriptionApiHolder.hasSubscription(post.userId)
+                post.accessType == "paid"         -> SubscriptionApiHolder.hasPostAccess(post.id)
+                else                                -> true
             }
         }
     }
