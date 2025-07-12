@@ -133,8 +133,14 @@
             android:id="@+id/tabLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:tabGravity="fill"
-            app:tabMode="fixed" />
+            app:tabGravity="center"
+            android:background="@android:color/transparent"
+            app:tabIndicatorColor="@color/gray_500"
+            app:tabIndicatorFullWidth="false"
+            app:tabIndicatorHeight="2dp"
+            app:tabMode="scrollable"
+            app:tabTextAppearance="@style/TopTabsStyling"
+            app:tabTextColor="@color/gray_500"  />
     </com.google.android.material.appbar.AppBarLayout>
 
 
