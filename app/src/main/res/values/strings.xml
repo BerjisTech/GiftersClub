@@ -52,8 +52,8 @@
     <string name="my_following">My following</string>
 
     <!-- Chat header previews -->
-    <string name="new_followers_preview">userx and n others started following you</string>
-    <string name="activity_preview">Userx liked your photo</string>
+    <string name="new_followers_preview">You have new followers</string>
+    <string name="activity_preview">You have new gifts &amp; post interactions</string>
     <string name="system_notifications_preview">Your token purchase ...</string>
     <string name="wishlist">Wishlist</string>
     <string name="send">Send</string>
