@@ -2,6 +2,9 @@ package club.gifters.giftersclub.gifts
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -35,8 +38,14 @@ class UserWishlistsFragment : Fragment(R.layout.fragment_wishlists) {
         super.onViewCreated(view, savedInstanceState)
         userId = arguments?.getString(ARG_USER_ID) ?: ""
 
+
+        val createWishlistButton = view.findViewById<Button>(R.id.btnCreateWishlist)
+        val etSearch = view.findViewById<EditText>(R.id.etSearchWishlists)
         val rv = view.findViewById<RecyclerView>(R.id.rvWishlists)
+
         rv.layoutManager = LinearLayoutManager(requireContext())
+        etSearch.visibility = View.GONE
+
         val adapter = WishlistAdapter { wishlist ->
         // Use Activity's FragmentManager so the mainContentContainer exists
         requireActivity().supportFragmentManager.beginTransaction()
@@ -47,6 +56,16 @@ class UserWishlistsFragment : Fragment(R.layout.fragment_wishlists) {
             .commit()
         }
         rv.adapter = adapter
+
+
+        // Set up the create wishlist button
+        createWishlistButton.setOnClickListener {
+            // Use unified newInstance and Activity's manager
+            requireActivity().supportFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, CreateWishlistFragment.newInstance())
+                .addToBackStack(null)
+                .commit()
+        }
 
         // Show create button only for list owner
         val fab = view.findViewById<FloatingActionButton>(R.id.fabCreateWishlist)
@@ -63,7 +82,7 @@ class UserWishlistsFragment : Fragment(R.layout.fragment_wishlists) {
         } else {
             fab.visibility = View.GONE
         }
-        val tvEmpty = view.findViewById<TextView>(R.id.tvEmptyWishlists)
+        val tvEmpty = view.findViewById<LinearLayout>(R.id.tvEmptyWishlists)
 
         lifecycleScope.launch {
             try {
@@ -76,8 +95,11 @@ class UserWishlistsFragment : Fragment(R.layout.fragment_wishlists) {
                 )
                 val items: List<Wishlist> = joined.map { it.toWishlist() }
                 adapter.submitList(items)
-                tvEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+                val isListEmpty = items.isEmpty()
+                tvEmpty.visibility = if (isListEmpty) View.VISIBLE else View.GONE
+                rv.visibility = if (isListEmpty) View.GONE else View.VISIBLE
             } catch (_: Exception) {
+                rv.visibility = View.GONE
                 tvEmpty.visibility = View.VISIBLE
             }
         }

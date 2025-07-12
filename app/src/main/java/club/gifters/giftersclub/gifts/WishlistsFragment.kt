@@ -3,7 +3,9 @@ package club.gifters.giftersclub.gifts
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
@@ -31,7 +33,13 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val tvEmpty = view.findViewById<LinearLayout>(R.id.tvEmptyWishlists)
+        val fab = view.findViewById<FloatingActionButton>(R.id.fabCreateWishlist)
         val etSearch = view.findViewById<EditText>(R.id.etSearchWishlists)
+        val rv = view.findViewById<RecyclerView>(R.id.rvWishlists)
+
+
+        // Set up the search EditText
         etSearch.doAfterTextChanged { editable ->
             searchQuery = editable?.toString().orEmpty().trim()
             page = 0
@@ -39,7 +47,7 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
             loadWishlists(view, clear = true)
         }
 
-        val rv = view.findViewById<RecyclerView>(R.id.rvWishlists)
+        // Set up the RecyclerView
         rv.layoutManager = LinearLayoutManager(requireContext())
         val adapter = WishlistAdapter { wishlist ->
             // Use Activity's FragmentManager for navigating to detail
@@ -69,8 +77,7 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
             }
         })
 
-        val tvEmpty = view.findViewById<TextView>(R.id.tvEmptyWishlists)
-        val fab = view.findViewById<FloatingActionButton>(R.id.fabCreateWishlist)
+        // Set up the FloatingActionButton
         fab.setOnClickListener {
             // Use unified newInstance and Activity's manager
             requireActivity().supportFragmentManager.beginTransaction()
@@ -86,9 +93,10 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
     private fun loadWishlists(view: View, clear: Boolean) {
         if (isLoading || isLastPage) return
         isLoading = true
+        val etSearch = view.findViewById<EditText>(R.id.etSearchWishlists)
         val rv = view.findViewById<RecyclerView>(R.id.rvWishlists)
         val adapter = rv.adapter as WishlistAdapter
-        val tvEmpty = view.findViewById<TextView>(R.id.tvEmptyWishlists)
+        val tvEmpty = view.findViewById<LinearLayout>(R.id.tvEmptyWishlists)
         lifecycleScope.launch {
             var orFilter: String? = null
             try {
@@ -122,9 +130,14 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
                 if (clear) adapter.submitList(wishlists)
                 else adapter.submitList(adapter.currentList + wishlists)
                 if (joined.size < pageSize) isLastPage = true else page++
-                tvEmpty.visibility = if (adapter.currentList.isEmpty()) View.VISIBLE else View.GONE
+                val isListEmpty = adapter.currentList.isEmpty()
+                tvEmpty.visibility = if (isListEmpty) View.VISIBLE else View.GONE
+                rv.visibility = if (isListEmpty) View.GONE else View.VISIBLE
+                etSearch.visibility = if (isListEmpty) View.GONE else View.VISIBLE
             } catch (e: Exception) {
                 Log.e("WishlistsFragment", "Error loading wishlists (orFilter=$orFilter)", e)
+                etSearch.visibility = View.GONE
+                rv.visibility = View.GONE
                 tvEmpty.visibility = View.VISIBLE
             } finally {
                 isLoading = false
