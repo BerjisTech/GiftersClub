@@ -16,6 +16,7 @@ import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import club.gifters.giftersclub.gifts.CreateWishlistFragment
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import kotlinx.coroutines.launch
 
 /**
@@ -37,6 +38,17 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
         val fab = view.findViewById<FloatingActionButton>(R.id.fabCreateWishlist)
         val etSearch = view.findViewById<EditText>(R.id.etSearchWishlists)
         val rv = view.findViewById<RecyclerView>(R.id.rvWishlists)
+        val swipeRefreshLayout = view.findViewById<SwipeRefreshLayout>(R.id.swipeRefreshLayout)
+
+        // Set up the swipe-to-refresh listener
+        swipeRefreshLayout.setOnRefreshListener {
+            page = 0
+            isLastPage = false
+            searchQuery = ""
+            etSearch.text.clear()
+            loadWishlists(view, clear = true)
+            swipeRefreshLayout.isRefreshing = false
+        }
 
 
         // Set up the search EditText

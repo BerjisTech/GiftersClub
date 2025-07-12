@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.gifts.GifterFragment
@@ -22,6 +23,8 @@ class LeaderboardFragment : Fragment(R.layout.fragment_leaderboard) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val recycler = view.findViewById<RecyclerView>(R.id.recyclerLeaderboard)
+        val swipeRefreshLayout = view.findViewById<SwipeRefreshLayout>(R.id.swipeRefreshLayout)
+
         recycler.layoutManager = LinearLayoutManager(context)
         adapter = TopGifterAdapter { gifter ->
             parentFragmentManager.beginTransaction()
@@ -30,6 +33,11 @@ class LeaderboardFragment : Fragment(R.layout.fragment_leaderboard) {
                 .commit()
         }
         recycler.adapter = adapter
+
+        swipeRefreshLayout.setOnRefreshListener {
+            loadLeaderboard()
+            swipeRefreshLayout.isRefreshing = false
+        }
 
         loadLeaderboard()
     }

@@ -309,6 +309,9 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
             } catch (e: HttpException) {
                 e("WishlistDetail", "Error contributing to wishlist", e)
                 Toast.makeText(requireContext(), "Failed to contribute. Please try again later.", Toast.LENGTH_SHORT).show()
+            } catch (e: java.net.SocketTimeoutException) {
+                e("WishlistDetail", "Timeout contributing to wishlist", e)
+                Toast.makeText(requireContext(), "Contribution timed out. Please check your connection and try again.", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 e("WishlistDetail", "Error contributing to wishlist", e)
                 Toast.makeText(requireContext(), "Failed to contribute. Please try again later.", Toast.LENGTH_SHORT).show()

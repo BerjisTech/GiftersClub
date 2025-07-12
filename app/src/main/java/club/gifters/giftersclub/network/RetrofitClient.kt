@@ -43,7 +43,11 @@ private class TokenRefreshAuthenticator : Authenticator {
             .addHeader("Content-Type", "application/json")
             .build()
 
-        val client = OkHttpClient.Builder().build()
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
         val refreshResponse = try {
             client.newCall(refreshRequest).execute()
         } catch (e: Exception) {
@@ -179,6 +183,9 @@ object RetrofitClient {
 
     // AWS S3 presigned URL API for media uploads (requires Supabase JWT auth)
     val awsClient = client.newBuilder()
+        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .addInterceptor { chain ->
             val original = chain.request()
             // Host for our presign-Lambda endpoint (API Gateway)
