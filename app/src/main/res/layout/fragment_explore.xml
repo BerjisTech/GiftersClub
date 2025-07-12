@@ -1,17 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
-    <EditText
-        android:id="@+id/etSearch"
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Search"
-        android:imeOptions="actionSearch"
-        android:inputType="text" />
+        android:layout_margin="10dp"
+        android:background="@drawable/bg_half_transparent_white"
+        app:cardCornerRadius="10dp">
+
+        <EditText
+            android:id="@+id/etSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/search_anything"
+            android:autofillHints="Start typing to search"
+            android:background="@drawable/bg_half_transparent_white"
+            android:padding="10dp"
+            android:imeOptions="actionSearch"
+            android:inputType="text" />
+    </androidx.cardview.widget.CardView>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvSuggestions"
@@ -23,8 +34,14 @@
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:tabMode="fixed"
-        app:tabGravity="fill" />
+        app:tabGravity="center"
+        android:background="@android:color/transparent"
+        app:tabIndicatorColor="@color/gray_500"
+        app:tabIndicatorFullWidth="false"
+        app:tabIndicatorHeight="2dp"
+        app:tabMode="scrollable"
+        app:tabTextAppearance="@style/TopTabsStyling"
+        app:tabTextColor="@color/gray_500" />
 
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager"
