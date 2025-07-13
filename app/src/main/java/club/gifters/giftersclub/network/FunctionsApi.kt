@@ -56,6 +56,14 @@ interface FunctionsApi {
     ): Response<Unit>
 
     /**
+     * Record an auth log event (sign-in) via Edge Function.
+     */
+    @POST("auth-log")
+    suspend fun authLogRpc(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /**
      * Obtain S3 presigned URLs for media uploads via Supabase Edge Function.
      */
     @POST("upload-media")
