@@ -276,6 +276,7 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
                 val ownerId = wishlist.userId
                 val username = profile?.username.orEmpty()
                 if (username.isNotBlank()) {
+                    // In-app notifications
                     RetrofitClient.notificationApi.createNotification(
                         Notification(
                             id = "",
@@ -302,6 +303,62 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
                             senderId = contributorId
                         )
                     )
+                    // Email notifications via Edge Function
+                    RetrofitClient.functionsApi.sendNotificationEmail(
+                        mapOf(
+                            "user_id" to ownerId,
+                            "type" to "wishlist_contribution",
+                            "reference_id" to wishlist.id,
+                            "message" to "$username contributed $amount tokens to your ${wishlist.name}",
+                            "template_data" to mapOf(
+                                "username" to username,
+                                "tokens" to amount,
+                                "wishlist_name" to wishlist.name
+                            )
+                        )
+                    )
+                    RetrofitClient.functionsApi.sendNotificationEmail(
+                        mapOf(
+                            "user_id" to contributorId,
+                            "type" to "wishlist_contribution",
+                            "reference_id" to wishlist.id,
+                            "message" to "You contributed $amount tokens to ${wishlist.name}",
+                            "template_data" to mapOf(
+                                "username" to username,
+                                "tokens" to amount,
+                                "wishlist_name" to wishlist.name
+                            )
+                        )
+                    )
+                    // Wishlist fulfilled notifications
+                    if ((this.amountContributed + amount) >= this.wish.tokens) {
+                        RetrofitClient.notificationApi.createNotification(
+                            Notification(
+                                id = "",
+                                userId = ownerId,
+                                type = "wishlist_fulfilled",
+                                referenceId = wishlist.id,
+                                message = "$username completed your ${wishlist.name} wishlist with $amount tokens",
+                                isRead = false,
+                                createdAt = "",
+                                updatedAt = null,
+                                senderId = contributorId
+                            )
+                        )
+                        RetrofitClient.functionsApi.sendNotificationEmail(
+                            mapOf(
+                                "user_id" to ownerId,
+                                "type" to "wishlist_fulfilled",
+                                "reference_id" to wishlist.id,
+                                "message" to "$username completed your ${wishlist.name} wishlist with $amount tokens",
+                                "template_data" to mapOf(
+                                    "username" to username,
+                                    "tokens" to amount,
+                                    "wishlist_name" to wishlist.name
+                                )
+                            )
+                        )
+                    }
                 }
                 Toast.makeText(requireContext(), "Contribution successful", Toast.LENGTH_SHORT).show()
                 // Refresh UI

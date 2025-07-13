@@ -28,6 +28,7 @@ import coil.transform.CircleCropTransformation
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Gift
 import club.gifters.giftersclub.model.Profile
+import club.gifters.giftersclub.model.Notification
 import club.gifters.giftersclub.network.GiftApi
 import club.gifters.giftersclub.network.RetrofitClient
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -189,6 +190,63 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
                 )
                 Toast.makeText(requireContext(), "Gift sent successfully!", Toast.LENGTH_SHORT)
                     .show()
+                // In-app notifications for gift sent/received
+                val senderProfile = profile
+                val recipientList = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$recipientId")
+                val recipientProfile = recipientList.firstOrNull()
+                if (senderProfile != null && recipientProfile != null) {
+                    RetrofitClient.notificationApi.createNotification(
+                        Notification(
+                            id = "",
+                            userId = gifterId,
+                            type = "gift_sent",
+                            referenceId = gift.id,
+                            message = "${recipientProfile.username} has received your ${gift.name}",
+                            isRead = false,
+                            createdAt = "",
+                            updatedAt = null,
+                            senderId = gifterId
+                        )
+                    )
+                    RetrofitClient.notificationApi.createNotification(
+                        Notification(
+                            id = "",
+                            userId = recipientProfile.userId,
+                            type = "gift_received",
+                            referenceId = gift.id,
+                            message = "${senderProfile.username} has sent you ${gift.name}",
+                            isRead = false,
+                            createdAt = "",
+                            updatedAt = null,
+                            senderId = gifterId
+                        )
+                    )
+                    // Send email notifications via Edge Function
+                    RetrofitClient.functionsApi.sendNotificationEmail(
+                        mapOf(
+                            "user_id" to gifterId,
+                            "type" to "gift_sent",
+                            "reference_id" to gift.id,
+                            "message" to "${recipientProfile.username} has received your ${gift.name}",
+                            "template_data" to mapOf(
+                                "recipient_username" to recipientProfile.username,
+                                "gift_name" to gift.name
+                            )
+                        )
+                    )
+                    RetrofitClient.functionsApi.sendNotificationEmail(
+                        mapOf(
+                            "user_id" to recipientProfile.userId,
+                            "type" to "gift_received",
+                            "reference_id" to gift.id,
+                            "message" to "${senderProfile.username} has sent you ${gift.name}",
+                            "template_data" to mapOf(
+                                "sender_username" to senderProfile.username,
+                                "gift_name" to gift.name
+                            )
+                        )
+                    )
+                }
             } catch (e: HttpException) {
                 Log.e(TAG, "Error sending gift", e)
                 Toast.makeText(requireContext(), "Failed to send gift", Toast.LENGTH_SHORT).show()

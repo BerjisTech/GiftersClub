@@ -1,5 +1,5 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">GiftersClub</string>
+    <string name="app_name">Gifters Club</string>
     <string name="leaderboard">Gifters</string>
     <string name="create_post">Create a Post</string>
     <string name="select_photos_videos">Upload Photos &amp; Videos</string>

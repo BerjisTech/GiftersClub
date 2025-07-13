@@ -48,6 +48,14 @@ interface FunctionsApi {
     ): Response<Unit>
 
     /**
+     * Trigger notification email via Supabase Edge Function.
+     */
+    @POST("send-notification-email")
+    suspend fun sendNotificationEmail(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /**
      * Obtain S3 presigned URLs for media uploads via Supabase Edge Function.
      */
     @POST("upload-media")

@@ -47,6 +47,13 @@
         <activity android:name=".chat.FullscreenMediaActivity"
             android:exported="false"
             android:theme="@style/Theme.GiftersClub"/>
+        <service
+            android:name=".notifications.MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
         <activity android:name=".live.LiveStreamActivity"/>
 
     </application>
