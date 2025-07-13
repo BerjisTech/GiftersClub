@@ -31,13 +31,33 @@ import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.social.FriendsFragment
 import club.gifters.giftersclub.explore.ExploreFragment
 import android.widget.ImageView
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.ActivityCompat
 
 class MainActivity : AppCompatActivity() {
+    companion object {
+        private const val NOTIF_PERMISSION_REQUEST_CODE = 1001
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         RetrofitClient.init(this)
         setContentView(R.layout.activity_main)
+        // On Android 13+, request runtime permission to post notifications
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    NOTIF_PERMISSION_REQUEST_CODE
+                )
+            }
+        }
         // Retrieve current FCM token and store it in profiles via Supabase
         com.google.firebase.messaging.FirebaseMessaging.getInstance().token
             .addOnCompleteListener { task ->
