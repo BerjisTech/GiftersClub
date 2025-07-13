@@ -330,8 +330,12 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
                             )
                         )
                     )
-                    // Wishlist fulfilled notifications
-                    if ((this.amountContributed + amount) >= this.wish.tokens) {
+                    // Wishlist fulfilled notifications: recompute total contributions
+                    val prevTotal = RetrofitClient.wishlistApi.getWishlistContributions(
+                        select = "tokens",
+                        wishlistIdFilter = "eq.${wishlist.id}"
+                    ).sumOf(WishlistContribution::tokens)
+                    if ((prevTotal + amount) >= wishlist.tokens) {
                         RetrofitClient.notificationApi.createNotification(
                             Notification(
                                 id = "",
