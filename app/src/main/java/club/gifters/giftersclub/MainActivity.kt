@@ -23,8 +23,10 @@ import club.gifters.giftersclub.chat.NotificationListFragment
 import android.content.Intent
 import club.gifters.giftersclub.live.LiveStreamActivity
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import club.gifters.giftersclub.AuthUtils
+import com.google.firebase.messaging.FirebaseMessaging
 import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.social.FriendsFragment
 import club.gifters.giftersclub.explore.ExploreFragment
@@ -36,6 +38,22 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         RetrofitClient.init(this)
         setContentView(R.layout.activity_main)
+        // Retrieve current FCM token and store it in profiles via Supabase
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().token
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val fcmToken = task.result
+                    AuthUtils.getCurrentUserId(this)?.let { userId ->
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            RetrofitClient.profileApi.updateProfile(
+                                select = "*",
+                                userIdFilter = "eq.$userId",
+                                updates = mapOf("fcm_token" to fcmToken)
+                            )
+                        }
+                    }
+                }
+            }
 
         // Setup ViewPager + top tabs (swipeable like TikTok)
         val tabTitles = listOf("Posts", "Gifts", "Gifters", "Wishlists")
