@@ -238,8 +238,16 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                         giftsSent = null,
                         giftsReceived = null
                     )
-                    val lastMsg = detail.lastMessageId
-                        ?.let { msgId -> chatApi.getMessageById(idFilter = "eq.$msgId").firstOrNull() }
+                    val lastMsg = detail.lastMessageContent?.let { content ->
+                        Message(
+                            id = detail.lastMessageId ?: "",
+                            senderId = userId,
+                            receiverId = detail.partnerId,
+                            content = content,
+                            createdAt = detail.lastMessageAt,
+                            attachments = detail.lastMessageAttachments.orEmpty()
+                        )
+                    }
                     val overview = ConversationOverview(detail.userA, detail.userB, detail.lastMessageAt)
                     ConversationUi(overview, profile, lastMsg, detail.unreadCount)
                 }

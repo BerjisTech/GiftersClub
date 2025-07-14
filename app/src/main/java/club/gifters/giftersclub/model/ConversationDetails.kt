@@ -13,5 +13,7 @@ data class ConversationDetails(
     @SerializedName("partner_name") val partnerName: String?,
     @SerializedName("partner_image") val partnerImage: String?,
     @SerializedName("unread_count") val unreadCount: Int,
-    @SerializedName("last_message_id") val lastMessageId: String?
+    @SerializedName("last_message_id") val lastMessageId: String?,
+    @SerializedName("last_message_content") val lastMessageContent: String?,
+    @SerializedName("last_message_attachments") val lastMessageAttachments: List<Attachment>?
 )
