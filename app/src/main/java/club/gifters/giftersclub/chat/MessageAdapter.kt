@@ -68,14 +68,22 @@ class MessageAdapter(
         protected val tvContent: TextView = view.findViewById(R.id.tvContent)
         protected val llAttachments: LinearLayout = view.findViewById(R.id.llAttachments)
 
+        init {
+            val metrics = itemView.context.resources.displayMetrics
+            val maxBubbleWidth = (metrics.widthPixels * 0.6f).toInt()
+            tvContent.maxWidth = maxBubbleWidth
+        }
+
         fun displayAttachments(msg: Message) {
             llAttachments.removeAllViews()
-            val maxHeight = (300 * itemView.context.resources.displayMetrics.density).toInt()
+            val metrics = itemView.context.resources.displayMetrics
+            val maxBubbleWidth = (metrics.widthPixels * 0.6f).toInt()
+            val maxHeight = (300 * metrics.density).toInt()
             msg.attachments?.forEach { attach ->
                 if (attach.type == "image") {
                     val iv = ImageView(itemView.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            maxBubbleWidth,
                             maxHeight
                         )
                         adjustViewBounds = true
@@ -95,7 +103,7 @@ class MessageAdapter(
                 } else {
                     val vv = VideoView(itemView.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            maxBubbleWidth,
                             maxHeight
                         )
                         setPadding(0, 4, 0, 0)

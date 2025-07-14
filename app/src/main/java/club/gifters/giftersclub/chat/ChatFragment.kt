@@ -94,6 +94,21 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         userId = decodeCurrentUserId()
+        // Intercept back press to toggle between conversation list and chat pane
+        val backCallback = object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val convoList = view.findViewById<RecyclerView>(R.id.rvConversations)
+                val chatPane = view.findViewById<ConstraintLayout>(R.id.chatPane)
+                if (chatPane.isVisible) {
+                    chatPane.isVisible = false
+                    convoList.isVisible = true
+                } else {
+                    isEnabled = false
+                    requireActivity().onBackPressed()
+                }
+            }
+        }
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback)
         Log.w("ChatFragment", "Current userId = $userId")
         Log.w("ChatFragment", "Current userId = $userId")
         // Update toolbar title
@@ -291,8 +306,9 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             } catch (_: Exception) {
             }
             // poll for new messages only
-            while (isActive) {
-                delay(2000)
+        while (isActive) {
+                // Poll more frequently for near-realtime UX
+                delay(1000)
                 try {
                     val newMsgs = chatApi.getMessages(
                         select = "*",
