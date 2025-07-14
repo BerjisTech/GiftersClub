@@ -13,6 +13,7 @@ import android.widget.ImageButton
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -290,6 +291,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         rvMessages: RecyclerView
     ) {
         requireActivity().title = partnerName
+        val chatPane = requireView().findViewById<ConstraintLayout>(R.id.chatPane)
+        chatPane.findViewById<TextView>(R.id.tvPartnerName).text = partnerName
         pollingJob?.cancel()
         pollingJob = lifecycleScope.launch {
             var lastTimestamp: String? = null

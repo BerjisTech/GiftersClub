@@ -19,15 +19,26 @@
         android:visibility="gone">
 
 
+        <TextView
+            android:id="@+id/tvPartnerName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            app:layout_constraintTop_toTopOf="@id/chatPane"
+            app:layout_constraintStart_toStartOf="@id/chatPane"
+            app:layout_constraintEnd_toEndOf="@id/chatPane" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvMessages"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:padding="4dp"
-            app:layout_constraintBottom_toTopOf="@id/chatFormCard"
-            app:layout_constraintEnd_toEndOf="@id/chatPane"
+            app:layout_constraintTop_toBottomOf="@id/tvPartnerName"
             app:layout_constraintStart_toStartOf="@id/chatPane"
-            app:layout_constraintTop_toTopOf="@id/chatPane" />
+            app:layout_constraintEnd_toEndOf="@id/chatPane"
+            app:layout_constraintBottom_toTopOf="@id/chatFormCard" />
 
         <androidx.cardview.widget.CardView
             android:id="@+id/attachmentPreviewContainerCard"
