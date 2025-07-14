@@ -1,6 +1,7 @@
 package club.gifters.giftersclub.network
 
 import club.gifters.giftersclub.model.Attachment
+import club.gifters.giftersclub.model.ConversationDetails
 import club.gifters.giftersclub.model.Message
 import club.gifters.giftersclub.model.ConversationOverview
 import retrofit2.Response
@@ -16,13 +17,12 @@ import retrofit2.http.Query
  */
 interface ChatApi {
     /**
-     * Fetch conversation overviews for the current user.
+     * Fetch conversation details for the current user via the conversation_details view.
      */
-    @GET("conversation_overview")
-    suspend fun getConversations(
-        @Query("select", encoded = true) select: String = "user_a,user_b,last_message_at",
-        @Query("or",      encoded = true) userIdFilter: String
-    ): List<ConversationOverview>
+    @GET("conversation_details")
+    suspend fun getConversationDetails(
+        @Query("select", encoded = true) select: String = "*"
+    ): List<ConversationDetails>
 
     /**
      * Fetch messages between two users.
@@ -44,6 +44,16 @@ interface ChatApi {
         @Query("or",      encoded = true) orFilter: String,
         @Query("order",   encoded = true) order: String = "created_at.desc",
         @Query("limit")  limit: Int = 1
+    ): List<Message>
+
+    /**
+     * Fetch a single message by its ID.
+     */
+    @GET("messages")
+    suspend fun getMessageById(
+        @Query("select", encoded = true) select: String = "*",
+        @Query("id", encoded = true) idFilter: String,
+        @Query("limit") limit: Int = 1
     ): List<Message>
 
     /**

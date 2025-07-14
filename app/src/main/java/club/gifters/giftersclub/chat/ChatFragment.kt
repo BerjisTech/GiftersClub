@@ -46,6 +46,12 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.util.UUID
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import club.gifters.giftersclub.model.ConversationDetails
+import club.gifters.giftersclub.model.ConversationOverview
+import club.gifters.giftersclub.model.Message
+import club.gifters.giftersclub.model.Profile
 
 /**
  * Fragment for displaying chat conversations and messages.
@@ -59,6 +65,10 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     private var uploadJob: Job? = null
     private val REQUEST_ATTACHMENT = 3001
     private var pollingJob: Job? = null
+
+    private val gson = Gson()
+    private val prefsName = "chat_prefs"
+    private val prefsKeyConversations = "chatConversations"
 
     companion object {
         private const val ARG_PARTNER_ID = "partner_id"
@@ -192,35 +202,55 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
      * Load the list of conversation overviews and bind to adapter.
      */
     private fun loadConversations(adapter: ConversationAdapter) {
+        val prefs = requireContext().getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+        val cacheKey = "chatConversations-$userId"
+        prefs.getString(cacheKey, null)?.let { cachedJson ->
+            try {
+                val type = object : TypeToken<List<ConversationUi>>() {}.type
+                val cachedList: List<ConversationUi> = gson.fromJson(cachedJson, type)
+                val validCache = cachedList.filter { it.lastMessage != null }
+                val sortedCache = validCache.sortedByDescending { it.overview.lastMessageAt }
+                val dedupedCache = sortedCache.distinctBy { it.partner.userId }
+                adapter.submitList(dedupedCache)
+            } catch (_: Exception) { }
+        }
         lifecycleScope.launch {
             try {
-                val convs = chatApi.getConversations(
-                    select = "user_a,user_b,last_message_at",
-                    userIdFilter = "(user_a.eq.$userId,user_b.eq.$userId)"
-                )
+                val convs = chatApi.getConversationDetails()
                 Log.w("ChatFragment", "Fetched conversations: ${convs.size}")
-                val uiModels = convs.mapNotNull { overview ->
-                    val partnerId = if (overview.userA == userId) overview.userB else overview.userA
-                    val profile = RetrofitClient.profileApi.getProfileByUserId(
-                        select = "*",
-                        userIdFilter = "eq.$partnerId"
-                    ).firstOrNull() ?: return@mapNotNull null
-                    val lastMsg = chatApi.getLastMessage(
-                        select = "*",
-                        orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
-                        order = "created_at.desc",
-                        limit = 1
-                    ).firstOrNull()
-                    val unreadResp = chatApi.getUnreadCount(
-                        select = "*",
-                        orFilter = "(and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
-                        readFilter = "is.null"
+                val uiModels = convs.mapNotNull { detail ->
+                    val profile = Profile(
+                        id = detail.partnerId,
+                        userId = detail.partnerId,
+                        email = null,
+                        username = detail.partnerName ?: "",
+                        name = detail.partnerName,
+                        bio = null,
+                        image = detail.partnerImage ?: "",
+                        tokenBalance = null,
+                        tokensReceived = null,
+                        tokensSent = null,
+                        followersCount = null,
+                        followingCount = null,
+                        isFollowing = null,
+                        gifterLevel = null,
+                        gifterLevelName = null,
+                        giftsSent = null,
+                        giftsReceived = null
                     )
-                    val header = unreadResp.headers()["Content-Range"]
-                    val unreadCount = header?.substringAfterLast('/')?.toIntOrNull() ?: 0
-                    ConversationUi(overview, profile, lastMsg, unreadCount)
+                    val lastMsg = detail.lastMessageId
+                        ?.let { msgId -> chatApi.getMessageById(idFilter = "eq.$msgId").firstOrNull() }
+                    val overview = ConversationOverview(detail.userA, detail.userB, detail.lastMessageAt)
+                    ConversationUi(overview, profile, lastMsg, detail.unreadCount)
                 }
-                adapter.submitList(uiModels)
+                val valid = uiModels.filter { it.lastMessage != null }
+                val sorted = valid.sortedByDescending { it.overview.lastMessageAt }
+                val deduped = sorted.distinctBy { it.partner.userId }
+                adapter.submitList(deduped)
+                
+                try {
+                    prefs.edit().putString(cacheKey, gson.toJson(deduped)).apply()
+                } catch (_: Exception) { }
             } catch (e: Exception) {
                 Log.w("ChatFragment", "Error loading conversations", e)
             }
