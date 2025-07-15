@@ -344,37 +344,22 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         chatPane.findViewById<TextView>(R.id.tvPartnerName).text = partnerName
         pollingJob?.cancel()
         pollingJob = lifecycleScope.launch {
-            var lastTimestamp: String? = null
-            try {
-                val initialMsgs = chatApi.getMessages(
-                    select = "*",
-                    orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId)," +
-                               "and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
-                    order = "created_at.asc"
-                )
-                msgAdapter.submitList(initialMsgs)
-                rvMessages.scrollToPosition(initialMsgs.size - 1)
-                lastTimestamp = initialMsgs.lastOrNull()?.createdAt
-            } catch (_: Exception) {
-            }
-
             while (isActive) {
-                delay(1000)
                 try {
-                    val newMsgs = chatApi.getMessages(
+                    val msgs = chatApi.getMessages(
                         select = "*",
                         orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId)," +
                                    "and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
-                        order = "created_at.asc",
-                        createdAtFilter = lastTimestamp?.let { "gt.$it" }
+                        order = "created_at.asc"
                     )
-                    if (newMsgs.isNotEmpty()) {
-                        newMsgs.forEach { msgAdapter.addMessage(it) }
-                        rvMessages.scrollToPosition(msgAdapter.itemCount - 1)
-                        lastTimestamp = newMsgs.last().createdAt
+                    msgAdapter.submitList(msgs)
+                    if (msgs.isNotEmpty()) {
+                        rvMessages.scrollToPosition(msgs.size - 1)
                     }
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.w("ChatFragment", "Error polling messages", e)
                 }
+                delay(1000)
             }
         }
     }
