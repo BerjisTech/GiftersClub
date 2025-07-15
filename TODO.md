@@ -87,4 +87,3 @@
   7. Android App Links:
 
  - [ ] After generating a signed APK, obtain the SHA256 fingerprint from the release signing key and update the `sha256_cert_fingerprints` in `assetlinks.json` accordingly.
- - [ ] 

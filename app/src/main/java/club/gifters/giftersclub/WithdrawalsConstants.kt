@@ -4,7 +4,7 @@ package club.gifters.giftersclub
  * Constants for withdrawal functionality: limits, exchange rates, and payment methods.
  */
 object WithdrawalsConstants {
-    const val MIN_WITHDRAWAL_KES = 1000
+    const val MIN_WITHDRAWAL_KES = 500
     const val WITHDRAWAL_PROCESSING_DAYS = 3
 
     const val KES_USD_RATE = 0.0078

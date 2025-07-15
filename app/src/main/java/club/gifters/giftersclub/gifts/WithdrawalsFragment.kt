@@ -177,17 +177,14 @@ class WithdrawalsFragment : Fragment(R.layout.fragment_withdrawals) {
         details?.let { params["p_payment_details"] = mapOf("details" to it) }
         lifecycleScope.launch {
             try {
-                val result = withdrawalApi.requestWithdrawal(params)
-                if (result.isNotEmpty()) {
-                    loadProfileAndHistory()
-                    etAmount.text?.clear()
-                    etDetails.text?.clear()
-                } else {
-                    Toast.makeText(requireContext(), "Withdrawal request failed", Toast.LENGTH_SHORT).show()
-                }
+                // RPC returns the inserted withdrawal record (throws on error)
+                withdrawalApi.requestWithdrawal(params)
+                loadProfileAndHistory()
+                etAmount.text?.clear()
+                etDetails.text?.clear()
             } catch (e: Exception) {
                 Log.e("WithdrawalsFragment", "Error submitting withdrawal", e)
-                Toast.makeText(requireContext(), "Error submitting withdrawal", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Withdrawal request failed", Toast.LENGTH_SHORT).show()
             }
         }
     }

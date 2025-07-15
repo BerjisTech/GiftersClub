@@ -21,10 +21,10 @@ interface WithdrawalApi {
     ): List<WithdrawalRequest>
 
     /**
-     * Call stored procedure to request a withdrawal.
+     * Call stored procedure to request a withdrawal; returns the created withdrawal record.
      */
     @POST("rpc/request_withdrawal")
     suspend fun requestWithdrawal(
         @Body params: Map<String, @JvmSuppressWildcards Any>
-    ): List<WithdrawalRequest>
+    ): WithdrawalRequest
 }

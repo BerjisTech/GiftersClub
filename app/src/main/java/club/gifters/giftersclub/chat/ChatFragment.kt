@@ -53,6 +53,7 @@ import club.gifters.giftersclub.model.ConversationDetails
 import club.gifters.giftersclub.model.ConversationOverview
 import club.gifters.giftersclub.model.Message
 import club.gifters.giftersclub.model.Profile
+import java.time.Instant
 
 /**
  * Fragment for displaying chat conversations and messages.
@@ -344,6 +345,20 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         chatPane.findViewById<TextView>(R.id.tvPartnerName).text = partnerName
         pollingJob?.cancel()
         pollingJob = lifecycleScope.launch {
+            // mark unread messages as read on first load
+            try {
+                val resp = chatApi.markMessagesAsRead(
+                    senderFilter = "sender_id.eq.$partnerId",
+                    receiverFilter = "receiver_id.eq.$userId",
+                    updates = mapOf("read_at" to Instant.now().toString())
+                )
+                if (!resp.isSuccessful) {
+                    Log.w("ChatFragment", "Error marking messages as read: ${resp.code()}")
+                }
+            } catch (e: Exception) {
+                Log.w("ChatFragment", "Error marking messages as read", e)
+            }
+
             while (isActive) {
                 try {
                     val msgs = chatApi.getMessages(
