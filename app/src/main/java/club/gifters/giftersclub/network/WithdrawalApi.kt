@@ -17,7 +17,8 @@ interface WithdrawalApi {
     @GET("withdrawals")
     suspend fun getWithdrawalsByUser(
         @Query("select", encoded = true) select: String = "*",
-        @Query("user_id", encoded = true) userId: String
+        @Query("user_id", encoded = true) userId: String,
+        @Query("order",    encoded = true) order: String = "created_at.desc"
     ): List<WithdrawalRequest>
 
     /**
