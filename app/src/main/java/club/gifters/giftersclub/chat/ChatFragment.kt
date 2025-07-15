@@ -66,6 +66,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     private var uploadJob: Job? = null
     private val REQUEST_ATTACHMENT = 3001
     private var pollingJob: Job? = null
+    private var convsPollingJob: Job? = null
 
     private val gson = Gson()
     private val prefsName = "chat_prefs"
@@ -201,6 +202,54 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         rvConvs.adapter = ConcatAdapter(headerAdapter, convAdapter)
         loadConversations(convAdapter)
 
+        convsPollingJob?.cancel()
+        convsPollingJob = lifecycleScope.launch {
+            while (isActive) {
+                delay(1000)
+                try {
+                    val convs = chatApi.getConversationDetails()
+                    val uiModels = convs.mapNotNull { detail ->
+                        val profile = Profile(
+                            id = detail.partnerId,
+                            userId = detail.partnerId,
+                            email = null,
+                            username = detail.partnerName ?: "",
+                            name = detail.partnerName,
+                            bio = null,
+                            image = detail.partnerImage ?: "",
+                            tokenBalance = null,
+                            tokensReceived = null,
+                            tokensSent = null,
+                            followersCount = null,
+                            followingCount = null,
+                            isFollowing = null,
+                            gifterLevel = null,
+                            gifterLevelName = null,
+                            giftsSent = null,
+                            giftsReceived = null
+                        )
+                        val lastMsg = detail.lastMessageContent?.let { content ->
+                            Message(
+                                id = detail.lastMessageId ?: "",
+                                senderId = userId,
+                                receiverId = detail.partnerId,
+                                content = content,
+                                createdAt = detail.lastMessageAt,
+                                attachments = detail.lastMessageAttachments.orEmpty()
+                            )
+                        }
+                        val overview = ConversationOverview(detail.userA, detail.userB, detail.lastMessageAt)
+                        ConversationUi(overview, profile, lastMsg, detail.unreadCount)
+                    }
+                    val valid = uiModels.filter { it.lastMessage != null }
+                    val sorted = valid.sortedByDescending { it.overview.lastMessageAt }
+                    val deduped = sorted.distinctBy { it.partner.userId }
+                    convAdapter.submitList(deduped)
+                } catch (_: Exception) {
+                }
+            }
+        }
+
         // attachment preview controls
         val attachmentPreviewContainer = view.findViewById<FrameLayout>(R.id.attachmentPreviewContainer)
         val ivAttachmentPreview = view.findViewById<ImageView>(R.id.ivAttachmentPreview)
@@ -296,11 +345,11 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         pollingJob?.cancel()
         pollingJob = lifecycleScope.launch {
             var lastTimestamp: String? = null
-            // initial load of entire conversation
             try {
                 val initialMsgs = chatApi.getMessages(
                     select = "*",
-                    orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
+                    orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId)," +
+                               "and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
                     order = "created_at.asc"
                 )
                 msgAdapter.submitList(initialMsgs)
@@ -308,14 +357,14 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 lastTimestamp = initialMsgs.lastOrNull()?.createdAt
             } catch (_: Exception) {
             }
-            // poll for new messages only
-        while (isActive) {
-                // Poll more frequently for near-realtime UX
+
+            while (isActive) {
                 delay(1000)
                 try {
                     val newMsgs = chatApi.getMessages(
                         select = "*",
-                        orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId),and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
+                        orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId)," +
+                                   "and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
                         order = "created_at.asc",
                         createdAtFilter = lastTimestamp?.let { "gt.$it" }
                     )
