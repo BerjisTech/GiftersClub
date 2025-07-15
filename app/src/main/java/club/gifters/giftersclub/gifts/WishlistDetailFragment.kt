@@ -12,6 +12,7 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import android.content.Intent
 import androidx.fragment.app.Fragment
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
@@ -39,6 +40,7 @@ import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.text.NumberFormat
 import java.time.Instant
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -64,6 +66,11 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         wishlistId = arguments?.getString(ARG_WISHLIST_ID) ?: ""
+        val swipeRefresh = view.findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
+        swipeRefresh.setOnRefreshListener {
+            onViewCreated(view, null)
+            swipeRefresh.isRefreshing = false
+        }
         // Remove fragment-level back button; use toolbar back arrow only
         val ivOwner = view.findViewById<ImageView>(R.id.ivOwnerAvatar)
         val tvOwner = view.findViewById<TextView>(R.id.tvOwnerName)
@@ -82,6 +89,15 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
         val contribAdapter = ContributorAdapter()
         rvContrib.adapter = contribAdapter
 
+        // Share button: share this wishlist link to invite contributors
+        view.findViewById<ImageView>(R.id.btnShareWishlist).setOnClickListener {
+            val shareUrl = "https://gifters.club/wishlist/${wishlistId}"
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, shareUrl)
+            }
+            startActivity(Intent.createChooser(shareIntent, getString(R.string.share_wishlist)))
+        }
         lifecycleScope.launch {
             try {
                 // load wishlist details
@@ -161,7 +177,9 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
                     val last = userContribs.maxByOrNull(WishlistContribution::createdAt)?.createdAt ?: ""
                     ContributorSummary(profile, sumTokens, last)
                 }
-                contribAdapter.submitList(summary)
+                // sort contributors by total tokens contributed (desc)
+                val sortedSummary = summary.sortedByDescending { it.tokens }
+                contribAdapter.submitList(sortedSummary)
                 tvCount.text = getString(R.string.contributors_title) + " (${summary.size})"
                 // Disable contribute on own wishlist; otherwise show contribution drawer
                 val currentUser = getCurrentUserId()

@@ -55,6 +55,16 @@ interface WishlistApi {
     ): List<WishlistContribution>
 
     /**
+     * Fetch contributions to wishlists owned by a user, optionally filtering by created_at.
+     */
+    @GET("wishlist_contributions")
+    suspend fun getWishlistContributionsByOwner(
+        @Query("select", encoded = true) select: String = "*",
+        @Query("wishlist.user_id", encoded = true) ownerFilter: String,
+        @Query("created_at", encoded = true) createdAtFilter: String? = null
+    ): List<WishlistContribution>
+
+    /**
      * Update a wishlist (soft fields) by ID.
      */
     @Headers("Prefer: return=minimal")

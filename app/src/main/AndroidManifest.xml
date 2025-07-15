@@ -34,7 +34,17 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".MainActivity"/>
+        <activity android:name=".MainActivity" android:exported="true">
+            <!-- Deep link for wishlists: https://gifters.club/wishlist/{id} -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="http"  android:host="gifters.club" android:pathPrefix="/wishlist"/>
+                <data android:scheme="https" android:host="gifters.club" android:pathPrefix="/wishlist"/>
+                <data android:scheme="giftersclub" android:host="wishlist"/>
+            </intent-filter>
+        </activity>
         <activity android:name=".PostsActivity" android:exported="true">
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>

@@ -19,6 +19,7 @@
     <string name="wishlist_tokens_hint">Tokens</string>
     <string name="good_to_know_message">Good to know: you can add specific gift items to your wishlist after creating it.</string>
     <string name="created_on">Created on %1$s</string>
+    <string name="share_wishlist">Share wishlist</string>
     <string name="contributors_title">Contributors</string>
     <string name="progress">Progress</string>
 
@@ -132,6 +133,9 @@
     <string name="streamer_name">Streamer Name</string>
     <string name="welcome_back">Welcome back!</string>
     <string name="you_have_3_new_gifts">You have 3 new gifts</string>
+    <string name="you_have_n_gifts_today">You have %1$d new gifts today</string>
+    <string name="you_have_n_contribs_today">You have %1$d wishlist contributions today</string>
+    <string name="no_activity_today">no activity today</string>
     <string name="top_gifters">Top Gifters</string>
     <string name="leaderboard_icon">Leaderboard Icon</string>
     <string name="wishlist_image">Wishlist Image</string>

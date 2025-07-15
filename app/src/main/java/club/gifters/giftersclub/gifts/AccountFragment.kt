@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import club.gifters.giftersclub.AuthActivity
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.PresignRequest
@@ -33,6 +34,8 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 import java.text.NumberFormat
+import java.time.Instant
+import java.time.ZoneId
 import androidx.core.content.edit
 
 /**
@@ -57,6 +60,7 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
     private lateinit var btnShareProfile: Button
     private lateinit var btnBuyTokens: Button
     private var profile: Profile? = null
+    private lateinit var tvActivitySummary: TextView
 
     private var userId: String = ""
     private var hasRetry = false
@@ -66,9 +70,54 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
         private const val TAG = "AccountFragment"
     }
 
+    /**
+     * Load today's activity summary: new gifts or wishlist contributions, or none.
+     */
+    private fun loadActivitySummary(tvActivitySummary: TextView) {
+        lifecycleScope.launch {
+            try {
+                // Gifts received today
+                val gifts = RetrofitClient.recentGiftsApi.listRecentGifts(
+                    select = "*",
+                    receiverFilter = "eq.$userId"
+                )
+                val today = Instant.now().atZone(ZoneId.systemDefault()).toLocalDate().toString()
+                val giftsToday = gifts.count { it.createdAt?.startsWith(today) == true }
+                if (giftsToday > 0) {
+                    tvActivitySummary.text = getString(R.string.you_have_n_gifts_today, giftsToday)
+                    return@launch
+                }
+                // Wishlist contributions to user's wishlists today
+                val contribs = RetrofitClient.wishlistApi.getWishlistContributionsByOwner(
+                    select = "*",
+                    ownerFilter = "eq.$userId",
+                    createdAtFilter = "gte.${today}T00:00:00Z"
+                )
+                val contribCount = contribs.size
+                if (contribCount > 0) {
+                    tvActivitySummary.text = getString(R.string.you_have_n_contribs_today, contribCount)
+                } else {
+                    tvActivitySummary.text = getString(R.string.no_activity_today)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading activity summary", e)
+                tvActivitySummary.text = getString(R.string.no_activity_today)
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         requireActivity().title = getString(R.string.account)
+        val swipeRefresh = view.findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
+        val tvActivitySummary = view.findViewById<TextView>(R.id.tvActivitySummary)
+        swipeRefresh.setOnRefreshListener {
+            loadProfile()
+            loadActivitySummary(tvActivitySummary)
+            swipeRefresh.isRefreshing = false
+        }
+        // initial activity summary
+        loadActivitySummary(tvActivitySummary)
         ivProfileImage = view.findViewById(R.id.ivProfileImage)
         btnEditImage = view.findViewById(R.id.btnEditImage)
         tvUsername = view.findViewById(R.id.tvUsername)
