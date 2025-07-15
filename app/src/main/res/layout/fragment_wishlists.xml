@@ -8,22 +8,29 @@
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="40dp">
+        android:layout_marginTop="50dp">
 
         <LinearLayout
-            android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginTop="50dp">
+            android:layout_marginTop="50dp"
+            android:orientation="vertical">
 
-            <EditText
-                android:id="@+id/etSearchWishlists"
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/search_wishlists"
-                android:imeOptions="actionSearch"
-                android:inputType="text"
-                android:padding="8dp" />
+                app:cardCornerRadius="30dp"
+                android:layout_margin="10dp">
+                <EditText
+                    android:id="@+id/etSearchWishlists"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/search_wishlists"
+                    android:imeOptions="actionSearch"
+                    android:background="@drawable/bg_half_transparent_white"
+                    android:inputType="text"
+                    android:padding="8dp" />
+            </androidx.cardview.widget.CardView>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvWishlists"
@@ -36,42 +43,47 @@
                 android:id="@+id/tvEmptyWishlists"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingVertical="20dp"
-                android:orientation="vertical"
                 android:layout_gravity="center"
-                android:gravity="center">
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingVertical="20dp">
+
                 <ImageView
                     android:layout_width="70dp"
                     android:layout_height="70dp"
-                    android:src="@drawable/wishlist"
                     android:layout_marginVertical="10dp"
-                    android:contentDescription="@string/wishlist_icon" />
+                    android:contentDescription="@string/wishlist_icon"
+                    android:src="@drawable/wishlist" />
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="30sp"
-                    android:text="@string/no_wishlists_found" />
+                    android:text="@string/no_wishlists_found"
+                    android:textSize="30sp" />
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="15sp"
                     android:layout_marginVertical="20dp"
-                    android:text="@string/you_haven_t_created_any_wishlist_yet" />
+                    android:text="@string/you_haven_t_created_any_wishlist_yet"
+                    android:textSize="15sp" />
+
                 <androidx.cardview.widget.CardView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginVertical="10dp"
                     app:cardCornerRadius="10dp">
+
                     <Button
+                        android:id="@+id/btnCreateWishlist"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/create_wishlist"
                         android:background="@color/pink_500"
-                        android:textColor="@color/white"
                         android:paddingHorizontal="40dp"
-                        android:id="@+id/btnCreateWishlist" />
+                        android:text="@string/create_wishlist"
+                        android:textColor="@color/white" />
                 </androidx.cardview.widget.CardView>
-                
+
             </LinearLayout>
         </LinearLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
@@ -83,7 +95,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        app:srcCompat="@android:drawable/ic_input_add"
-        android:contentDescription="@string/create_wishlist" />
+        android:contentDescription="@string/create_wishlist"
+        app:srcCompat="@android:drawable/ic_input_add" />
 
 </FrameLayout>
