@@ -28,23 +28,24 @@
                 android:id="@+id/tvCommentAuthor"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textStyle="bold"
-                android:textColor="@android:color/black" />
+                android:textColor="@color/gray_700"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvCommentTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:textAppearance="?attr/textAppearanceCaption" />
+                android:textSize="13sp"
+                android:textColor="@color/gray_400"/>
         </LinearLayout>
 
         <TextView
             android:id="@+id/tvCommentContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@android:color/black" />
+            android:textColor="@color/gray_500"
+            android:layout_marginTop="4dp" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -56,43 +57,45 @@
                 android:id="@+id/btnCommentLike"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="👍" />
+                android:text="@string/_like_emoji" />
 
             <TextView
                 android:id="@+id/tvCommentLikeCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
-                android:text="0" />
+                android:textColor="@color/gray_600"
+                android:text="@string/_0" />
 
             <TextView
                 android:id="@+id/btnCommentDislike"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="👎" />
+                android:text="@string/_dislike_emoji" />
 
             <TextView
                 android:id="@+id/tvCommentDislikeCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
-                android:text="0" />
+                android:textColor="@color/gray_600"
+                android:text="@string/_0" />
 
             <TextView
                 android:id="@+id/btnCommentReply"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="Reply" />
+                android:text="@string/reply" />
 
             <TextView
                 android:id="@+id/tvCommentReplyCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
-                android:text="0"
-                android:textAppearance="?attr/textAppearanceCaption" />
+                android:text="@string/_0"
+                android:textSize="11sp"/>
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

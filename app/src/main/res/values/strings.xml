@@ -175,4 +175,7 @@
     <string name="_ok">✔️</string>
     <string name="you_haven_t_created_any_wishlist_yet">You haven\'t created any wishlist yet</string>
     <string name="search_anything">Search anything</string>
+    <string name="comments">Comments</string>
+    <string name="reply">Reply</string>
+    <string name="_dislike_emoji">👎</string>
 </resources>
