@@ -2,12 +2,26 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Needed to post notifications on Android 13+ -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Camera and audio for live photo/video capture -->
-    <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_ADSERVICES_AD_ID"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE"
+        tools:node="remove" />
+
 
     <application
         android:enableOnBackInvokedCallback="true"
@@ -23,50 +37,52 @@
 
         <activity android:name=".AuthActivity" android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="gifterclub" android:host="login-callback"/>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="gifterclub" android:host="login-callback" />
             </intent-filter>
         </activity>
 
         <activity android:name=".MainActivity" android:exported="true">
             <!-- Deep link for wishlists: https://gifters.club/wishlist/{id} -->
             <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="http"  android:host="gifters.club" android:pathPrefix="/wishlist"/>
-                <data android:scheme="https" android:host="gifters.club" android:pathPrefix="/wishlist"/>
-                <data android:scheme="giftersclub" android:host="wishlist"/>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" android:host="gifters.club"
+                    android:pathPrefix="/wishlist" />
+                <data android:scheme="https" android:host="gifters.club"
+                    android:pathPrefix="/wishlist" />
+                <data android:scheme="giftersclub" android:host="wishlist" />
             </intent-filter>
         </activity>
         <activity android:name=".PostsActivity" android:exported="true">
             <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="http" android:host="gifters.club" android:pathPrefix="/post"/>
-                <data android:scheme="https" android:host="gifters.club" android:pathPrefix="/post"/>
-                <data android:scheme="giftersclub" android:host="post"/>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" android:host="gifters.club" android:pathPrefix="/post" />
+                <data android:scheme="https" android:host="gifters.club" android:pathPrefix="/post" />
+                <data android:scheme="giftersclub" android:host="post" />
             </intent-filter>
         </activity>
-        <activity android:name=".payments.PaymentWebViewActivity"/>
+        <activity android:name=".payments.PaymentWebViewActivity" />
         <activity android:name=".chat.FullscreenMediaActivity"
             android:exported="false"
-            android:theme="@style/Theme.GiftersClub"/>
+            android:theme="@style/Theme.GiftersClub" />
         <service
             android:name=".notifications.MyFirebaseMessagingService"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-        <activity android:name=".live.LiveStreamActivity"/>
+        <activity android:name=".live.LiveStreamActivity" />
 
     </application>
 
