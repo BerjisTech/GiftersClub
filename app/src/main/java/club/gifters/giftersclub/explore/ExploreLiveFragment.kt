@@ -56,7 +56,7 @@ class ExploreLiveFragment : Fragment(R.layout.fragment_explore_live) {
                 // 1) direct live_stream matches for live status
                 val wild = "*${query}*"
                 val directFilter = "(title.ilike.${wild},description.ilike.${wild})"
-                Log.d(TAG, "Live directFilter=$directFilter")
+                // Log.d(TAG, "Live directFilter=$directFilter")
                 val direct = RetrofitClient.liveStreamApi.searchLiveStreams(
                     select = "*",
                     orFilter = directFilter,
@@ -65,7 +65,7 @@ class ExploreLiveFragment : Fragment(R.layout.fragment_explore_live) {
                 )
                 // 2) live_streams where host matches profiles and status live
                 val userFilter = "(username.ilike.*${query}*,name.ilike.*${query}*)"
-                Log.d(TAG, "Live userFilter=$userFilter")
+                // Log.d(TAG, "Live userFilter=$userFilter")
                 val profiles = RetrofitClient.profileApi.searchProfiles("*", userFilter)
                 val hostIds = profiles.map { it.userId }.distinct()
                 val userStreams = if (hostIds.isNotEmpty()) {
@@ -77,14 +77,14 @@ class ExploreLiveFragment : Fragment(R.layout.fragment_explore_live) {
                     )
                 } else emptyList()
                 // merge unique, direct first then user
-                Log.d(TAG, "Live results direct=${direct.size}, hostStreams=${userStreams.size}")
+                // Log.d(TAG, "Live results direct=${direct.size}, hostStreams=${userStreams.size}")
                 val seen = mutableSetOf<String>()
                 val merged = mutableListOf<LiveStream>()
                 direct.filter { seen.add(it.id) }.let { merged += it }
                 userStreams.filter { seen.add(it.id) }.let { merged += it }
-                Log.d(TAG, "Live merged count=${merged.size}")
+                // Log.d(TAG, "Live merged count=${merged.size}")
                 if (merged.isEmpty()) {
-                    Log.d(TAG, "Live merged empty, falling back to direct title/description search")
+                    // Log.d(TAG, "Live merged empty, falling back to direct title/description search")
                     val fallbackFilter = "(title.ilike.*${query}*,description.ilike.*${query}*)"
                     val fallback = RetrofitClient.liveStreamApi.searchLiveStreams(
                         select = "*",
@@ -96,7 +96,7 @@ class ExploreLiveFragment : Fragment(R.layout.fragment_explore_live) {
                     adapter.submitList(merged)
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Live search failed", e)
+                // Log.w(TAG, "Live search failed", e)
                 adapter.submitList(emptyList())
             } finally {
                 swipe.isRefreshing = false

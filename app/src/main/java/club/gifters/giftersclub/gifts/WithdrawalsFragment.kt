@@ -144,7 +144,7 @@ class WithdrawalsFragment : Fragment(R.layout.fragment_withdrawals) {
                     rvHistory.visibility = View.GONE
                 }
             } catch (e: Exception) {
-                Log.e("WithdrawalsFragment", "Error loading profile/history", e)
+                // Log.e("WithdrawalsFragment", "Error loading profile/history", e)
             }
         }
     }
@@ -183,7 +183,7 @@ class WithdrawalsFragment : Fragment(R.layout.fragment_withdrawals) {
                 etAmount.text?.clear()
                 etDetails.text?.clear()
             } catch (e: Exception) {
-                Log.e("WithdrawalsFragment", "Error submitting withdrawal", e)
+                // Log.e("WithdrawalsFragment", "Error submitting withdrawal", e)
                 Toast.makeText(requireContext(), "Withdrawal request failed", Toast.LENGTH_SHORT).show()
             }
         }

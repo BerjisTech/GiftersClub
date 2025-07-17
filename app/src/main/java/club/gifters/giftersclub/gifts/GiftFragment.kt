@@ -248,10 +248,10 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
                     )
                 }
             } catch (e: HttpException) {
-                Log.e(TAG, "Error sending gift", e)
+                // Log.e(TAG, "Error sending gift", e)
                 Toast.makeText(requireContext(), "Failed to send gift", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                Log.e(TAG, "Error sending gift", e)
+                // Log.e(TAG, "Error sending gift", e)
                 Toast.makeText(requireContext(), "Failed to send gift", Toast.LENGTH_SHORT).show()
             } finally {
                 overlay.visibility = View.GONE
@@ -303,16 +303,16 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
             if (q.length >= 2) {
                 lifecycleScope.launch {
                     val filter = "(username.ilike.*$q*,email.ilike.*$q*)"
-                    Log.i(TAG, "Searching profiles with filter: $filter")
+                    // Log.i(TAG, "Searching profiles with filter: $filter")
                     try {
                         val raw = RetrofitClient.profileApi.searchProfiles("*", filter)
                         // Exclude current user to prevent gifting oneself
                         val currentUser = getCurrentUserId()
                         val filtered = raw.filter { it.userId != currentUser }
-                        Log.i(TAG, "Search returned ${'$'}{raw.size} profiles, filtered to ${'$'}{filtered.size}")
+                        // Log.i(TAG, "Search returned ${'$'}{raw.size} profiles, filtered to ${'$'}{filtered.size}")
                         adapter.submitList(filtered)
                     } catch (e: HttpException) {
-                        Log.w(TAG, "Search HTTP error (filter=$filter)", e)
+                        // Log.w(TAG, "Search HTTP error (filter=$filter)", e)
                         if (e.code() == 401) {
                             Toast.makeText(
                                 requireContext(),
@@ -322,7 +322,7 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
                         }
                         adapter.submitList(emptyList())
                     } catch (e: Exception) {
-                        Log.e(TAG, "Search error (filter=$filter)", e)
+                        // Log.e(TAG, "Search error (filter=$filter)", e)
                         adapter.submitList(emptyList())
                     }
                 }

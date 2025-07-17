@@ -71,7 +71,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
                 username?.let { uname ->
                 val profiles = profileApi.getProfileByUsername("*", "eq.$uname")
                 val prof = profiles.firstOrNull() ?: return@launch
-                Log.d(TAG, "Fetched profile: $prof")
+                // Log.d(TAG, "Fetched profile: $prof")
                 bindProfile(prof, imageAvatar, textName, textUser, textFollowers, textFollowing, textBio)
 
                 // follow/friend button state
@@ -80,7 +80,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
                     isFollowing  = FollowApiHolder.isFollowingUser(prof.userId)
                     isFollowedBy = FollowApiHolder.isFollowedByUser(prof.userId)
                     isFriend     = isFollowing && isFollowedBy
-                    Log.d(TAG, "Follow state: isFollowing=$isFollowing isFollowedBy=$isFollowedBy isFriend=$isFriend")
+                    // Log.d(TAG, "Follow state: isFollowing=$isFollowing isFollowedBy=$isFollowedBy isFriend=$isFriend")
                     btnFollow.isVisible = true
                     btnFollow.setOnClickListener {
                         lifecycleScope.launch {
@@ -167,7 +167,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
         textFollowing: TextView,
         textBio: TextView
     ) {
-        Log.d(TAG, "bindProfile counts: followers=${p.followersCount} following=${p.followingCount}")
+        // Log.d(TAG, "bindProfile counts: followers=${p.followersCount} following=${p.followingCount}")
         textName.text      = p.name
         textUser.text      = "@${p.username}"
         textFollowers.text = "${p.followersCount ?: 0} follower${if ((p.followersCount ?: 0) == 1) "" else "s"}"

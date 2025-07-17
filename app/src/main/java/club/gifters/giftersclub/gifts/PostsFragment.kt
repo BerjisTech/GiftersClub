@@ -262,10 +262,10 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                     loadPosts(clear)
                     return@launch
                 }
-                Log.e(TAG, "Failed to load posts", e)
+                // Log.e(TAG, "Failed to load posts", e)
                 Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to load posts", e)
+                // Log.e(TAG, "Failed to load posts", e)
                 Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
             } finally {
                 isLoading = false
@@ -287,7 +287,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 isLastPage = false
                 loadPosts(clear = false)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to load post", e)
+                // Log.e(TAG, "Failed to load post", e)
                 Toast.makeText(requireContext(), "Failed to load post", Toast.LENGTH_SHORT).show()
             } finally {
                 isLoading = false

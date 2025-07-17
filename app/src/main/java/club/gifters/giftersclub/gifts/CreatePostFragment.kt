@@ -221,7 +221,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     videoCapture
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "Use case binding failed", e)
+                // Log.e(TAG, "Use case binding failed", e)
             }
         }, ContextCompat.getMainExecutor(requireContext()))
     }
@@ -735,7 +735,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             editedBitmap = try {
                 gpuImageView.capture()
             } catch (e: InterruptedException) {
-                Log.e(TAG, "Error capturing filtered image", e)
+                // Log.e(TAG, "Error capturing filtered image", e)
                 originalBitmap
             }
             layoutEdit.isVisible = false
@@ -796,7 +796,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             ContextCompat.getMainExecutor(requireContext()),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onError(exc: ImageCaptureException) {
-                    Log.e(TAG, "Photo capture failed", exc)
+                    // Log.e(TAG, "Photo capture failed", exc)
                     Toast.makeText(requireContext(), "Photo capture failed", Toast.LENGTH_SHORT)
                         .show()
                 }
@@ -819,7 +819,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             ContextCompat.getMainExecutor(requireContext()),
             object : VideoCapture.OnVideoSavedCallback {
                 override fun onError(videoCaptureError: Int, message: String, cause: Throwable?) {
-                    Log.e(TAG, "Video capture failed: $message", cause)
+                    // Log.e(TAG, "Video capture failed: $message", cause)
                     Toast.makeText(requireContext(), "Video capture failed", Toast.LENGTH_SHORT)
                         .show()
                 }
@@ -966,7 +966,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     userId = JSONObject(decoded).optString("sub")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error decoding access token", e)
+                // Log.e(TAG, "Error decoding access token", e)
             }
         }
         lifecycleScope.launch {
@@ -990,19 +990,19 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     )
                 )
                 if (!postResp.isSuccessful) {
-                    Log.e(
-                        TAG,
-                        "Failed to create post: HTTP ${postResp.code()} ${
-                            postResp.errorBody()?.string()
-                        }"
-                    )
+//                    Log.e(
+//                        TAG,
+//                        "Failed to create post: HTTP ${postResp.code()} ${
+//                            postResp.errorBody()?.string()
+//                        }"
+//                    )
                     Toast.makeText(requireContext(), "Failed to create post", Toast.LENGTH_SHORT)
                         .show()
                     return@launch
                 }
                 val posts = postResp.body().orEmpty()
                 if (posts.isEmpty()) {
-                    Log.e(TAG, "CreatePost returned empty list")
+                    // Log.e(TAG, "CreatePost returned empty list")
                     Toast.makeText(requireContext(), "Failed to create post", Toast.LENGTH_SHORT)
                         .show()
                     return@launch
@@ -1021,12 +1021,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         postApi.upsertPostTags(
                             tagsResp.body()!!.map { PostTagUpsertRequest(post.id, it.id) })
                     } else {
-                        Log.e(
-                            TAG,
-                            "Failed to upsert tags: HTTP ${tagsResp.code()} ${
-                                tagsResp.errorBody()?.string()
-                            }"
-                        )
+                        // Log.e(
+//                            TAG,
+//                            "Failed to upsert tags: HTTP ${tagsResp.code()} ${
+//                                tagsResp.errorBody()?.string()
+//                            }"
+//                        )
                     }
                 }
                 for ((index, uri) in selectedUris.withIndex()) {
@@ -1065,7 +1065,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     }
                     if (!putResp.isSuccessful) {
                         val errorBody = withContext(Dispatchers.IO) { putResp.body?.string().orEmpty() }
-                        Log.e(TAG, "S3 post upload failed: HTTP ${putResp.code} body=$errorBody")
+                        // Log.e(TAG, "S3 post upload failed: HTTP ${putResp.code} body=$errorBody")
                         throw Exception("Upload failed: ${putResp.code} body=$errorBody")
                     }
                     val publicUrl = presignData.publicUrl
@@ -1078,17 +1078,17 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         )
                     )
                     if (!mediaResp.isSuccessful) {
-                        Log.e(
-                            TAG,
-                            "Failed to save post media: HTTP ${mediaResp.code()} ${mediaResp.errorBody()?.string()}"
-                        )
+                        // Log.e(
+//                            TAG,
+//                            "Failed to save post media: HTTP ${mediaResp.code()} ${mediaResp.errorBody()?.string()}"
+//                        )
                     }
                 }
                 Toast.makeText(requireContext(), "Post created successfully", Toast.LENGTH_SHORT)
                     .show()
                 parentFragmentManager.popBackStack()
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to create post", e)
+                // Log.e(TAG, "Failed to create post", e)
                 Toast.makeText(requireContext(), "Failed to create post", Toast.LENGTH_SHORT).show()
             } finally {
                 progressBar.isVisible = false

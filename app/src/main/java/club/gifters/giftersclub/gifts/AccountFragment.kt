@@ -95,12 +95,13 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                 )
                 val contribCount = contribs.size
                 if (contribCount > 0) {
-                    tvActivitySummary.text = getString(R.string.you_have_n_contribs_today, contribCount)
+                    tvActivitySummary.text =
+                        getString(R.string.you_have_n_contribs_today, contribCount)
                 } else {
                     tvActivitySummary.text = getString(R.string.no_activity_today)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error loading activity summary", e)
+                // Log.e(TAG, "Error loading activity summary", e)
                 tvActivitySummary.text = getString(R.string.no_activity_today)
             }
         }
@@ -142,7 +143,8 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
             ?.let {
                 val parts = it.split('.')
                 if (parts.size > 1) {
-                    val decoded = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
+                    val decoded =
+                        String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
                     userId = org.json.JSONObject(decoded).optString("sub")
                 }
             }
@@ -186,9 +188,11 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                     requireContext().getSharedPreferences("supabase", Context.MODE_PRIVATE)
                         .edit { remove("access_token").remove("refresh_token") }
                     loadProfile()
-                } else Log.e(TAG, "Failed to load profile", e)
+                } else {
+                    // Log.e(TAG, "Failed to load profile", e)
+                }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to load profile", e)
+                // Log.e(TAG, "Failed to load profile", e)
             }
         }
     }
@@ -207,11 +211,11 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
         tvUsername.text = profile.username
         tvFullName.text = profile.name.orEmpty()
         // Bind token and gift stats from profile
-        tvTokenBalance.text   = NumberFormat.getInstance().format(profile.tokenBalance ?: 0)
+        tvTokenBalance.text = NumberFormat.getInstance().format(profile.tokenBalance ?: 0)
         tvTokensReceived.text = NumberFormat.getInstance().format(profile.tokensReceived ?: 0)
-        tvTokensSent.text     = NumberFormat.getInstance().format(profile.tokensSent ?: 0)
-        tvGiftsReceived.text  = NumberFormat.getInstance().format(profile.giftsReceived ?: 0)
-        tvGiftsSent.text      = NumberFormat.getInstance().format(profile.giftsSent ?: 0)
+        tvTokensSent.text = NumberFormat.getInstance().format(profile.tokensSent ?: 0)
+        tvGiftsReceived.text = NumberFormat.getInstance().format(profile.giftsReceived ?: 0)
+        tvGiftsSent.text = NumberFormat.getInstance().format(profile.giftsSent ?: 0)
         // Load wishlist counts for this user
         lifecycleScope.launch {
             try {
@@ -221,7 +225,7 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                 )
                 val total = items.size
                 val fulfilled = items.count { it.isFulfilled }
-                tvWishlistsOpen.text      = NumberFormat.getInstance().format(total - fulfilled)
+                tvWishlistsOpen.text = NumberFormat.getInstance().format(total - fulfilled)
                 tvWishlistsFulfilled.text = NumberFormat.getInstance().format(fulfilled)
             } catch (_: Exception) {
             }
@@ -239,7 +243,8 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
             .setPositiveButton(R.string.buy) { _, _ ->
                 val amount = input.text.toString().toIntOrNull()
                 if (amount == null || amount <= 0) {
-                    Toast.makeText(requireContext(), R.string.invalid_amount, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), R.string.invalid_amount, Toast.LENGTH_SHORT)
+                        .show()
                 } else {
                     initiateTopup(amount)
                 }
@@ -269,7 +274,7 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                     lastTxId = resp.body()?.firstOrNull()?.id
                 } else {
                     val errorBody = resp.errorBody()?.string().orEmpty()
-                    Log.e(TAG, "Failed to record token transaction: HTTP ${resp.code()} body=$errorBody")
+                    // Log.e(TAG, "Failed to record token transaction: HTTP ${resp.code()} body=$errorBody")
                     Toast.makeText(
                         requireContext(),
                         "Failed to record transaction (${resp.code()}): $errorBody",
@@ -277,12 +282,23 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                     ).show()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error recording initial token transaction", e)
+                // Log.e(TAG, "Error recording initial token transaction", e)
             }
             if (!lastTxId.isNullOrBlank()) {
-                PaymentWebViewActivity.start(requireContext(), userId, email, amount, txRef, lastTxId)
+                PaymentWebViewActivity.start(
+                    requireContext(),
+                    userId,
+                    email,
+                    amount,
+                    txRef,
+                    lastTxId
+                )
             } else {
-                Toast.makeText(requireContext(), "Failed to initiate token purchase", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Failed to initiate token purchase",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
@@ -308,7 +324,8 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
     private fun uploadProfileImage(uri: Uri) {
         lifecycleScope.launch {
             try {
-                val type = requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
+                val type =
+                    requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
                 val ext = type.substringAfterLast('/', "bin")
                 val filename = "profile-${userId}.${ext}"
                 val bytes = withContext(Dispatchers.IO) {
@@ -318,7 +335,12 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                 val body = bytes.toRequestBody(type.toMediaTypeOrNull())
                 val presignResp = withContext(Dispatchers.IO) {
                     RetrofitClient.functionsApi.uploadMedia(
-                        PresignRequest(fileName = filename, fileType = type, bucket = "profile", overwrite = true)
+                        PresignRequest(
+                            fileName = filename,
+                            fileType = type,
+                            bucket = "profile",
+                            overwrite = true
+                        )
                     )
                 }
                 if (!presignResp.isSuccessful) throw HttpException(presignResp)
@@ -333,21 +355,23 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                 }
                 if (!putResp.isSuccessful) {
                     val errorBody = withContext(Dispatchers.IO) { putResp.body?.string().orEmpty() }
-                    Log.e(TAG, "S3 profile upload failed: HTTP ${putResp.code} body=$errorBody")
+                    // Log.e(TAG, "S3 profile upload failed: HTTP ${putResp.code} body=$errorBody")
                     throw Exception("Upload failed: ${putResp.code} body=$errorBody")
                 }
 
                 val publicUrl = presignData.publicUrl
                 updateProfileField(mapOf("image" to publicUrl))
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to upload profile image", e)
-                Toast.makeText(requireContext(), "Failed to upload image", Toast.LENGTH_SHORT).show()
+                // Log.e(TAG, "Failed to upload profile image", e)
+                Toast.makeText(requireContext(), "Failed to upload image", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
     }
 
     private fun promptEdit(field: String) {
-        val current = if (field == "username") tvUsername.text.toString() else tvFullName.text.toString()
+        val current =
+            if (field == "username") tvUsername.text.toString() else tvFullName.text.toString()
         val input = EditText(requireContext()).apply { setText(current) }
         AlertDialog.Builder(requireContext())
             .setTitle("Edit ${field.replaceFirstChar { it.uppercase() }}")
@@ -367,16 +391,24 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                     updates = updates
                 )
                 if (resp.isSuccessful) bindProfile(resp.body()!![0])
-                else Log.e(TAG, "Failed to update profile: HTTP ${resp.code()}")
+                else {
+                    // Log.e(TAG, "Failed to update profile: HTTP ${resp.code()}")}
+                }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to update profile", e)
-                Toast.makeText(requireContext(), "Failed to update profile", Toast.LENGTH_SHORT).show()
+                // Log.e(TAG, "Failed to update profile", e)
+                Toast.makeText(requireContext(), "Failed to update profile", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
     }
 
     private fun shareProfile() {
-        val shareUrl = "${SupabaseConfig.SUPABASE_URL.replace(".supabase.co", ".supabase.co/profile/")}${tvUsername.text}"
+        val shareUrl = "${
+            SupabaseConfig.SUPABASE_URL.replace(
+                ".supabase.co",
+                ".supabase.co/profile/"
+            )
+        }${tvUsername.text}"
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, shareUrl)

@@ -93,7 +93,7 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
             try {
                 // 1) direct content and hashtag matches
                 val contentFilter = "(content.ilike.*${query}*,content.ilike.*#${query}*)"
-                Log.d(TAG, "Direct filter=$contentFilter")
+                // Log.d(TAG, "Direct filter=$contentFilter")
                 val direct = RetrofitClient.postApi.searchPosts(
                     orFilter = contentFilter,
                     mediaTypeFilter = mediaType?.let { "eq.$it" },
@@ -103,7 +103,7 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
                 )
                 // 2) posts via matching comments
                 val commentFilter = "(content.ilike.*${query}*)"
-                Log.d(TAG, "Comment filter=$commentFilter")
+                // Log.d(TAG, "Comment filter=$commentFilter")
                 val comments = RetrofitClient.commentApi.searchComments(
                     select = "post_id",
                     orFilter = commentFilter
@@ -118,7 +118,7 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
                 } else emptyList()
                 // 3) posts via matching profile name/username
                 val userFilter = "(username.ilike.*${query}*,name.ilike.*${query}*)"
-                Log.d(TAG, "User filter=$userFilter")
+                // Log.d(TAG, "User filter=$userFilter")
                 val profiles = RetrofitClient.profileApi.searchProfiles("*", userFilter)
                 val userIds = profiles.map { it.userId }.distinct()
                 val userPosts = if (userIds.isNotEmpty()) {
@@ -130,17 +130,17 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
                     )
                 } else emptyList()
                 // merge unique in priority order
-                Log.d(TAG, "Results sizes direct=${direct.size}, commentPosts=${commentPosts.size}, userPosts=${userPosts.size}")
+                // Log.d(TAG, "Results sizes direct=${direct.size}, commentPosts=${commentPosts.size}, userPosts=${userPosts.size}")
                 val seen = mutableSetOf<String>()
                 val merged = mutableListOf<Post>()
                 direct.filter { seen.add(it.id) }.let { merged += it }
                 commentPosts.filter { seen.add(it.id) }.let { merged += it }
                 userPosts.filter { seen.add(it.id) }.let { merged += it }
-                Log.d(TAG, "Merged total=${merged.size} posts")
+                // Log.d(TAG, "Merged total=${merged.size} posts")
                 // filter out posts the user cannot access
                 val accessibleMerged = filterAccessible(merged)
                 if (accessibleMerged.isEmpty()) {
-                    Log.d(TAG, "Merged empty or inaccessible, falling back to direct content search")
+                    // Log.d(TAG, "Merged empty or inaccessible, falling back to direct content search")
                     val fallbackFilter = "(content.ilike.*${query}*)"
                     val fallback = RetrofitClient.postApi.searchPosts(
                         orFilter = fallbackFilter,
@@ -155,7 +155,7 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
                     adapter.submitList(accessibleMerged)
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Post search failed", e)
+                // Log.w(TAG, "Post search failed", e)
                 adapter.submitList(emptyList())
             } finally {
                 swipe.isRefreshing = false

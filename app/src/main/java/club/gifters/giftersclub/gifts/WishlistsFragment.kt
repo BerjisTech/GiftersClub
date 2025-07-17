@@ -129,7 +129,7 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
                     }
                     orFilter = "(${filters.joinToString(",")})"
                 }
-                Log.i("WishlistsFragment", "Loading page=$page size=$pageSize orFilter=${orFilter ?: "<none>"}")
+                // Log.i("WishlistsFragment", "Loading page=$page size=$pageSize orFilter=${orFilter ?: "<none>"}")
                 val joined = wishlistApi.getWishlists(
                     select   = "*,profile:profiles(id,user_id,username,name),wishlist_contributions(tokens)",
                     orFilter = orFilter,
@@ -137,7 +137,7 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
                     limit    = pageSize,
                     offset   = page * pageSize
                 )
-                Log.i("WishlistsFragment", "Fetched ${joined.size} raw results")
+                // Log.i("WishlistsFragment", "Fetched ${joined.size} raw results")
                 val wishlists = joined.map { it.toWishlist() }
                 if (clear) adapter.submitList(wishlists)
                 else adapter.submitList(adapter.currentList + wishlists)
@@ -147,7 +147,7 @@ class WishlistsFragment : Fragment(R.layout.fragment_wishlists) {
                 rv.visibility = if (isListEmpty) View.GONE else View.VISIBLE
                 etSearch.visibility = if (isListEmpty) View.GONE else View.VISIBLE
             } catch (e: Exception) {
-                Log.e("WishlistsFragment", "Error loading wishlists (orFilter=$orFilter)", e)
+                // Log.e("WishlistsFragment", "Error loading wishlists (orFilter=$orFilter)", e)
                 etSearch.visibility = View.GONE
                 rv.visibility = View.GONE
                 tvEmpty.visibility = View.VISIBLE

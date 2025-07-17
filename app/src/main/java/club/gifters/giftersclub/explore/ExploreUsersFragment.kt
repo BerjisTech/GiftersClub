@@ -64,14 +64,14 @@ class ExploreUsersFragment : Fragment(R.layout.fragment_explore_users) {
             try {
                 // reuse GiftFragment user search logic
                 val filter = "(username.ilike.*${query}*,name.ilike.*${query}*)"
-                Log.d(TAG, "User search filter=$filter")
+                // Log.d(TAG, "User search filter=$filter")
                 val raw = RetrofitClient.profileApi.searchProfiles("*", filter)
                 val currentUser = AuthUtils.getCurrentUserId(requireContext())
                 val results = raw.filter { it.userId != currentUser }
-                Log.d(TAG, "Users found=${results.size}")
+                // Log.d(TAG, "Users found=${results.size}")
                 adapter.submitList(results)
             } catch (e: Exception) {
-                Log.w(TAG, "User search failed", e)
+                // Log.w(TAG, "User search failed", e)
                 adapter.submitList(emptyList())
             } finally {
                 swipe.isRefreshing = false

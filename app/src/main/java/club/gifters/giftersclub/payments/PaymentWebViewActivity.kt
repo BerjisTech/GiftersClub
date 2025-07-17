@@ -73,7 +73,7 @@ class PaymentWebViewActivity : AppCompatActivity() {
                                 ).show()
                             }
                         } catch (e: Exception) {
-                            Log.e(TAG, "Error processing token purchase", e)
+                            // Log.e(TAG, "Error processing token purchase", e)
                             runOnUiThread {
                                 Toast.makeText(
                                     this@PaymentWebViewActivity,

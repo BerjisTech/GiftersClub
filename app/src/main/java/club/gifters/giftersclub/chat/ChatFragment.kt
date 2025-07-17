@@ -112,8 +112,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             }
         }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback)
-        Log.w("ChatFragment", "Current userId = $userId")
-        Log.w("ChatFragment", "Current userId = $userId")
+        // Log.w("ChatFragment", "Current userId = $userId")
+        // Log.w("ChatFragment", "Current userId = $userId")
         // Update toolbar title
         requireActivity().title = getString(R.string.conversations)
 
@@ -283,7 +283,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         lifecycleScope.launch {
             try {
                 val convs = chatApi.getConversationDetails()
-                Log.w("ChatFragment", "Fetched conversations: ${convs.size}")
+                // Log.w("ChatFragment", "Fetched conversations: ${convs.size}")
                 val uiModels = convs.mapNotNull { detail ->
                     val profile = Profile(
                         id = detail.partnerId,
@@ -326,7 +326,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     prefs.edit().putString(cacheKey, gson.toJson(deduped)).apply()
                 } catch (_: Exception) { }
             } catch (e: Exception) {
-                Log.w("ChatFragment", "Error loading conversations", e)
+                // Log.w("ChatFragment", "Error loading conversations", e)
             }
         }
     }
@@ -353,10 +353,10 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     updates = mapOf("read_at" to Instant.now().toString())
                 )
                 if (!resp.isSuccessful) {
-                    Log.w("ChatFragment", "Error marking messages as read: ${resp.code()}")
+                    // Log.w("ChatFragment", "Error marking messages as read: ${resp.code()}")
                 }
             } catch (e: Exception) {
-                Log.w("ChatFragment", "Error marking messages as read", e)
+                // Log.w("ChatFragment", "Error marking messages as read", e)
             }
 
             while (isActive) {
@@ -372,7 +372,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                         rvMessages.scrollToPosition(msgs.size - 1)
                     }
                 } catch (e: Exception) {
-                    Log.w("ChatFragment", "Error polling messages", e)
+                    // Log.w("ChatFragment", "Error polling messages", e)
                 }
                 delay(1000)
             }
@@ -463,7 +463,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     etMessage.text.clear()
                 }
             } catch (e: Exception) {
-                Log.w("ChatFragment", "Error loading conversations", e)
+                // Log.w("ChatFragment", "Error loading conversations", e)
             }
         }
     }
