@@ -3,24 +3,16 @@ package club.gifters.giftersclub.network
 import android.content.Context
 import club.gifters.giftersclub.AwsConfig
 import club.gifters.giftersclub.SupabaseConfig
-import okhttp3.OkHttpClient
 import okhttp3.Authenticator
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.Route
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import club.gifters.giftersclub.network.WithdrawalApi
-import club.gifters.giftersclub.network.PresignApi
-import club.gifters.giftersclub.network.SubscriptionsApi
-import club.gifters.giftersclub.network.RecentGiftsApi
-import club.gifters.giftersclub.network.LiveStreamApi
-import club.gifters.giftersclub.network.TagApi
-import club.gifters.giftersclub.network.SearchQueriesApi
-import club.gifters.giftersclub.network.PostAccessApi
 
 /**
  * Singleton Retrofit client configured with Supabase REST URL and API key interceptor.

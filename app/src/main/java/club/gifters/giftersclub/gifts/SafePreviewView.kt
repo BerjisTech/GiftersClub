@@ -2,10 +2,9 @@ package club.gifters.giftersclub.gifts
 
 import android.content.Context
 import android.util.AttributeSet
-import androidx.camera.view.PreviewView
-import androidx.camera.core.Preview
-import android.view.ViewGroup.LayoutParams
 import android.widget.FrameLayout
+import androidx.camera.core.Preview
+import androidx.camera.view.PreviewView
 
 /**
  * Safe PreviewView that skips display listener registration in Android Studio layout editor to prevent preview crashes.

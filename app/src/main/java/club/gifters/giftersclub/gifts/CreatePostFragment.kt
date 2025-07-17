@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
@@ -17,8 +18,8 @@ import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
-import android.util.Log
 import android.util.TypedValue
+import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
@@ -40,24 +41,19 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.core.VideoCapture
 import androidx.camera.lifecycle.ProcessCameraProvider
-import club.gifters.giftersclub.gifts.SafePreviewView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.camera.core.ZoomState
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.network.PresignRequest
-import club.gifters.giftersclub.network.PresignResponse
-import retrofit2.HttpException
-import okhttp3.Request
 import club.gifters.giftersclub.model.CreatePostMediaRequest
 import club.gifters.giftersclub.model.CreatePostRequest
 import club.gifters.giftersclub.model.PostTagUpsertRequest
 import club.gifters.giftersclub.model.TagUpsertRequest
+import club.gifters.giftersclub.network.PresignRequest
 import club.gifters.giftersclub.network.RetrofitClient
 import com.akaita.android.circularseekbar.CircularSeekBar
 import com.akaita.android.circularseekbar.CircularSeekBar.OnCircularSeekBarChangeListener
@@ -71,20 +67,19 @@ import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilterGroup
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageGrayscaleFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
-import club.gifters.giftersclub.gifts.SafeGPUImageView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import retrofit2.HttpException
 import yuku.ambilwarna.AmbilWarnaDialog
-import android.view.MotionEvent
-import android.graphics.PorterDuff
 import java.io.File
 import java.io.FileOutputStream
-import java.util.regex.Pattern
 import java.io.InputStream
+import java.util.regex.Pattern
 
 /**
  * Fragment for creating a new post in two steps: select media, then add details.

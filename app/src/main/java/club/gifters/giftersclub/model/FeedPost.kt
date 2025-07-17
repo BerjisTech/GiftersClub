@@ -1,8 +1,6 @@
 package club.gifters.giftersclub.model
 
 import com.google.gson.annotations.SerializedName
-import club.gifters.giftersclub.model.Profile
-import club.gifters.giftersclub.model.PostMedia
 
 /**
  * Post feed item with computed relevance score and engagement metrics.

@@ -1,8 +1,7 @@
 package club.gifters.giftersclub.chat
 
-import android.net.Uri
 import android.content.Intent
-import club.gifters.giftersclub.chat.FullscreenMediaActivity
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,9 +10,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.VideoView
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Message
+import coil.load
 import java.time.OffsetDateTime
 import java.util.concurrent.TimeUnit
 

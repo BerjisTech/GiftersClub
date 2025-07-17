@@ -1,22 +1,18 @@
 package club.gifters.giftersclub.gifts
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
-import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import club.gifters.giftersclub.gifts.CreateWishlistFragment
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import kotlinx.coroutines.launch
 
 /**

@@ -3,6 +3,7 @@ package club.gifters.giftersclub.live
 import android.content.Context
 import android.os.Bundle
 import android.util.Base64
+import android.view.View
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -10,18 +11,16 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.constraintlayout.widget.ConstraintLayout
-import com.google.android.material.bottomsheet.BottomSheetBehavior
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.live.LiveGiftAdapter
 import club.gifters.giftersclub.model.Gift
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import kotlinx.coroutines.launch
-import android.view.View
 import org.json.JSONObject
 import java.text.NumberFormat
 

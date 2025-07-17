@@ -7,13 +7,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import club.gifters.giftersclub.R
-import android.util.Log
-import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.explore.ExploreUserAdapter
-import club.gifters.giftersclub.model.Profile
-import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.R
+import club.gifters.giftersclub.gifts.GifterFragment
+import club.gifters.giftersclub.model.Profile
+import club.gifters.giftersclub.network.RetrofitClient
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch

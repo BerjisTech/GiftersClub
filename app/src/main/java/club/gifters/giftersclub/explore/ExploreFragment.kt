@@ -13,19 +13,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.network.SearchQueriesApi
-import club.gifters.giftersclub.model.SearchExploreResult
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.launch
-import android.util.Log
-import club.gifters.giftersclub.explore.SuggestionAdapter
-import club.gifters.giftersclub.explore.ExploreTopFragment
-import club.gifters.giftersclub.explore.ExplorePostsFragment
-import club.gifters.giftersclub.explore.ExploreUsersFragment
-import club.gifters.giftersclub.explore.ExploreLiveFragment
 import retrofit2.HttpException
 
 /**

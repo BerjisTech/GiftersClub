@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -13,17 +12,16 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import club.gifters.giftersclub.AuthActivity
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.network.PresignRequest
-import club.gifters.giftersclub.network.PresignResponse
-import okhttp3.Request
 import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.model.WishlistItem
+import club.gifters.giftersclub.network.PresignRequest
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import coil.load
@@ -31,12 +29,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
-import androidx.core.content.edit
 
 /**
  * Fragment displaying the user's account info and stats.

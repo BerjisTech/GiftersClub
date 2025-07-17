@@ -2,7 +2,6 @@ package club.gifters.giftersclub.chat
 
 import android.content.Context
 import android.os.Bundle
-import android.text.format.DateUtils
 import android.util.Base64
 import android.view.View
 import androidx.fragment.app.Fragment
@@ -11,7 +10,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.NotificationApi
-import club.gifters.giftersclub.network.ProfileApi
 import club.gifters.giftersclub.network.RetrofitClient
 import kotlinx.coroutines.launch
 import org.json.JSONObject

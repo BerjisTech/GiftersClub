@@ -3,17 +3,16 @@ package club.gifters.giftersclub.gifts
 import android.content.Context
 import android.os.Bundle
 import android.util.Base64
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.Spinner
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -23,19 +22,19 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
-import coil.transform.CircleCropTransformation
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Gift
-import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.model.Notification
+import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.network.GiftApi
 import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.payments.PaymentWebViewActivity
+import coil.load
+import coil.transform.CircleCropTransformation
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
-import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import org.json.JSONObject
+import retrofit2.HttpException
 
 /**
  * Fragment displaying a grid of gifts with sorting options.

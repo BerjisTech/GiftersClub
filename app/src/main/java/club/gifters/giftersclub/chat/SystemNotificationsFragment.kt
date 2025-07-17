@@ -2,7 +2,6 @@ package club.gifters.giftersclub.chat
 
 import android.content.Context
 import android.os.Bundle
-import android.text.format.DateUtils
 import android.util.Base64
 import android.view.View
 import androidx.fragment.app.Fragment

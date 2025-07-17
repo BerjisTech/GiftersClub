@@ -5,18 +5,16 @@ import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
-import club.gifters.giftersclub.R
-import club.gifters.giftersclub.network.RetrofitClient
-import kotlinx.coroutines.launch
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.recyclerview.widget.RecyclerView
-import android.util.Log
-import club.gifters.giftersclub.explore.ExplorePostAdapter
-import club.gifters.giftersclub.model.Post
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.R
+import club.gifters.giftersclub.model.Post
+import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.social.SubscriptionApiHolder
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.launch
 
 /**
  * Fragment for displaying post search results in Explore (Top, Videos, Photos).

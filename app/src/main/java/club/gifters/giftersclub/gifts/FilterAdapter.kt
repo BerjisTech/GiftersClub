@@ -7,13 +7,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageContrastFilter
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageBrightnessFilter
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageGrayscaleFilter
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageColorInvertFilter
 import club.gifters.giftersclub.R
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
 
 /**
  * Data model for a named GPUImage filter, optionally adjustable via SeekBar.

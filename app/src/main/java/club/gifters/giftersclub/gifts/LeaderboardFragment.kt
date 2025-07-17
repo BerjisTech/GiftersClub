@@ -9,7 +9,6 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.gifts.GifterFragment
 import kotlinx.coroutines.launch
 
 /**

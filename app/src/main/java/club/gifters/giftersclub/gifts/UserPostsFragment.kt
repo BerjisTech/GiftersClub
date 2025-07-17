@@ -7,15 +7,12 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.gifts.GifterFragment
-import club.gifters.giftersclub.gifts.PostsFragment
-import club.gifters.giftersclub.gifts.PostGridAdapter
-import kotlinx.coroutines.launch
-import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.social.SubscriptionApiHolder
+import kotlinx.coroutines.launch
 
 private const val ARG_USER_ID = "user_id"
 

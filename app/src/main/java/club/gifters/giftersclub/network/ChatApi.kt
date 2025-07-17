@@ -1,9 +1,7 @@
 package club.gifters.giftersclub.network
 
-import club.gifters.giftersclub.model.Attachment
 import club.gifters.giftersclub.model.ConversationDetails
 import club.gifters.giftersclub.model.Message
-import club.gifters.giftersclub.model.ConversationOverview
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET

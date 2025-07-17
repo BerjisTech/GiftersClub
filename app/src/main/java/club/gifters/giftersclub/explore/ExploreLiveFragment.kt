@@ -8,12 +8,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.model.LiveStream
-import club.gifters.giftersclub.explore.ExploreLiveAdapter
+import club.gifters.giftersclub.network.RetrofitClient
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import android.util.Log
 import kotlinx.coroutines.launch
 
 /**

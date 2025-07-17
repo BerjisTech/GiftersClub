@@ -5,18 +5,16 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Wishlist
 import club.gifters.giftersclub.network.RetrofitClient
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
-import club.gifters.giftersclub.AuthUtils
-import club.gifters.giftersclub.gifts.CreateWishlistFragment
 
 private const val ARG_USER_ID = "user_id"
 

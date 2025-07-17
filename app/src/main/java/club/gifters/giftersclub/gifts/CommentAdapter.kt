@@ -1,5 +1,6 @@
 package club.gifters.giftersclub.gifts
 
+import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -7,17 +8,14 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import club.gifters.giftersclub.R
 import coil.load
 import coil.transform.CircleCropTransformation
-import club.gifters.giftersclub.R
-import android.text.format.DateUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import club.gifters.giftersclub.gifts.CommentApiHolder
-import club.gifters.giftersclub.gifts.CommentReactionCounts
 import club.gifters.giftersclub.gifts.Comment as Cmt
 
 /**

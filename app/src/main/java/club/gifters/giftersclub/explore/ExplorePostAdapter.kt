@@ -1,17 +1,12 @@
 package club.gifters.giftersclub.explore
 
+import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import coil.load
-import coil.transform.CircleCropTransformation
-import android.text.format.DateUtils
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -19,6 +14,10 @@ import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.gifts.PostMediaAdapter
 import club.gifters.giftersclub.model.Post
+import coil.load
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 /**
  * Adapter for showing post search results in Explore.

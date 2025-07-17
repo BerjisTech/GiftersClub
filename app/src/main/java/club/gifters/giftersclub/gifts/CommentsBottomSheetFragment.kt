@@ -1,37 +1,31 @@
 package club.gifters.giftersclub.gifts
 
+import android.app.Dialog
+import android.content.Context
 import android.os.Bundle
+import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import androidx.core.view.isVisible
-import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import club.gifters.giftersclub.R
-import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.gifts.Comment
-import club.gifters.giftersclub.gifts.CommentReactionCounts
-import club.gifters.giftersclub.gifts.CommentAdapter
-import club.gifters.giftersclub.gifts.GifterFragment
-import android.content.Context
-import android.util.Base64
-import org.json.JSONObject
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import club.gifters.giftersclub.AuthUtils
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import android.app.Dialog
 import android.view.WindowManager
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.R
+import club.gifters.giftersclub.network.RetrofitClient
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 /**
  * Bottom sheet fragment to display and post comments for a given post.

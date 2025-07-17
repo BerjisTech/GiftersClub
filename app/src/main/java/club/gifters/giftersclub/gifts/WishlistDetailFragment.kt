@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
-import club.gifters.giftersclub.gifts.CreateWishlistFragment
 import android.widget.FrameLayout
 import androidx.core.view.isVisible
 import club.gifters.giftersclub.R

@@ -5,10 +5,9 @@ import android.app.NotificationManager
 import android.content.Context
 import android.util.Base64
 import androidx.core.app.NotificationCompat
+import club.gifters.giftersclub.network.RetrofitClient
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import club.gifters.giftersclub.model.Notification
-import club.gifters.giftersclub.network.RetrofitClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

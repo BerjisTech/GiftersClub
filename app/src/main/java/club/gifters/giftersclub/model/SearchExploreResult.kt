@@ -1,9 +1,5 @@
 package club.gifters.giftersclub.model
 
-import club.gifters.giftersclub.model.Post
-import club.gifters.giftersclub.model.Profile
-import club.gifters.giftersclub.model.LiveStream
-
 /**
  * Response model for the search_explore RPC.
  */

@@ -5,9 +5,8 @@ import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import club.gifters.giftersclub.explore.ExploreTopAdapter
-import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.R
+import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.model.LiveStream
 import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.model.Profile

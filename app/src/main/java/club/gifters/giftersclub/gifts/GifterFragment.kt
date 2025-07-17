@@ -3,7 +3,6 @@ package club.gifters.giftersclub.gifts
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -19,11 +18,10 @@ import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.chat.ChatFragment
+import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.network.ProfileApi
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.gifts.PostsFragment
-import club.gifters.giftersclub.model.Post
 import coil.load
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton

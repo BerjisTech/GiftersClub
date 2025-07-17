@@ -1,6 +1,5 @@
 package club.gifters.giftersclub.gifts
 
-import club.gifters.giftersclub.gifts.CommentReactionCounts
 import club.gifters.giftersclub.model.Profile
 import com.google.gson.annotations.SerializedName
 

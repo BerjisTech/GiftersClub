@@ -1,8 +1,6 @@
 package club.gifters.giftersclub.network
 
 import retrofit2.Response
-import club.gifters.giftersclub.network.PresignRequest
-import club.gifters.giftersclub.network.PresignResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
 
