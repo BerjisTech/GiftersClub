@@ -1,17 +1,3 @@
-
-# ----------------------------------------------------------------
-# R8 / ProGuard keep rules to preserve generic signatures and reflection targets
-# ----------------------------------------------------------------
--keepattributes Signature
--keepattributes *Annotation*
-
-# Keep your model and network classes (adjust package if needed)
--keep class club.gifters.giftersclub.models.** { *; }
--keep class club.gifters.giftersclub.network.** { *; }
-
-# Gson: keep classes and generic signatures for JSON (if you use Gson)
--keep class com.google.gson.** { *; }
--keep class com.google.gson.stream.** { *; }
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
