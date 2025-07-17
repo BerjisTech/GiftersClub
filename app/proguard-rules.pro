@@ -29,3 +29,28 @@
 -dontwarn org.openjsse.javax.net.ssl.SSLParameters
 -dontwarn org.openjsse.javax.net.ssl.SSLSocket
 -dontwarn org.openjsse.net.ssl.OpenJSSE
+
+# Keep main entry points
+-keep class club.gifters.giftersclub.**Activity { *; }
+
+# Prevent initializer strip issues
+-keepclassmembers class * {
+    static <clinit>();
+}
+
+# TLS providers (prevent irrelevant warnings)
+-dontwarn org.bouncycastle.jsse.**
+-dontwarn org.conscrypt.**
+-dontwarn org.openjsse.**
+
+# Retrofit & Gson
+-keep class com.google.gson.** { *; }
+-keep class retrofit2.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
+-dontwarn retrofit2.**
+
+# CameraX, uCrop, GPUImage
+-keep class androidx.camera.** { *; }
+-keep class com.yalantis.ucrop.** { *; }
+-keep class jp.co.cyberagent.android.gpuimage.** { *; }
