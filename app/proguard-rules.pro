@@ -1,3 +1,17 @@
+
+# ----------------------------------------------------------------
+# R8 / ProGuard keep rules to preserve generic signatures and reflection targets
+# ----------------------------------------------------------------
+-keepattributes Signature
+-keepattributes *Annotation*
+
+# Keep your model and network classes (adjust package if needed)
+-keep class club.gifters.giftersclub.models.** { *; }
+-keep class club.gifters.giftersclub.network.** { *; }
+
+# Gson: keep classes and generic signatures for JSON (if you use Gson)
+-keep class com.google.gson.** { *; }
+-keep class com.google.gson.stream.** { *; }
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
@@ -49,6 +63,17 @@
 -keepattributes Signature
 -keepattributes *Annotation*
 -dontwarn retrofit2.**
+
+# Retrofit: keep method annotations and generic signatures for HTTP interface methods
+-keepattributes Signature,InnerClasses,EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations
+-keepclassmembers,allowshrinking,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+-if interface * { @retrofit2.http.* <methods>; }
+-keep,allowobfuscation interface <1>
+-dontwarn retrofit2.KotlinExtensions
+-dontwarn retrofit2.KotlinExtensions$*
 
 # CameraX, uCrop, GPUImage
 -keep class androidx.camera.** { *; }
