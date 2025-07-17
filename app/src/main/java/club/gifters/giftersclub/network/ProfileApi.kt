@@ -41,7 +41,7 @@ interface ProfileApi {
         @Query("select", encoded = true) select: String = "*",
         @Query("user_id", encoded = true) userIdFilter: String,
         @Body updates: Map<String, @JvmSuppressWildcards Any>
-    ): Response<List<Profile>>
+    ): List<Profile>
 
     /**
      * List wishlist items for a user (to count open vs fulfilled wishlists).

@@ -384,13 +384,14 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
     private fun updateProfileField(updates: Map<String, Any>) {
         lifecycleScope.launch {
             try {
-                val resp = profileApi.updateProfile(
+                val updatedProfile = profileApi.updateProfile(
                     userIdFilter = "eq.$userId",
                     updates = updates
                 )
-                if (resp.isSuccessful) bindProfile(resp.body()!![0])
-                else {
-                    // Log.e(TAG, "Failed to update profile: HTTP ${resp.code()}")}
+                if (updatedProfile.isNotEmpty()) {
+                    bindProfile(updatedProfile[0])
+                } else {
+                    // Log.e(TAG, "Failed to update profile: empty list returned")}
                 }
             } catch (e: Exception) {
                 // Log.e(TAG, "Failed to update profile", e)
