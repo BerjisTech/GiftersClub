@@ -26,6 +26,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.AuthActivity
 import com.google.firebase.messaging.FirebaseMessaging
 import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.social.FriendsFragment
@@ -43,6 +44,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (AuthUtils.getCurrentUserId(this) == null) {
+            startActivity(Intent(this, AuthActivity::class.java))
+            finish()
+            return
+        }
         RetrofitClient.init(this)
         setContentView(R.layout.activity_main)
         // Handle wishlist deep links: https://gifters.club/wishlist/{id}

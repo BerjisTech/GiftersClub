@@ -1,6 +1,9 @@
 package club.gifters.giftersclub
 
 import android.os.Bundle
+import android.content.Intent
+import club.gifters.giftersclub.AuthActivity
+import club.gifters.giftersclub.AuthUtils
 import androidx.appcompat.app.AppCompatActivity
 import club.gifters.giftersclub.gifts.PostsFragment
 
@@ -8,6 +11,11 @@ class PostsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (AuthUtils.getCurrentUserId(this) == null) {
+            startActivity(Intent(this, AuthActivity::class.java))
+            finish()
+            return
+        }
         setContentView(R.layout.activity_posts)
 
         val uri = intent.data
