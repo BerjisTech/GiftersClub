@@ -11,6 +11,7 @@ import club.gifters.giftersclub.model.WithdrawalRequest
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -57,7 +58,7 @@ class WithdrawalAdapter(
             val raw = wr.createdAt
             tvDate.text = try {
                 DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-                    .format(Instant.parse(raw).atZone(ZoneId.systemDefault()))
+                    .format(OffsetDateTime.parse(raw).toLocalDate())
             } catch (_: Exception) {
                 raw.substringBefore('T')
             }

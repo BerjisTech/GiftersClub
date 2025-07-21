@@ -41,6 +41,7 @@ import java.text.NumberFormat
 import java.time.Instant
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import java.time.ZoneId
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -123,9 +124,9 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
                 val formattedDate = wish.createdAt?.let { raw ->
                     try {
                         DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-                            .format(Instant.parse(raw).atZone(ZoneId.systemDefault()))
+                            .format(OffsetDateTime.parse(raw).toLocalDate())
                     } catch (_: Exception) {
-                        raw
+                        raw.substringBefore('T')
                     }
                 } ?: ""
                 tvCreated.text = getString(R.string.created_on, formattedDate)

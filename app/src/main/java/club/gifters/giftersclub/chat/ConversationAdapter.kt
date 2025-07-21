@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
+import java.time.OffsetDateTime
 import club.gifters.giftersclub.R
 
 /**
@@ -50,11 +51,17 @@ class ConversationAdapter(
                     ?: if (it.attachments?.firstOrNull()?.type == "image") "[PHOTO]" else "[VIDEO]"
             } ?: ""
             // relative time
-            val ts = item.overview.lastMessageAt.let { DateUtils.getRelativeTimeSpanString(
-                java.time.Instant.parse(it).toEpochMilli(),
-                System.currentTimeMillis(),
-                DateUtils.MINUTE_IN_MILLIS
-            ) }
+            val ts = item.overview.lastMessageAt.let { raw ->
+                try {
+                    DateUtils.getRelativeTimeSpanString(
+                        OffsetDateTime.parse(raw).toInstant().toEpochMilli(),
+                        System.currentTimeMillis(),
+                        DateUtils.MINUTE_IN_MILLIS
+                    )
+                } catch (_: Exception) {
+                    raw.substringBefore('T')
+                }
+            }
             tvTime.text = ts
             if (item.unreadCount > 0) {
                 tvUnread.visibility = View.VISIBLE

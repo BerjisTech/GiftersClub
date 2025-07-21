@@ -14,6 +14,7 @@ import club.gifters.giftersclub.model.ContributorSummary
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -47,7 +48,7 @@ class ContributorAdapter : ListAdapter<ContributorSummary, ContributorAdapter.Vi
             val rawDate = item.contributedAt
             tvDate.text = try {
                 DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-                    .format(Instant.parse(rawDate).atZone(ZoneId.systemDefault()))
+                    .format(OffsetDateTime.parse(rawDate).toLocalDate())
             } catch (_: Exception) {
                 rawDate.substringBefore('T')
             }
