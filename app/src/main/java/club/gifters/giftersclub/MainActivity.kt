@@ -51,16 +51,30 @@ class MainActivity : AppCompatActivity() {
         }
         RetrofitClient.init(this)
         setContentView(R.layout.activity_main)
-        // Handle wishlist deep links: https://gifters.club/wishlist/{id}
+        // Handle deep links: wishlist (/wishlist/{id}) and gifter profiles (/u/{username}, /g/{username})
         intent?.data?.let { uri ->
-            if (uri.pathSegments.firstOrNull() == "wishlist" && uri.pathSegments.size > 1) {
-                val id = uri.lastPathSegment ?: return@let
-                supportFragmentManager.beginTransaction()
-                    .replace(R.id.mainContentContainer,
-                        club.gifters.giftersclub.gifts.WishlistDetailFragment.newInstance(id)
-                    )
-                    .addToBackStack(null)
-                    .commit()
+            val segments = uri.pathSegments
+            when {
+                segments.firstOrNull() == "wishlist" && segments.size > 1 -> {
+                    val id = segments[1]
+                    supportFragmentManager.beginTransaction()
+                        .replace(
+                            R.id.mainContentContainer,
+                            club.gifters.giftersclub.gifts.WishlistDetailFragment.newInstance(id)
+                        )
+                        .addToBackStack(null)
+                        .commit()
+                }
+                (segments.firstOrNull() == "u" || segments.firstOrNull() == "g") && segments.size > 1 -> {
+                    val username = segments[1]
+                    supportFragmentManager.beginTransaction()
+                        .replace(
+                            R.id.mainContentContainer,
+                            GifterFragment.newInstance(username)
+                        )
+                        .addToBackStack(null)
+                        .commit()
+                }
             }
         }
         // On Android 13+, request runtime permission to post notifications
