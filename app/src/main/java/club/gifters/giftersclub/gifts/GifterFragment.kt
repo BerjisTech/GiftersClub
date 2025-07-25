@@ -134,7 +134,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
                         0 -> GiftFragment.newInstance(prof.userId, prof.username)
                         1 -> UserWishlistsFragment.newInstance(prof.userId)
                         2 -> {
-                            userPostsFragment = UserPostsFragment.newInstance(prof.userId)
+                            userPostsFragment = UserPostsFragment.newInstance(prof.userId, prof.username)
                             userPostsFragment!!
                         }
                         else -> GiftFragment.newInstance(prof.userId, prof.username)

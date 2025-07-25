@@ -13,8 +13,17 @@ import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.social.SubscriptionApiHolder
 import kotlinx.coroutines.launch
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import android.widget.TextView
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ClickableSpan
+import android.text.method.LinkMovementMethod
+import androidx.core.view.isVisible
+import club.gifters.giftersclub.gifts.CreatePostFragment
 
 private const val ARG_USER_ID = "user_id"
+private const val ARG_USERNAME = "username"
 
 /**
  * Fragment for displaying posts by a specific user in a grid view.
@@ -27,6 +36,9 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
     private var isLoading = false
     private var isLastPage = false
     private var userId: String? = null
+    private var username: String? = null
+    private var swipeRefreshLayout: SwipeRefreshLayout? = null
+    private var emptyTextView: TextView? = null
 
     private var isSelectionMode = false
     private val selectedPosts = mutableSetOf<Post>()
@@ -52,8 +64,11 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
     }
 
     companion object {
-        fun newInstance(userId: String): UserPostsFragment {
-            val args = Bundle().apply { putString(ARG_USER_ID, userId) }
+        fun newInstance(userId: String, username: String): UserPostsFragment {
+            val args = Bundle().apply {
+                putString(ARG_USER_ID, userId)
+                putString(ARG_USERNAME, username)
+            }
             return UserPostsFragment().apply { arguments = args }
         }
     }
@@ -61,6 +76,7 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         userId = arguments?.getString(ARG_USER_ID)
+        username = arguments?.getString(ARG_USERNAME)
     }
 
     private val canDelete: Boolean
@@ -70,6 +86,8 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
         super.onViewCreated(view, savedInstanceState)
         val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerViewPosts)
         recyclerView.layoutManager = GridLayoutManager(context, 3) // 3 columns
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefresh)
+        emptyTextView = view.findViewById(R.id.textEmpty)
 
         adapter = PostGridAdapter(
             onPostClick = { post ->
@@ -137,6 +155,34 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
         }
     }
 
+    private fun updateEmptyState() {
+        val isEmpty = adapter.currentList.isEmpty()
+        swipeRefreshLayout?.isVisible = !isEmpty
+        emptyTextView?.isVisible = isEmpty
+        if (isEmpty) {
+            emptyTextView?.text = if (AuthUtils.getCurrentUserId(requireContext()) == userId) {
+                val text = "You haven't uploaded any posts, get started by creating a new post"
+                val spannable = SpannableString(text)
+                val clickable = "create a new post"
+                val start = text.indexOf(clickable)
+                if (start >= 0) {
+                    spannable.setSpan(object : ClickableSpan() {
+                        override fun onClick(widget: View) {
+                            requireActivity().supportFragmentManager.beginTransaction()
+                                .replace(R.id.mainContentContainer, CreatePostFragment())
+                                .addToBackStack(null)
+                                .commit()
+                        }
+                    }, start, start + clickable.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+                emptyTextView?.movementMethod = LinkMovementMethod.getInstance()
+                spannable
+            } else {
+                "@${'$'}{username} has not uploaded anything yet"
+            }
+        }
+    }
+
     fun deleteSelectedPosts() {
         if (selectedPosts.isEmpty()) return
 
@@ -176,6 +222,7 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
                 // filter posts the user cannot access
                 val visible = filterAccessible(items)
                 if (clear) adapter.submitList(visible) else adapter.submitList(adapter.currentList + visible)
+                updateEmptyState()
                 if (items.size < limit) isLastPage = true else page++
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
