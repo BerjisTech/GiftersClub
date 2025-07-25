@@ -96,9 +96,9 @@ object RetrofitClient {
         // Log all REST requests and responses for debugging
         .addInterceptor { chain ->
             val request = chain.request()
-            println("REST → ${request.method} ${request.url}")
+            // println("REST → ${request.method} ${request.url}")
             val response = chain.proceed(request)
-            println("REST ← ${response.code} ${response.request.url}")
+            // println("REST ← ${response.code} ${response.request.url}")
             response
         }
         .addInterceptor { chain ->
@@ -199,9 +199,9 @@ object RetrofitClient {
             }
 
             val request = builder.build()
-            println("AWS → ${request.method} ${request.url}")
+            // println("AWS → ${request.method} ${request.url}")
             val response = chain.proceed(request)
-            println("AWS ← ${response.code} ${response.request.url}")
+            // println("AWS ← ${response.code} ${response.request.url}")
             response
         }
         .build()

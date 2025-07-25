@@ -24,7 +24,7 @@
               sensitive operations.
 
 
-  2. Deep Link Handling:
+2. Deep Link Handling:
 
 
    * Concern: Vulnerable to Deep Link Hijacking
@@ -35,17 +35,8 @@
            2. Consider Android App Links: For production, implement Android App Links (Digital Asset Links) to verify ownership of gifters.club domain,
               preventing other apps from intercepting your web links. This involves hosting a assetlinks.json file on your domain.
 
-  3. Network Communication:
 
-
-   * Concern: Logging Sensitive Data to `System.out.println`
-       * Mitigation: Remove or conditionally enable logging for debug builds only.
-       * Action:
-           1. In `RetrofitClient.kt`: Wrap the println statements within a debug check (e.g., if (BuildConfig.DEBUG) { ... }).
-           2. Best Practice: For more robust logging, integrate a dedicated logging library (e.g., Timber, Logcat) that allows for different logging levels
-              and can be easily disabled or configured for release builds.
-
-  4. Input Validation and Sanitization:
+3. Input Validation and Sanitization:
 
 
    * Concern: No Client-side Validation/Sanitization for User-Generated Content
@@ -63,7 +54,7 @@
               String, val user_id: String, val type: String) and use that for reactToComment. Similarly for createComment.
            2. Refactor: Review all API calls that use Map<String, Any> for request bodies and replace them with strongly typed data classes.
 
-  5. Access Control and Authorization:
+5. Access Control and Authorization:
 
 
    * Concern: Client-side Enforcement Not Clear; Backend Must Be Robust
@@ -74,7 +65,7 @@
            2. Client-side: Continue to use the onLocked callback and UI elements to guide users, but understand that the ultimate access decision rests with
               the backend.
 
-  6. Third-Party Libraries:
+6. Third-Party Libraries:
 
 
    * Concern: Outdated Libraries
@@ -84,7 +75,5 @@
            2. Dependency Scanning: Integrate a dependency vulnerability scanner (e.g., OWASP Dependency-Check, Snyk) into your CI/CD pipeline to
               automatically detect known vulnerabilities in your dependencies.
 
-  7. Android App Links:
 
- - [ ] After generating a signed APK, obtain the SHA256 fingerprint from the release signing key and update the `sha256_cert_fingerprints` in `assetlinks.json` accordingly.
 
