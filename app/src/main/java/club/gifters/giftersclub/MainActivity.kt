@@ -213,4 +213,12 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.addOnBackStackChangedListener { updateBars() }
         updateBars()
     }
+
+    override fun onResume() {
+        super.onResume()
+        if (AuthUtils.getCurrentUserId(this) == null) {
+            startActivity(Intent(this, AuthActivity::class.java))
+            finish()
+        }
+    }
 }
