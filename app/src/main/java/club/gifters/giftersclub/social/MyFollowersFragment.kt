@@ -6,6 +6,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import android.widget.TextView
+import androidx.core.view.isVisible
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.network.RetrofitClient
@@ -30,6 +32,7 @@ class MyFollowersFragment : Fragment(R.layout.fragment_my_followers) {
                 .commit()
         }
         rv.adapter = adapter
+        val emptyView = view.findViewById<TextView>(R.id.tvEmptyMyFollowers)
 
         // load and display followers
         lifecycleScope.launch {
@@ -43,11 +46,17 @@ class MyFollowersFragment : Fragment(R.layout.fragment_my_followers) {
                     val filter = "in.(${ids.joinToString(",")})"
                     val profiles = RetrofitClient.profileApi.getProfilesByUserIds("*", filter)
                     adapter.submitList(profiles)
+                    rv.isVisible = true
+                    emptyView.isVisible = false
                 } else {
                     adapter.submitList(emptyList())
+                    rv.isVisible = false
+                    emptyView.isVisible = true
                 }
             } catch (_: Exception) {
                 adapter.submitList(emptyList())
+                rv.isVisible = false
+                emptyView.isVisible = true
             }
         }
     }

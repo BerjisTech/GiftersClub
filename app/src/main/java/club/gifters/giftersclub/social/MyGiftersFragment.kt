@@ -6,6 +6,15 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import android.widget.TextView
+import androidx.core.view.isVisible
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ClickableSpan
+import android.text.style.ForegroundColorSpan
+import android.text.method.LinkMovementMethod
+import androidx.core.content.ContextCompat
+import club.gifters.giftersclub.gifts.LeaderboardFragment
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.network.RetrofitClient
@@ -33,6 +42,7 @@ class MyGiftersFragment : Fragment(R.layout.fragment_my_gifters) {
                 .commit()
         }
         rv.adapter = adapter
+        val emptyView = view.findViewById<TextView>(R.id.tvEmptyMyGifters)
 
         // load and display recent gifters via recent_gifts view
         lifecycleScope.launch {
@@ -41,9 +51,60 @@ class MyGiftersFragment : Fragment(R.layout.fragment_my_gifters) {
                 val entries = RetrofitClient.recentGiftsApi.listRecentGifts(
                     receiverFilter = "eq.$currentUserId"
                 )
-                adapter.submitList(entries.distinctBy { it.gifterId })
+                val recent = entries.distinctBy { it.gifterId }
+                if (recent.isNotEmpty()) {
+                    adapter.submitList(recent)
+                    rv.isVisible = true
+                    emptyView.isVisible = false
+                } else {
+                    adapter.submitList(emptyList())
+                    rv.isVisible = false
+                    emptyView.isVisible = true
+                    val message = getString(R.string.empty_my_gifters)
+                    val clickableText = "check out the leaderboard for gifters"
+                    val spannable = SpannableString(message)
+                    val startIndex = message.indexOf(clickableText)
+                    if (startIndex >= 0) {
+                        val endIndex = startIndex + clickableText.length
+                        spannable.setSpan(object : ClickableSpan() {
+                            override fun onClick(widget: View) {
+                                requireActivity().supportFragmentManager.beginTransaction()
+                                    .replace(R.id.mainContentContainer, LeaderboardFragment())
+                                    .addToBackStack(null)
+                                    .commit()
+                            }
+                        }, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        spannable.setSpan(ForegroundColorSpan(
+                            ContextCompat.getColor(requireContext(), R.color.pink_500)
+                        ), startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                    emptyView.text = spannable
+                    emptyView.movementMethod = LinkMovementMethod.getInstance()
+                }
             } catch (_: Exception) {
                 adapter.submitList(emptyList())
+                rv.isVisible = false
+                emptyView.isVisible = true
+                val message = getString(R.string.empty_my_gifters)
+                val clickableText = "check out the leaderboard for gifters"
+                val spannable = SpannableString(message)
+                val startIndex = message.indexOf(clickableText)
+                if (startIndex >= 0) {
+                    val endIndex = startIndex + clickableText.length
+                    spannable.setSpan(object : ClickableSpan() {
+                        override fun onClick(widget: View) {
+                            requireActivity().supportFragmentManager.beginTransaction()
+                                .replace(R.id.mainContentContainer, LeaderboardFragment())
+                                .addToBackStack(null)
+                                .commit()
+                        }
+                    }, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    spannable.setSpan(ForegroundColorSpan(
+                        ContextCompat.getColor(requireContext(), R.color.pink_500)
+                    ), startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+                emptyView.text = spannable
+                emptyView.movementMethod = LinkMovementMethod.getInstance()
             }
         }
     }

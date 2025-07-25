@@ -51,6 +51,9 @@
     <string name="my_followers">My followers</string>
     <string name="my_gifters">My gifters</string>
     <string name="my_following">My following</string>
+    <string name="empty_my_followers">Your followers will show up here</string>
+    <string name="empty_my_gifters">you haven\'t been gifted yet, check out the leaderboard for gifters</string>
+    <string name="empty_my_following">People you follow will appear here</string>
 
     <!-- Chat header previews -->
     <string name="new_followers_preview">You have new followers</string>
