@@ -9,6 +9,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
@@ -18,6 +19,7 @@ import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.chat.ChatFragment
+import club.gifters.giftersclub.settings.SettingsFragment
 import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.network.ProfileApi
@@ -110,12 +112,20 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
 
                 // Settings button for account owner
                 isOwner = currentUserId != null && currentUserId == prof.userId
-                val btnSettings = view.findViewById<LinearLayout>(R.id.btnSettings)
+                val btnSettings = view.findViewById<CardView>(R.id.btnSettings)
+                val btnAccount = view.findViewById<CardView>(R.id.btnAccount)
                 if (isOwner) {
                     btnSettings.isVisible = true
-                    btnSettings.setOnClickListener {
+                    btnAccount.isVisible = true
+                    btnAccount.setOnClickListener {
                         parentFragmentManager.beginTransaction()
                             .replace(R.id.mainContentContainer, AccountFragment())
+                            .addToBackStack(null)
+                            .commit()
+                    }
+                    btnSettings.setOnClickListener {
+                        parentFragmentManager.beginTransaction()
+                            .replace(R.id.mainContentContainer, SettingsFragment())
                             .addToBackStack(null)
                             .commit()
                     }
