@@ -186,4 +186,5 @@
     <string name="reply">Reply</string>
     <string name="_dislike_emoji">👎</string>
     <string name="account">Account</string>
+    <string name="share_icon">Share icon</string>
 </resources>

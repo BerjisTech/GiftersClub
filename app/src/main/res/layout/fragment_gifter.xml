@@ -110,17 +110,17 @@
                         android:id="@+id/btnAccount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:cardCornerRadius="10dp"
-                        android:layout_marginHorizontal="5dp">
+                        android:layout_marginHorizontal="5dp"
+                        app:cardCornerRadius="10dp">
 
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="5dp"
                             android:background="@drawable/bg_teal_cyan_gradient"
-                            android:orientation="horizontal">
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="5dp">
 
                             <ImageView
                                 android:layout_width="20dp"
@@ -132,8 +132,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="10dp"
-                                android:textColor="@color/white"
-                                android:text="@string/account" />
+                                android:text="@string/account"
+                                android:textColor="@color/white" />
                         </LinearLayout>
                     </androidx.cardview.widget.CardView>
 
@@ -141,17 +141,17 @@
                         android:id="@+id/btnSettings"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:cardCornerRadius="10dp"
-                        android:layout_marginHorizontal="5dp">
+                        android:layout_marginHorizontal="5dp"
+                        app:cardCornerRadius="10dp">
 
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:background="@drawable/bg_cyan_sky_gradient"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="5dp"
                             android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="5dp">
 
                             <ImageView
                                 android:layout_width="20dp"
@@ -163,10 +163,17 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="10dp"
-                                android:textColor="@color/white"
-                                android:text="@string/settings" />
+                                android:text="@string/settings"
+                                android:textColor="@color/white" />
                         </LinearLayout>
                     </androidx.cardview.widget.CardView>
+
+                    <ImageView
+                        android:id="@+id/btnShareProfile"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:src="@drawable/share"
+                        android:contentDescription="@string/share_icon"/>
                 </LinearLayout>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>

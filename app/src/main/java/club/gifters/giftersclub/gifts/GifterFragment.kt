@@ -1,5 +1,6 @@
 package club.gifters.giftersclub.gifts
 
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
@@ -18,6 +19,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
+import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.chat.ChatFragment
 import club.gifters.giftersclub.settings.SettingsFragment
 import club.gifters.giftersclub.model.Post
@@ -58,6 +60,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
         val textFollowing = view.findViewById<TextView>(R.id.textFollowing)
         val textBio     = view.findViewById<TextView>(R.id.textBio)
         val btnFollow   = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnFollow)
+        val btnShareProfile = view.findViewById<ImageView>(R.id.btnShareProfile)
 
         // Toolbar title changes as header collapses
         val nestedScroll = view.findViewById<NestedScrollView>(R.id.nestedScrollView)
@@ -73,6 +76,10 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
                 val prof = profiles.firstOrNull() ?: return@launch
                 // Log.d(TAG, "Fetched profile: $prof")
                 bindProfile(prof, imageAvatar, textName, textUser, textFollowers, textFollowing, textBio)
+
+//                    Share  Profile
+
+                    btnShareProfile.setOnClickListener { shareProfile() }
 
                 // follow/friend button state
                 val currentUserId = AuthUtils.getCurrentUserId(requireContext())
@@ -223,5 +230,19 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
         gifterActions.isVisible = true
         btnDeleteSelectedPosts.isVisible = true
         btnDeleteSelectedPosts.text = "Delete ${selectedPosts.size} Posts"
+    }
+
+    private fun shareProfile() {
+        val shareUrl = "${
+            SupabaseConfig.SUPABASE_URL.replace(
+                ".supabase.co",
+                ".supabase.co/profile/"
+            )
+        }${username}"
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareUrl)
+        }
+        startActivity(Intent.createChooser(intent, getString(R.string.share_profile)))
     }
 }

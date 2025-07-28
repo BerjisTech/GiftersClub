@@ -86,7 +86,7 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
             updates["username"] = etUsername.text.toString().trim()
             updates["name"] = etDisplayName.text.toString().trim()
             updates["bio"] = etBio.text.toString().trim()
-            lifecycleScope.launchWhenStarted {
+        lifecycleScope.launch {
                 try {
                     val updated =
                         profileApi.updateProfile(userIdFilter = "eq.$userId", updates = updates)
@@ -115,7 +115,7 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
                     File(requireContext().cacheDir, "CROP_DST_${System.currentTimeMillis()}.jpg")
                 UCrop.of(Uri.fromFile(srcFile), Uri.fromFile(destFile))
                     .withAspectRatio(1f, 1f)
-                    .start(requireActivity(), UCrop.REQUEST_CROP)
+                    .start(requireContext(), this@ProfileSettingsFragment, UCrop.REQUEST_CROP)
             }
 
             requestCode == UCrop.REQUEST_CROP && resultCode == Activity.RESULT_OK && data != null -> {
@@ -131,14 +131,14 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
     }
 
     private fun uploadImage(uri: Uri) {
-        lifecycleScope.launchWhenStarted {
+        lifecycleScope.launch {
             try {
                 val type = requireContext().contentResolver.getType(uri).orEmpty()
                 val ext = type.substringAfterLast('/', "")
                 val filename = "profile-$userId.$ext"
                 val bytes = withContext(Dispatchers.IO) {
                     requireContext().contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                } ?: return@launchWhenStarted
+                } ?: return@launch
 
                 val presignResp = RetrofitClient.functionsApi.uploadMedia(
                     PresignRequest(
@@ -167,16 +167,19 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
     }
 
     private fun updateProfile(updates: Map<String, Any>) {
-        lifecycleScope.launchWhenStarted {
+        lifecycleScope.launch {
             try {
-                val updated =
-                    profileApi.updateProfile(userIdFilter = "eq.$userId", updates = updates)
+                val updated = profileApi.updateProfile(userIdFilter = "eq.$userId", updates = updates)
                 if (updated.isNotEmpty()) {
+                    val newImage = updated[0].image
+                    ivAvatar.load(newImage) {
+                        transformations(CircleCropTransformation())
+                        placeholder(android.R.color.darker_gray)
+                    }
                     Toast.makeText(requireContext(), "Profile updated", Toast.LENGTH_SHORT).show()
                 }
             } catch (_: Exception) {
-                Toast.makeText(requireContext(), "Failed to update profile", Toast.LENGTH_SHORT)
-                    .show()
+                Toast.makeText(requireContext(), "Failed to update profile", Toast.LENGTH_SHORT).show()
             }
         }
     }

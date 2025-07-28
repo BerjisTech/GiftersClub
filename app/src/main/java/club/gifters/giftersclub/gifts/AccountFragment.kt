@@ -42,11 +42,8 @@ import java.time.ZoneId
 class AccountFragment : Fragment(R.layout.fragment_account) {
     private val profileApi = RetrofitClient.profileApi
     private lateinit var ivProfileImage: ImageView
-    private lateinit var btnEditImage: TextView
     private lateinit var tvUsername: TextView
-    private lateinit var btnEditUsername: TextView
     private lateinit var tvFullName: TextView
-    private lateinit var btnEditFullName: TextView
     private lateinit var tvTokenBalance: TextView
     private lateinit var tvTokensReceived: TextView
     private lateinit var tvTokensSent: TextView
@@ -55,7 +52,6 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
     private lateinit var tvWishlistsOpen: TextView
     private lateinit var tvWishlistsFulfilled: TextView
     private lateinit var btnWithdrawals: Button
-    private lateinit var btnShareProfile: Button
     private lateinit var btnBuyTokens: Button
     private var profile: Profile? = null
     private lateinit var tvActivitySummary: TextView
@@ -117,12 +113,7 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
         }
         // initial activity summary
         loadActivitySummary(tvActivitySummary)
-        ivProfileImage = view.findViewById(R.id.ivProfileImage)
-        btnEditImage = view.findViewById(R.id.btnEditImage)
         tvUsername = view.findViewById(R.id.tvUsername)
-        btnEditUsername = view.findViewById(R.id.btnEditUsername)
-        tvFullName = view.findViewById(R.id.tvFullName)
-        btnEditFullName = view.findViewById(R.id.btnEditFullName)
         tvTokenBalance = view.findViewById(R.id.tvTokenBalance)
         tvTokensReceived = view.findViewById(R.id.tvTokensReceived)
         tvTokensSent = view.findViewById(R.id.tvTokensSent)
@@ -131,7 +122,6 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
         tvWishlistsOpen = view.findViewById(R.id.tvWishlistsOpen)
         tvWishlistsFulfilled = view.findViewById(R.id.tvWishlistsFulfilled)
         btnWithdrawals = view.findViewById(R.id.btnWithdrawals)
-        btnShareProfile = view.findViewById(R.id.btnShareProfile)
         btnBuyTokens = view.findViewById(R.id.btnBuyTokens)
 
         // Extract user_id from stored access token
@@ -149,16 +139,13 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
 
         loadProfile()
 
-        btnEditImage.setOnClickListener { pickImage() }
-        btnEditUsername.setOnClickListener { promptEdit("username") }
-        btnEditFullName.setOnClickListener { promptEdit("name") }
+        // Profile editing moved to Settings; remove edit buttons.
         btnWithdrawals.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.mainContentContainer, WithdrawalsFragment())
                 .addToBackStack(null)
                 .commit()
         }
-        btnShareProfile.setOnClickListener { shareProfile() }
         btnBuyTokens.setOnClickListener { showBuyTokensDialog() }
 
         // Logout
@@ -367,19 +354,6 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
         }
     }
 
-    private fun promptEdit(field: String) {
-        val current =
-            if (field == "username") tvUsername.text.toString() else tvFullName.text.toString()
-        val input = EditText(requireContext()).apply { setText(current) }
-        AlertDialog.Builder(requireContext())
-            .setTitle("Edit ${field.replaceFirstChar { it.uppercase() }}")
-            .setView(input)
-            .setPositiveButton("Save") { _, _ ->
-                updateProfileField(mapOf(field to input.text.toString().trim()))
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
 
     private fun updateProfileField(updates: Map<String, Any>) {
         lifecycleScope.launch {
@@ -399,19 +373,5 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                     .show()
             }
         }
-    }
-
-    private fun shareProfile() {
-        val shareUrl = "${
-            SupabaseConfig.SUPABASE_URL.replace(
-                ".supabase.co",
-                ".supabase.co/profile/"
-            )
-        }${tvUsername.text}"
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, shareUrl)
-        }
-        startActivity(Intent.createChooser(intent, getString(R.string.share_profile)))
     }
 }
