@@ -43,7 +43,7 @@ class SecuritySettingsFragment : Fragment(R.layout.fragment_security_settings) {
                                 "blocked_user_id" to it.userId
                             ))
                             Toast.makeText(requireContext(), "User blocked", Toast.LENGTH_SHORT).show()
-                            loadBlockedUsers(userId, spinnerBlocked)
+                            loadBlockedUsers(userId, spinnerBlocked, btnUnblock)
                         }
                     } catch (_: Exception) {
                         Toast.makeText(requireContext(), "Failed to block user", Toast.LENGTH_SHORT).show()
@@ -60,7 +60,7 @@ class SecuritySettingsFragment : Fragment(R.layout.fragment_security_settings) {
                         blockedFilter = "eq.$selected"
                     )
                     Toast.makeText(requireContext(), "User unblocked", Toast.LENGTH_SHORT).show()
-                    loadBlockedUsers(userId, spinnerBlocked)
+                    loadBlockedUsers(userId, spinnerBlocked, btnBlock)
                 } catch (_: Exception) {
                     Toast.makeText(requireContext(), "Failed to unblock user", Toast.LENGTH_SHORT).show()
                 }
@@ -85,20 +85,32 @@ class SecuritySettingsFragment : Fragment(R.layout.fragment_security_settings) {
             }
         }
 
-        loadBlockedUsers(userId, spinnerBlocked)
+        loadBlockedUsers(userId, spinnerBlocked, btnUnblock)
         loadUserReports(userId, spinnerReports)
     }
 
-    private fun loadBlockedUsers(userId: String, spinner: android.widget.Spinner) {
+    private fun loadBlockedUsers(
+        userId: String,
+        spinner: android.widget.Spinner,
+        btnUnblock: MaterialButton
+    ) {
         lifecycleScope.launch {
             try {
                 val blocks = profileApi.getUserBlocks("eq.$userId")
                 val names = blocks.map { it.blocked_user_id }
-                spinner.adapter = ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_spinner_item,
-                    names
-                )
+                if (names.isEmpty()) {
+                    spinner.adapter = ArrayAdapter(
+                        requireContext(), android.R.layout.simple_spinner_item,
+                        listOf("You haven't blocked anyone yet")
+                    )
+                    btnUnblock.isEnabled = false
+                } else {
+                    spinner.adapter = ArrayAdapter(
+                        requireContext(), android.R.layout.simple_spinner_item,
+                        names
+                    )
+                    btnUnblock.isEnabled = true
+                }
             } catch (_: Exception) {
                 Toast.makeText(requireContext(), "Failed to load blocked users", Toast.LENGTH_SHORT).show()
             }
@@ -110,11 +122,17 @@ class SecuritySettingsFragment : Fragment(R.layout.fragment_security_settings) {
             try {
                 val reports = profileApi.getUserReports("*", "eq.$userId")
                 val entries = reports.map { it.reported_user_id }
-                spinner.adapter = ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_spinner_item,
-                    entries
-                )
+                if (entries.isEmpty()) {
+                    spinner.adapter = ArrayAdapter(
+                        requireContext(), android.R.layout.simple_spinner_item,
+                        listOf("You haven't reported anyone yet")
+                    )
+                } else {
+                    spinner.adapter = ArrayAdapter(
+                        requireContext(), android.R.layout.simple_spinner_item,
+                        entries
+                    )
+                }
             } catch (_: Exception) {
                 Toast.makeText(requireContext(), "Failed to load reports", Toast.LENGTH_SHORT).show()
             }

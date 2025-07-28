@@ -68,11 +68,19 @@ class ModerationSettingsFragment : Fragment(R.layout.fragment_moderation_setting
         lifecycleScope.launch {
             try {
                 val words = profileApi.getFilteredWords("word", "eq.$userId").map { it.word }
-                spinnerWords.adapter = ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_spinner_item,
-                    words
-                )
+                if (words.isEmpty()) {
+                    spinnerWords.adapter = ArrayAdapter(
+                        requireContext(), android.R.layout.simple_spinner_item,
+                        listOf("You haven't filtered any words yet")
+                    )
+                    btnRemove.isEnabled = false
+                } else {
+                    spinnerWords.adapter = ArrayAdapter(
+                        requireContext(), android.R.layout.simple_spinner_item,
+                        words
+                    )
+                    btnRemove.isEnabled = true
+                }
             } catch (_: Exception) {
                 Toast.makeText(requireContext(), "Failed to load words", Toast.LENGTH_SHORT).show()
             }
