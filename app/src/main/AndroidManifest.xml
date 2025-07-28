@@ -103,6 +103,11 @@
             </intent-filter>
         </activity>
         <activity android:name=".payments.PaymentWebViewActivity" />
+        <!-- uCrop activity for avatar cropping -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity android:name=".chat.FullscreenMediaActivity"
             android:exported="false"
             android:theme="@style/Theme.GiftersClub" />

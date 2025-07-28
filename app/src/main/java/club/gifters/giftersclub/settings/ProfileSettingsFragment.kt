@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import coil.load
+import coil.transform.CircleCropTransformation
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.yalantis.ucrop.UCrop
@@ -30,17 +31,23 @@ import java.io.FileOutputStream
 class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
     private val profileApi = RetrofitClient.profileApi
     private var userId: String = ""
+    private lateinit var ivAvatar: ImageView
+    private lateinit var btnChooseAvatar: MaterialButton
+    private lateinit var etUsername: TextInputEditText
+    private lateinit var etDisplayName: TextInputEditText
+    private lateinit var etBio: TextInputEditText
+    private lateinit var btnSaveProfile: MaterialButton
     private val REQUEST_PICK_IMAGE = 3001
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         userId = AuthUtils.getCurrentUserId(requireContext()) ?: return
-        val ivAvatar = view.findViewById<ImageView>(R.id.ivAvatar)
-        val btnChooseAvatar = view.findViewById<MaterialButton>(R.id.btnChooseAvatar)
-        val etUsername = view.findViewById<TextInputEditText>(R.id.etUsername)
-        val etDisplayName = view.findViewById<TextInputEditText>(R.id.etDisplayName)
-        val etBio = view.findViewById<TextInputEditText>(R.id.etBio)
-        val btnSaveProfile = view.findViewById<MaterialButton>(R.id.btnSaveProfile)
+        ivAvatar = view.findViewById(R.id.ivAvatar)
+        btnChooseAvatar = view.findViewById(R.id.btnChooseAvatar)
+        etUsername = view.findViewById(R.id.etUsername)
+        etDisplayName = view.findViewById(R.id.etDisplayName)
+        etBio = view.findViewById(R.id.etBio)
+        btnSaveProfile = view.findViewById(R.id.btnSaveProfile)
 
         lifecycleScope.launch {
             val profile = try {
@@ -58,7 +65,10 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
                 etDisplayName.setText(it.name.orEmpty())
                 etBio.setText(it.bio.orEmpty())
                 if (it.image.isNotBlank()) {
-                    ivAvatar.load(it.image) { placeholder(android.R.color.darker_gray) }
+                    ivAvatar.load(it.image) {
+                        transformations(CircleCropTransformation())
+                        placeholder(android.R.color.darker_gray)
+                    }
                 }
             }
         }
@@ -110,7 +120,10 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
 
             requestCode == UCrop.REQUEST_CROP && resultCode == Activity.RESULT_OK && data != null -> {
                 UCrop.getOutput(data)?.let { uri ->
-                    view?.findViewById<ImageView>(R.id.ivAvatar)?.setImageURI(uri)
+                    ivAvatar.load(uri) {
+                        transformations(CircleCropTransformation())
+                        placeholder(android.R.color.darker_gray)
+                    }
                     uploadImage(uri)
                 }
             }
