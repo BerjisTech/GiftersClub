@@ -1,9 +1,164 @@
 package club.gifters.giftersclub.settings
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.widget.ImageView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import coil.load
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.textfield.TextInputEditText
+import com.yalantis.ucrop.UCrop
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
+import club.gifters.giftersclub.network.PresignRequest
+import club.gifters.giftersclub.network.RetrofitClient
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import retrofit2.HttpException
+import java.io.File
+import java.io.FileOutputStream
 
-/** Stub for Profile settings UI */
-class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings)
+class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
+    private val profileApi = RetrofitClient.profileApi
+    private var userId: String = ""
+    private val REQUEST_PICK_IMAGE = 3001
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        userId = AuthUtils.getCurrentUserId(requireContext()) ?: return
+        val ivAvatar = view.findViewById<ImageView>(R.id.ivAvatar)
+        val btnChooseAvatar = view.findViewById<MaterialButton>(R.id.btnChooseAvatar)
+        val etUsername = view.findViewById<TextInputEditText>(R.id.etUsername)
+        val etDisplayName = view.findViewById<TextInputEditText>(R.id.etDisplayName)
+        val etBio = view.findViewById<TextInputEditText>(R.id.etBio)
+        val btnSaveProfile = view.findViewById<MaterialButton>(R.id.btnSaveProfile)
+
+        lifecycleScope.launchWhenStarted {
+            try {
+                val profile = profileApi.getProfileByUserId(userIdFilter = "eq.$userId").firstOrNull()
+                profile?.let {
+                    etUsername.setText(it.username)
+                    etDisplayName.setText(it.name.orEmpty())
+                    etBio.setText(it.bio.orEmpty())
+                    if (it.image.isNotBlank()) {
+                        ivAvatar.load(it.image) { placeholder(android.R.color.darker_gray) }
+                    }
+                }
+            } catch (_: Exception) {
+                // ignore load errors (e.g., HTTP 400 due to missing RLS row)
+            }
+        }
+
+        btnChooseAvatar.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "image/*"
+            }
+            startActivityForResult(intent, REQUEST_PICK_IMAGE)
+        }
+
+        btnSaveProfile.setOnClickListener {
+            val updates = mutableMapOf<String, Any>()
+            updates["username"] = etUsername.text.toString().trim()
+            updates["name"] = etDisplayName.text.toString().trim()
+            updates["bio"] = etBio.text.toString().trim()
+            lifecycleScope.launchWhenStarted {
+                try {
+                    val updated =
+                        profileApi.updateProfile(userIdFilter = "eq.$userId", updates = updates)
+                    if (updated.isNotEmpty()) {
+                        Toast.makeText(requireContext(), "Profile updated", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                } catch (_: Exception) {
+                    Toast.makeText(requireContext(), "Failed to update profile", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when {
+            requestCode == REQUEST_PICK_IMAGE && resultCode == Activity.RESULT_OK -> data?.data?.let { uri ->
+                val srcFile =
+                    File(requireContext().cacheDir, "CROP_SRC_${System.currentTimeMillis()}.jpg")
+                requireContext().contentResolver.openInputStream(uri)?.use { input ->
+                    FileOutputStream(srcFile).use { output -> input.copyTo(output) }
+                }
+                val destFile =
+                    File(requireContext().cacheDir, "CROP_DST_${System.currentTimeMillis()}.jpg")
+                UCrop.of(Uri.fromFile(srcFile), Uri.fromFile(destFile))
+                    .withAspectRatio(1f, 1f)
+                    .start(requireActivity(), UCrop.REQUEST_CROP)
+            }
+
+            requestCode == UCrop.REQUEST_CROP && resultCode == Activity.RESULT_OK && data != null -> {
+                UCrop.getOutput(data)?.let { uri ->
+                    view?.findViewById<ImageView>(R.id.ivAvatar)?.setImageURI(uri)
+                    uploadImage(uri)
+                }
+            }
+        }
+    }
+
+    private fun uploadImage(uri: Uri) {
+        lifecycleScope.launchWhenStarted {
+            try {
+                val type = requireContext().contentResolver.getType(uri).orEmpty()
+                val ext = type.substringAfterLast('/', "")
+                val filename = "profile-$userId.$ext"
+                val bytes = withContext(Dispatchers.IO) {
+                    requireContext().contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                } ?: return@launchWhenStarted
+
+                val presignResp = RetrofitClient.functionsApi.uploadMedia(
+                    PresignRequest(
+                        fileName = filename,
+                        fileType = type,
+                        bucket = "profile",
+                        overwrite = true
+                    )
+                )
+                if (!presignResp.isSuccessful) throw HttpException(presignResp)
+                val presignData = presignResp.body()!!
+
+                val body = bytes.toRequestBody(type.toMediaTypeOrNull())
+                val putReq = Request.Builder().url(presignData.uploadUrl).put(body).build()
+                val putResp = withContext(Dispatchers.IO) {
+                    RetrofitClient.awsClient.newCall(putReq).execute()
+                }
+                if (!putResp.isSuccessful) throw Exception("Upload failed: ${putResp.code}")
+
+                updateProfile(mapOf("image" to presignData.publicUrl))
+            } catch (_: Exception) {
+                Toast.makeText(requireContext(), "Failed to upload image", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+    }
+
+    private fun updateProfile(updates: Map<String, Any>) {
+        lifecycleScope.launchWhenStarted {
+            try {
+                val updated =
+                    profileApi.updateProfile(userIdFilter = "eq.$userId", updates = updates)
+                if (updated.isNotEmpty()) {
+                    Toast.makeText(requireContext(), "Profile updated", Toast.LENGTH_SHORT).show()
+                }
+            } catch (_: Exception) {
+                Toast.makeText(requireContext(), "Failed to update profile", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+    }
+}

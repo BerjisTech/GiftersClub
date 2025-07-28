@@ -4,10 +4,16 @@ import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.model.WishlistItem
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.PATCH
+import retrofit2.http.POST
 import retrofit2.http.Query
+import club.gifters.giftersclub.model.FilteredWord
+import club.gifters.giftersclub.model.UserBlock
+import club.gifters.giftersclub.model.UserReport
+import club.gifters.giftersclub.model.UserSettings
 
 /**
  * Retrofit interface for fetching user profiles.
@@ -62,6 +68,15 @@ interface ProfileApi {
     ): List<Profile>
 
     /**
+     * Fetch interaction settings (who_can_interact) for a user.
+     */
+    @GET("user_settings")
+    suspend fun getUserSettings(
+        @Query("select", encoded = true) select: String = "who_can_interact",
+        @Query("user_id", encoded = true) userIdFilter: String
+    ): List<UserSettings>
+
+    /**
      * Search profiles by username or email (or exact user_id).
      * Uses Supabase OR filter with ilike for partial matches.
      */
@@ -70,4 +85,59 @@ interface ProfileApi {
         @Query("select", encoded = true) select: String = "*",
         @Query("or", encoded = true) orFilter: String
     ): List<Profile>
+
+    /** Fetch filtered words for current user */
+    @GET("filtered_words")
+    suspend fun getFilteredWords(
+        @Query("select", encoded = true) select: String = "word",
+        @Query("user_id", encoded = true) userIdFilter: String
+    ): List<FilteredWord>
+
+    /** Insert a new filtered word */
+    @Headers("Prefer: return=representation")
+    @POST("filtered_words")
+    suspend fun insertFilteredWord(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): List<FilteredWord>
+
+    /** Remove a filtered word */
+    @DELETE("filtered_words")
+    suspend fun deleteFilteredWord(
+        @Query("user_id", encoded = true) userIdFilter: String,
+        @Query("word", encoded = true) wordFilter: String
+    ): Response<Unit>
+
+    /** Fetch blocks for current user */
+    @GET("user_blocks")
+    suspend fun getUserBlocks(
+        @Query("blocker_user_id", encoded = true) blockerFilter: String
+    ): List<UserBlock>
+
+    /** Block a user */
+    @Headers("Prefer: return=representation")
+    @POST("user_blocks")
+    suspend fun blockUser(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): List<UserBlock>
+
+    /** Unblock a user */
+    @DELETE("user_blocks")
+    suspend fun unblockUser(
+        @Query("blocker_user_id", encoded = true) blockerFilter: String,
+        @Query("blocked_user_id", encoded = true) blockedFilter: String
+    ): Response<Unit>
+
+    /** Fetch user reports for current user */
+    @GET("user_reports")
+    suspend fun getUserReports(
+        @Query("select", encoded = true) select: String = "*",
+        @Query("reporter_user_id", encoded = true) reporterFilter: String
+    ): List<UserReport>
+
+    /** Report a user */
+    @Headers("Prefer: return=representation")
+    @POST("user_reports")
+    suspend fun reportUser(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): List<UserReport>
 }

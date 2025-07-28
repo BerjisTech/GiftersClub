@@ -75,5 +75,13 @@
            2. Dependency Scanning: Integrate a dependency vulnerability scanner (e.g., OWASP Dependency-Check, Snyk) into your CI/CD pipeline to
               automatically detect known vulnerabilities in your dependencies.
 
+7. Android Settings Screen Enhancements:
+
+   • Scaffold the SettingsFragment with tabs for Profile, Security, Moderation, Interaction.
+   • Implement ProfileSettingsFragment to edit username, display name, bio, and upload + crop a square avatar.
+   • Implement SecuritySettingsFragment to block/unblock users, report users, and show user’s reports.
+   • Implement ModerationSettingsFragment to add/remove filtered words with spinners and toasts.
+   • Implement InteractionSettingsFragment to select who_can_interact (anyone, followers, friends) with persistence.
+
 
 

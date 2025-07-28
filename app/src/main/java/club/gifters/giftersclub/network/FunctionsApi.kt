@@ -54,6 +54,14 @@ interface FunctionsApi {
     ): Response<Unit>
 
     /**
+     * Update interaction privacy settings via Edge Function.
+     */
+    @POST("update-interaction-settings")
+    suspend fun updateInteractionSettingsRpc(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /**
      * Record an auth log event (sign-in) via Edge Function.
      */
     @POST("auth-log")
