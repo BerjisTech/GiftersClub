@@ -14,6 +14,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
@@ -41,19 +42,24 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
         val etBio = view.findViewById<TextInputEditText>(R.id.etBio)
         val btnSaveProfile = view.findViewById<MaterialButton>(R.id.btnSaveProfile)
 
-        lifecycleScope.launchWhenStarted {
-            try {
-                val profile = profileApi.getProfileByUserId(userIdFilter = "eq.$userId").firstOrNull()
-                profile?.let {
-                    etUsername.setText(it.username)
-                    etDisplayName.setText(it.name.orEmpty())
-                    etBio.setText(it.bio.orEmpty())
-                    if (it.image.isNotBlank()) {
-                        ivAvatar.load(it.image) { placeholder(android.R.color.darker_gray) }
-                    }
-                }
+        lifecycleScope.launch {
+            val profile = try {
+                profileApi.getProfileByUserId(
+                    select = "*",
+                    userIdFilter = "eq.$userId"
+                ).firstOrNull()
+            } catch (e: HttpException) {
+                if (e.code() == 400) null else throw e
             } catch (_: Exception) {
-                // ignore load errors (e.g., HTTP 400 due to missing RLS row)
+                null
+            }
+            profile?.let {
+                etUsername.setText(it.username)
+                etDisplayName.setText(it.name.orEmpty())
+                etBio.setText(it.bio.orEmpty())
+                if (it.image.isNotBlank()) {
+                    ivAvatar.load(it.image) { placeholder(android.R.color.darker_gray) }
+                }
             }
         }
 
