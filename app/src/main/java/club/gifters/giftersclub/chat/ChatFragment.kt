@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package club.gifters.giftersclub.chat
 
 import android.app.Activity
