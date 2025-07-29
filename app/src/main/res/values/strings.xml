@@ -59,6 +59,7 @@
     <string name="new_followers_preview">You have new followers</string>
     <string name="activity_preview">You have new gifts &amp; post interactions</string>
     <string name="system_notifications_preview">Your token purchase ...</string>
+    <string name="empty_chat_message">Your chats will appear here</string>
     <string name="wishlist">Wishlist</string>
     <string name="send">Send</string>
     <string name="chat_with_user">Chat</string>

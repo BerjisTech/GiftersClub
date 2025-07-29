@@ -1,6 +1,7 @@
 package club.gifters.giftersclub.chat
 
 import java.time.OffsetDateTime
+import club.gifters.giftersclub.chat.ConversationUi
 
 /**
  * Unified list item for chat and notification headers.
@@ -30,4 +31,9 @@ sealed class ChatListItem {
 
     /** Types for the header items. */
     enum class HeaderType { NEW_FOLLOWERS, ACTIVITY, SYSTEM_NOTIFICATIONS }
+
+    /** Placeholder when there are no chats */
+    object Empty : ChatListItem() {
+        override val time: Long = 0L
+    }
 }

@@ -11,7 +11,9 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import club.gifters.giftersclub.R
+import club.gifters.giftersclub.chat.ChatListItem
 import club.gifters.giftersclub.chat.ChatListItem.HeaderType
+import club.gifters.giftersclub.chat.ConversationUi
 import java.time.OffsetDateTime
 
 /**
@@ -25,27 +27,40 @@ class ChatListAdapter(
     private companion object {
         const val TYPE_HEADER = 0
         const val TYPE_CONVERSATION = 1
+        const val TYPE_EMPTY = 2
     }
 
     override fun getItemViewType(position: Int): Int = when (getItem(position)) {
-        is ChatListItem.Header -> TYPE_HEADER
+        is ChatListItem.Header       -> TYPE_HEADER
         is ChatListItem.Conversation -> TYPE_CONVERSATION
+        is ChatListItem.Empty        -> TYPE_EMPTY
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_conversation, parent, false)
-        return if (viewType == TYPE_HEADER) {
-            HeaderViewHolder(view, onHeaderClick)
-        } else {
-            ConversationViewHolder(view, onConversationClick)
+        return when (viewType) {
+            TYPE_HEADER -> {
+                val view = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.item_conversation, parent, false)
+                HeaderViewHolder(view, onHeaderClick)
+            }
+            TYPE_CONVERSATION -> {
+                val view = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.item_conversation, parent, false)
+                ConversationViewHolder(view, onConversationClick)
+            }
+            else -> {
+                val view = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.item_chat_empty, parent, false)
+                EmptyViewHolder(view)
+            }
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = getItem(position)) {
-            is ChatListItem.Header -> (holder as HeaderViewHolder).bind(item)
+            is ChatListItem.Header       -> (holder as HeaderViewHolder).bind(item)
             is ChatListItem.Conversation -> (holder as ConversationViewHolder).bind(item.ui)
+            is ChatListItem.Empty        -> { /* no-op */ }
         }
     }
 
@@ -119,13 +134,14 @@ class ChatListAdapter(
         }
     }
 
+    private class EmptyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+
     private object Diff : DiffUtil.ItemCallback<ChatListItem>() {
-        override fun areItemsTheSame(old: ChatListItem, new: ChatListItem): Boolean {
-            return if (old is ChatListItem.Header && new is ChatListItem.Header) {
-                old.type == new.type
-            } else if (old is ChatListItem.Conversation && new is ChatListItem.Conversation) {
-                old.ui.overview == new.ui.overview
-            } else false
+        override fun areItemsTheSame(old: ChatListItem, new: ChatListItem): Boolean = when {
+            old is ChatListItem.Header       && new is ChatListItem.Header       -> old.type == new.type
+            old is ChatListItem.Conversation && new is ChatListItem.Conversation -> old.ui.overview == new.ui.overview
+            old is ChatListItem.Empty        && new is ChatListItem.Empty        -> true
+            else -> false
         }
 
         override fun areContentsTheSame(old: ChatListItem, new: ChatListItem) = old == new
