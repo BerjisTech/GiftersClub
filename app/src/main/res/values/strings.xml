@@ -60,6 +60,11 @@
     <string name="activity_preview">You have new gifts &amp; post interactions</string>
     <string name="system_notifications_preview">Your token purchase ...</string>
     <string name="empty_chat_message">Your chats will appear here</string>
+    <string name="header_followers_count">You have %1$d new followers today</string>
+    <string name="header_followers_none">You have no new followers today</string>
+    <string name="header_activity_count">You have %1$d new gifts today</string>
+    <string name="header_activity_none">You have no new gifts today</string>
+    <string name="header_system_none">Nothing to see here</string>
     <string name="wishlist">Wishlist</string>
     <string name="send">Send</string>
     <string name="chat_with_user">Chat</string>
