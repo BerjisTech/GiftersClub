@@ -217,97 +217,78 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
      */
     private fun loadChatList() {
         lifecycleScope.launch {
-            try {
-                // fetch notifications
-                val notes = notificationApi.getNotifications("*", "eq.$userId")
-                val followNotes = notes.filter { it.type == "follow" || it.type == "friend_request" }
-                val lastFollow = followNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
-                val activityNotes = notes.filter {
-                    it.type != "transaction" && it.type != "withdrawal" && it.type != "follow" && it.type != "friend_request"
-                }
-                val lastActivity = activityNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
-                val systemNotes = notes.filter { it.type == "transaction" || it.type == "withdrawal" }
-                val lastSystem = systemNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
+            // compute header timestamps, but never fail entire load
+            val notes = try {
+                notificationApi.getNotifications("*", "eq.$userId")
+            } catch (_: Exception) {
+                emptyList()
+            }
+            val followNotes = notes.filter { it.type == "follow" || it.type == "friend_request" }
+            val lastFollow = followNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
+            val activityNotes = notes.filter {
+                it.type != "transaction" && it.type != "withdrawal" && it.type != "follow" && it.type != "friend_request"
+            }
+            val lastActivity = activityNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
+            val systemNotes = notes.filter { it.type == "transaction" || it.type == "withdrawal" }
+            val lastSystem = systemNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
 
-                // fetch conversation overviews
-                val convs = chatApi.getConversationDetails()
-                val uiList = convs.mapNotNull { detail ->
-                    val profile = Profile(
-                        id = detail.partnerId,
-                        userId = detail.partnerId,
-                        email = null,
-                        username = detail.partnerName ?: "",
-                        name = detail.partnerName,
-                        bio = null,
-                        image = detail.partnerImage ?: "",
-                        tokenBalance = null,
-                        tokensReceived = null,
-                        tokensSent = null,
-                        followersCount = null,
-                        followingCount = null,
-                        isFollowing = null,
-                        gifterLevel = null,
-                        gifterLevelName = null,
-                        giftsSent = null,
-                        giftsReceived = null
-                    )
+            // fetch conversation overviews, but continue on error
+            val sortedConvs = try {
+                chatApi.getConversationDetails().mapNotNull { detail ->
                     detail.lastMessageContent?.let { content ->
-                        val msg = Message(
-                            id = detail.lastMessageId.orEmpty(),
-                            senderId = userId,
-                            receiverId = detail.partnerId,
-                            content = content,
-                            createdAt = detail.lastMessageAt,
-                            attachments = detail.lastMessageAttachments.orEmpty()
-                        )
                         ConversationUi(
                             ConversationOverview(detail.userA, detail.userB, detail.lastMessageAt),
-                            profile,
-                            msg,
+                            Profile(
+                                id = detail.partnerId,
+                                userId = detail.partnerId,
+                                email = null,
+                                username = detail.partnerName ?: "",
+                                name = detail.partnerName,
+                                bio = null,
+                                image = detail.partnerImage ?: "",
+                                tokenBalance = null,
+                                tokensReceived = null,
+                                tokensSent = null,
+                                followersCount = null,
+                                followingCount = null,
+                                isFollowing = null,
+                                gifterLevel = null,
+                                gifterLevelName = null,
+                                giftsSent = null,
+                                giftsReceived = null
+                            ),
+                            Message(
+                                id = detail.lastMessageId.orEmpty(),
+                                senderId = userId,
+                                receiverId = detail.partnerId,
+                                content = content,
+                                createdAt = detail.lastMessageAt,
+                                attachments = detail.lastMessageAttachments.orEmpty()
+                            ),
                             detail.unreadCount
                         )
                     }
-                }
-                // sort and dedupe
-                val sortedConvs = uiList.sortedByDescending { Instant.parse(it.overview.lastMessageAt).toEpochMilli() }
-                    .distinctBy { it.partner.userId }
-
-                // build merged list: static notification headers always, then chats
-                val items = mutableListOf<ChatListItem>()
-                items.add(
-                    ChatListItem.Header(
-                        HeaderType.NEW_FOLLOWERS,
-                        getString(R.string.new_followers),
-                        getString(R.string.new_followers_preview),
-                        lastFollow
-                    )
-                )
-                items.add(
-                    ChatListItem.Header(
-                        HeaderType.ACTIVITY,
-                        getString(R.string.activity),
-                        getString(R.string.activity_preview),
-                        lastActivity
-                    )
-                )
-                items.add(
-                    ChatListItem.Header(
-                        HeaderType.SYSTEM_NOTIFICATIONS,
-                        getString(R.string.system_notifications),
-                        getString(R.string.system_notifications_preview),
-                        lastSystem
-                    )
-                )
-                if (sortedConvs.isEmpty()) {
-                    // show placeholder when no chats
-                    items.add(ChatListItem.Empty)
-                }
-                sortedConvs.forEach { items.add(ChatListItem.Conversation(it)) }
-                items.sortByDescending { it.time }
-                chatListAdapter.submitList(items)
+                }.sortedByDescending { Instant.parse(it.overview.lastMessageAt).toEpochMilli() }
+                 .distinctBy { it.partner.userId }
             } catch (_: Exception) {
-                // ignore fetch errors
+                emptyList()
             }
+
+            // always show the static headers, then placeholder if no chats, then chats
+            val items = mutableListOf<ChatListItem.Header>().apply {
+                add(ChatListItem.Header(HeaderType.NEW_FOLLOWERS,
+                    getString(R.string.new_followers), getString(R.string.new_followers_preview), lastFollow))
+                add(ChatListItem.Header(HeaderType.ACTIVITY,
+                    getString(R.string.activity), getString(R.string.activity_preview), lastActivity))
+                add(ChatListItem.Header(HeaderType.SYSTEM_NOTIFICATIONS,
+                    getString(R.string.system_notifications), getString(R.string.system_notifications_preview), lastSystem))
+            }.map<ChatListItem> { it }.toMutableList()
+            if (sortedConvs.isEmpty()) {
+                items.add(ChatListItem.Empty)
+            }
+            sortedConvs.forEach { items.add(ChatListItem.Conversation(it)) }
+            items.sortByDescending { it.time }
+            chatListAdapter.submitList(items)
         }
     }
 
