@@ -34,8 +34,6 @@ import club.gifters.giftersclub.chat.ChatListItem.HeaderType
 import club.gifters.giftersclub.social.FriendsFragment
 import club.gifters.giftersclub.chat.NotificationListFragment
 import club.gifters.giftersclub.chat.SystemNotificationsFragment
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -67,9 +65,6 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     private lateinit var notificationApi: NotificationApi
     private lateinit var chatListAdapter: ChatListAdapter
 
-    private val gson = Gson()
-    private val prefsName = "chat_prefs"
-    private val prefsKeyConversations = "chatConversations"
 
     companion object {
         private const val ARG_PARTNER_ID = "partner_id"
