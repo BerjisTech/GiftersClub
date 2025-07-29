@@ -183,6 +183,28 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             }
         )
         rvConvs.adapter = chatListAdapter
+        // show static headers + empty placeholder immediately for new users
+        chatListAdapter.submitList(listOf(
+            ChatListItem.Header(
+                HeaderType.NEW_FOLLOWERS,
+                getString(R.string.new_followers),
+                getString(R.string.new_followers_preview),
+                0L
+            ),
+            ChatListItem.Header(
+                HeaderType.ACTIVITY,
+                getString(R.string.activity),
+                getString(R.string.activity_preview),
+                0L
+            ),
+            ChatListItem.Header(
+                HeaderType.SYSTEM_NOTIFICATIONS,
+                getString(R.string.system_notifications),
+                getString(R.string.system_notifications_preview),
+                0L
+            ),
+            ChatListItem.Empty
+        ))
         loadChatList()
 
         // Poll every few seconds to refresh chats and notifications
