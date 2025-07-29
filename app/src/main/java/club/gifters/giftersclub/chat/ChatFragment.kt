@@ -293,18 +293,31 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             }
 
             // always show the static headers, then placeholder if no chats, then chats
-            val items = mutableListOf<ChatListItem.Header>().apply {
-                add(ChatListItem.Header(HeaderType.NEW_FOLLOWERS,
-                    getString(R.string.new_followers), getString(R.string.new_followers_preview), lastFollow))
-                add(ChatListItem.Header(HeaderType.ACTIVITY,
-                    getString(R.string.activity), getString(R.string.activity_preview), lastActivity))
-                add(ChatListItem.Header(HeaderType.SYSTEM_NOTIFICATIONS,
-                    getString(R.string.system_notifications), getString(R.string.system_notifications_preview), lastSystem))
-            }.map<ChatListItem> { it }.toMutableList()
-            if (sortedConvs.isEmpty()) {
-                items.add(ChatListItem.Empty)
+            val items = mutableListOf<ChatListItem>().apply {
+                add(ChatListItem.Header(
+                    HeaderType.NEW_FOLLOWERS,
+                    getString(R.string.new_followers),
+                    getString(R.string.new_followers_preview),
+                    lastFollow
+                ))
+                add(ChatListItem.Header(
+                    HeaderType.ACTIVITY,
+                    getString(R.string.activity),
+                    getString(R.string.activity_preview),
+                    lastActivity
+                ))
+                add(ChatListItem.Header(
+                    HeaderType.SYSTEM_NOTIFICATIONS,
+                    getString(R.string.system_notifications),
+                    getString(R.string.system_notifications_preview),
+                    lastSystem
+                ))
+                if (sortedConvs.isEmpty()) {
+                    // show placeholder when no chats
+                    add(ChatListItem.Empty)
+                }
+                sortedConvs.forEach { add(ChatListItem.Conversation(it)) }
             }
-            sortedConvs.forEach { items.add(ChatListItem.Conversation(it)) }
             items.sortByDescending { it.time }
             chatListAdapter.submitList(items)
         }
