@@ -234,6 +234,22 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
      * Load and merge static notification headers and chat conversations,
      * then display in a single sorted list.
      */
+    /**
+     * Safe ISO Instant parser supporting offsets/fractions.
+     */
+    private fun parseInstant(raw: String?): Instant? {
+        if (raw.isNullOrBlank()) return null
+        return try {
+            Instant.parse(raw)
+        } catch (_: Exception) {
+            try {
+                OffsetDateTime.parse(raw).toInstant()
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
     private fun loadChatList() {
         lifecycleScope.launch {
             // compute header timestamps, but never fail entire load
