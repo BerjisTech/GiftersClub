@@ -17,9 +17,8 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.ConcatAdapter
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.LinearLayoutManager
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.ConversationOverview
 import club.gifters.giftersclub.model.Message
@@ -27,7 +26,13 @@ import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.network.ChatApi
 import club.gifters.giftersclub.network.PresignRequest
 import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.network.NotificationApi
+import club.gifters.giftersclub.chat.ChatListAdapter
+import club.gifters.giftersclub.chat.ChatListItem
+import club.gifters.giftersclub.chat.ChatListItem.HeaderType
 import club.gifters.giftersclub.social.FriendsFragment
+import club.gifters.giftersclub.chat.NotificationListFragment
+import club.gifters.giftersclub.chat.SystemNotificationsFragment
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CancellationException
@@ -58,6 +63,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     private val REQUEST_ATTACHMENT = 3001
     private var pollingJob: Job? = null
     private var convsPollingJob: Job? = null
+    private lateinit var notificationApi: NotificationApi
+    private lateinit var chatListAdapter: ChatListAdapter
 
     private val gson = Gson()
     private val prefsName = "chat_prefs"
@@ -134,110 +141,60 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         )
             return
         }
-        // Otherwise show conversation list as usual
+        // Initialize unified chat/notification list
         val rvConvs = view.findViewById<RecyclerView>(R.id.rvConversations)
         rvConvs.layoutManager = LinearLayoutManager(requireContext())
-        // Header items: New followers, Activity, System notifications
-        val headerAdapter = ChatHeaderAdapter { type ->
-            when (type) {
-                ChatHeaderAdapter.HeaderType.NEW_FOLLOWERS ->
-                    parentFragmentManager.beginTransaction()
-                        .replace(
-                            R.id.mainContentContainer,
-                            FriendsFragment.newInstance(0)
-                        )
-                        .addToBackStack(null)
-                        .commit()
-                ChatHeaderAdapter.HeaderType.ACTIVITY ->
-                    parentFragmentManager.beginTransaction()
-                        .replace(
-                            R.id.mainContentContainer,
-                            NotificationListFragment()
-                        )
-                        .addToBackStack(null)
-                        .commit()
-                ChatHeaderAdapter.HeaderType.SYSTEM_NOTIFICATIONS ->
-                    parentFragmentManager.beginTransaction()
-                        .replace(
-                            R.id.mainContentContainer,
-                            SystemNotificationsFragment()
-                        )
-                        .addToBackStack(null)
-                        .commit()
+        // Prepare APIs for notifications
+        notificationApi = RetrofitClient.notificationApi
+        // Adapter merging header entries and conversations
+        chatListAdapter = ChatListAdapter(
+            onHeaderClick = { type ->
+                when (type) {
+                    HeaderType.NEW_FOLLOWERS -> parentFragmentManager.beginTransaction()
+                        .replace(R.id.mainContentContainer, FriendsFragment.newInstance(0))
+                        .addToBackStack(null).commit()
+                    HeaderType.ACTIVITY -> parentFragmentManager.beginTransaction()
+                        .replace(R.id.mainContentContainer, NotificationListFragment())
+                        .addToBackStack(null).commit()
+                    HeaderType.SYSTEM_NOTIFICATIONS -> parentFragmentManager.beginTransaction()
+                        .replace(R.id.mainContentContainer, SystemNotificationsFragment())
+                        .addToBackStack(null).commit()
+                }
+            },
+            onConversationClick = { ui ->
+                // user tapped a conversation: show its chat pane
+                rvConvs.visibility = View.GONE
+                val chatPane = view.findViewById<ConstraintLayout>(R.id.chatPane)
+                chatPane.visibility = View.VISIBLE
+
+                val rvMsgs = chatPane.findViewById<RecyclerView>(R.id.rvMessages)
+                rvMsgs.layoutManager = LinearLayoutManager(requireContext())
+                val innerMsgAdapter = MessageAdapter(userId)
+                rvMsgs.adapter = innerMsgAdapter
+
+                val etMsg = chatPane.findViewById<EditText>(R.id.etMessage)
+                chatPane.findViewById<ImageButton>(R.id.btnAttach).setOnClickListener { pickAttachment() }
+                chatPane.findViewById<ImageButton>(R.id.btnSend).setOnClickListener {
+                    sendMessage(innerMsgAdapter, rvMsgs, etMsg, ui.partner.userId)
+                }
+
+                selectConversation(
+                    ui.partner.userId,
+                    ui.partner.name ?: ui.partner.username,
+                    innerMsgAdapter,
+                    rvMsgs
+                )
             }
-        }
-        val convAdapter = ConversationAdapter(userId) { conv ->
-            // user tapped a conversation: show its chat pane
-            view.findViewById<RecyclerView>(R.id.rvConversations).visibility = View.GONE
-            val chatPane = view.findViewById<ConstraintLayout>(R.id.chatPane)
-            chatPane.visibility = View.VISIBLE
+        )
+        rvConvs.adapter = chatListAdapter
+        loadChatList()
 
-            val rvMsgs = chatPane.findViewById<RecyclerView>(R.id.rvMessages)
-            rvMsgs.layoutManager = LinearLayoutManager(requireContext())
-            val innerMsgAdapter = MessageAdapter(userId)
-            rvMsgs.adapter = innerMsgAdapter
-
-            val etMsg = chatPane.findViewById<EditText>(R.id.etMessage)
-            chatPane.findViewById<ImageButton>(R.id.btnAttach).setOnClickListener { pickAttachment() }
-            chatPane.findViewById<ImageButton>(R.id.btnSend).setOnClickListener {
-                sendMessage(innerMsgAdapter, rvMsgs, etMsg, conv.partner.userId)
-            }
-
-            selectConversation(
-                conv.partner.userId,
-                conv.partner.name ?: conv.partner.username,
-                innerMsgAdapter,
-                rvMsgs
-            )
-        }
-        rvConvs.adapter = ConcatAdapter(headerAdapter, convAdapter)
-        loadConversations(convAdapter)
-
+        // Poll every few seconds to refresh chats and notifications
         convsPollingJob?.cancel()
         convsPollingJob = lifecycleScope.launch {
             while (isActive) {
-                delay(1000)
-                try {
-                    val convs = chatApi.getConversationDetails()
-                    val uiModels = convs.mapNotNull { detail ->
-                        val profile = Profile(
-                            id = detail.partnerId,
-                            userId = detail.partnerId,
-                            email = null,
-                            username = detail.partnerName ?: "",
-                            name = detail.partnerName,
-                            bio = null,
-                            image = detail.partnerImage ?: "",
-                            tokenBalance = null,
-                            tokensReceived = null,
-                            tokensSent = null,
-                            followersCount = null,
-                            followingCount = null,
-                            isFollowing = null,
-                            gifterLevel = null,
-                            gifterLevelName = null,
-                            giftsSent = null,
-                            giftsReceived = null
-                        )
-                        val lastMsg = detail.lastMessageContent?.let { content ->
-                            Message(
-                                id = detail.lastMessageId ?: "",
-                                senderId = userId,
-                                receiverId = detail.partnerId,
-                                content = content,
-                                createdAt = detail.lastMessageAt,
-                                attachments = detail.lastMessageAttachments.orEmpty()
-                            )
-                        }
-                        val overview = ConversationOverview(detail.userA, detail.userB, detail.lastMessageAt)
-                        ConversationUi(overview, profile, lastMsg, detail.unreadCount)
-                    }
-                    val valid = uiModels.filter { it.lastMessage != null }
-                    val sorted = valid.sortedByDescending { it.overview.lastMessageAt }
-                    val deduped = sorted.distinctBy { it.partner.userId }
-                    convAdapter.submitList(deduped)
-                } catch (_: Exception) {
-                }
+                delay(5000)
+                loadChatList()
             }
         }
 
@@ -257,69 +214,6 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     /**
      * Load the list of conversation overviews and bind to adapter.
      */
-    private fun loadConversations(adapter: ConversationAdapter) {
-        val prefs = requireContext().getSharedPreferences(prefsName, Context.MODE_PRIVATE)
-        val cacheKey = "chatConversations-$userId"
-        prefs.getString(cacheKey, null)?.let { cachedJson ->
-            try {
-                val type = object : TypeToken<List<ConversationUi>>() {}.type
-                val cachedList: List<ConversationUi> = gson.fromJson(cachedJson, type)
-                val validCache = cachedList.filter { it.lastMessage != null }
-                val sortedCache = validCache.sortedByDescending { it.overview.lastMessageAt }
-                val dedupedCache = sortedCache.distinctBy { it.partner.userId }
-                adapter.submitList(dedupedCache)
-            } catch (_: Exception) { }
-        }
-        lifecycleScope.launch {
-            try {
-                val convs = chatApi.getConversationDetails()
-                // Log.w("ChatFragment", "Fetched conversations: ${convs.size}")
-                val uiModels = convs.mapNotNull { detail ->
-                    val profile = Profile(
-                        id = detail.partnerId,
-                        userId = detail.partnerId,
-                        email = null,
-                        username = detail.partnerName ?: "",
-                        name = detail.partnerName,
-                        bio = null,
-                        image = detail.partnerImage ?: "",
-                        tokenBalance = null,
-                        tokensReceived = null,
-                        tokensSent = null,
-                        followersCount = null,
-                        followingCount = null,
-                        isFollowing = null,
-                        gifterLevel = null,
-                        gifterLevelName = null,
-                        giftsSent = null,
-                        giftsReceived = null
-                    )
-                    val lastMsg = detail.lastMessageContent?.let { content ->
-                        Message(
-                            id = detail.lastMessageId ?: "",
-                            senderId = userId,
-                            receiverId = detail.partnerId,
-                            content = content,
-                            createdAt = detail.lastMessageAt,
-                            attachments = detail.lastMessageAttachments.orEmpty()
-                        )
-                    }
-                    val overview = ConversationOverview(detail.userA, detail.userB, detail.lastMessageAt)
-                    ConversationUi(overview, profile, lastMsg, detail.unreadCount)
-                }
-                val valid = uiModels.filter { it.lastMessage != null }
-                val sorted = valid.sortedByDescending { it.overview.lastMessageAt }
-                val deduped = sorted.distinctBy { it.partner.userId }
-                adapter.submitList(deduped)
-                
-                try {
-                    prefs.edit().putString(cacheKey, gson.toJson(deduped)).apply()
-                } catch (_: Exception) { }
-            } catch (e: Exception) {
-                // Log.w("ChatFragment", "Error loading conversations", e)
-            }
-        }
-    }
 
     /**
      * Select a conversation to display messages and set up chat UI.
