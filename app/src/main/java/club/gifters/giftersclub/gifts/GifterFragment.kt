@@ -5,6 +5,7 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -59,7 +60,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
         val textFollowers = view.findViewById<TextView>(R.id.textFollowers)
         val textFollowing = view.findViewById<TextView>(R.id.textFollowing)
         val textBio     = view.findViewById<TextView>(R.id.textBio)
-        val btnFollow   = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnFollow)
+        val btnFollow   = view.findViewById<TextView>(R.id.btnFollow)
         val btnShareProfile = view.findViewById<ImageView>(R.id.btnShareProfile)
 
         // Toolbar title changes as header collapses
@@ -201,7 +202,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
         }
     }
 
-    private fun updateFollowButton(btn: MaterialButton) {
+    private fun updateFollowButton(btn: TextView) {
         if (isFriend) {
             btn.text = "Friends"
             btn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#22c55e"))
