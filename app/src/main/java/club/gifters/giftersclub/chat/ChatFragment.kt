@@ -272,9 +272,9 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 val sortedConvs = uiList.sortedByDescending { Instant.parse(it.overview.lastMessageAt).toEpochMilli() }
                     .distinctBy { it.partner.userId }
 
-                // build merged list of headers + conversations
+                // build merged list: static notification headers always, then chats
                 val items = mutableListOf<ChatListItem>()
-                if (lastFollow > 0L) items.add(
+                items.add(
                     ChatListItem.Header(
                         HeaderType.NEW_FOLLOWERS,
                         getString(R.string.new_followers),
@@ -282,7 +282,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                         lastFollow
                     )
                 )
-                if (lastActivity > 0L) items.add(
+                items.add(
                     ChatListItem.Header(
                         HeaderType.ACTIVITY,
                         getString(R.string.activity),
@@ -290,7 +290,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                         lastActivity
                     )
                 )
-                if (lastSystem > 0L) items.add(
+                items.add(
                     ChatListItem.Header(
                         HeaderType.SYSTEM_NOTIFICATIONS,
                         getString(R.string.system_notifications),
