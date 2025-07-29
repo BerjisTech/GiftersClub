@@ -86,12 +86,16 @@ class ChatListAdapter(
             tvName.text = item.title
             tvPreview.text = item.preview
             tvUnread.visibility = View.GONE
-            tvTime.visibility = View.VISIBLE
-            tvTime.text = DateUtils.getRelativeTimeSpanString(
-                item.time,
-                System.currentTimeMillis(),
-                DateUtils.MINUTE_IN_MILLIS
-            )
+            if (item.time > 0L) {
+                tvTime.visibility = View.VISIBLE
+                tvTime.text = DateUtils.getRelativeTimeSpanString(
+                    item.time,
+                    System.currentTimeMillis(),
+                    DateUtils.MINUTE_IN_MILLIS
+                )
+            } else {
+                tvTime.visibility = View.GONE
+            }
         }
     }
 
