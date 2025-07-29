@@ -212,8 +212,100 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
 
 
     /**
-     * Load the list of conversation overviews and bind to adapter.
+     * Load and merge static notification headers and chat conversations,
+     * then display in a single sorted list.
      */
+    private fun loadChatList() {
+        lifecycleScope.launch {
+            try {
+                // fetch notifications
+                val notes = notificationApi.getNotifications("*", "eq.$userId")
+                val followNotes = notes.filter { it.type == "follow" || it.type == "friend_request" }
+                val lastFollow = followNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
+                val activityNotes = notes.filter {
+                    it.type != "transaction" && it.type != "withdrawal" && it.type != "follow" && it.type != "friend_request"
+                }
+                val lastActivity = activityNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
+                val systemNotes = notes.filter { it.type == "transaction" || it.type == "withdrawal" }
+                val lastSystem = systemNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
+
+                // fetch conversation overviews
+                val convs = chatApi.getConversationDetails()
+                val uiList = convs.mapNotNull { detail ->
+                    val profile = Profile(
+                        id = detail.partnerId,
+                        userId = detail.partnerId,
+                        email = null,
+                        username = detail.partnerName ?: "",
+                        name = detail.partnerName,
+                        bio = null,
+                        image = detail.partnerImage ?: "",
+                        tokenBalance = null,
+                        tokensReceived = null,
+                        tokensSent = null,
+                        followersCount = null,
+                        followingCount = null,
+                        isFollowing = null,
+                        gifterLevel = null,
+                        gifterLevelName = null,
+                        giftsSent = null,
+                        giftsReceived = null
+                    )
+                    detail.lastMessageContent?.let { content ->
+                        val msg = Message(
+                            id = detail.lastMessageId.orEmpty(),
+                            senderId = userId,
+                            receiverId = detail.partnerId,
+                            content = content,
+                            createdAt = detail.lastMessageAt,
+                            attachments = detail.lastMessageAttachments.orEmpty()
+                        )
+                        ConversationUi(
+                            ConversationOverview(detail.userA, detail.userB, detail.lastMessageAt),
+                            profile,
+                            msg,
+                            detail.unreadCount
+                        )
+                    }
+                }
+                // sort and dedupe
+                val sortedConvs = uiList.sortedByDescending { Instant.parse(it.overview.lastMessageAt).toEpochMilli() }
+                    .distinctBy { it.partner.userId }
+
+                // build merged list of headers + conversations
+                val items = mutableListOf<ChatListItem>()
+                if (lastFollow > 0L) items.add(
+                    ChatListItem.Header(
+                        HeaderType.NEW_FOLLOWERS,
+                        getString(R.string.new_followers),
+                        getString(R.string.new_followers_preview),
+                        lastFollow
+                    )
+                )
+                if (lastActivity > 0L) items.add(
+                    ChatListItem.Header(
+                        HeaderType.ACTIVITY,
+                        getString(R.string.activity),
+                        getString(R.string.activity_preview),
+                        lastActivity
+                    )
+                )
+                if (lastSystem > 0L) items.add(
+                    ChatListItem.Header(
+                        HeaderType.SYSTEM_NOTIFICATIONS,
+                        getString(R.string.system_notifications),
+                        getString(R.string.system_notifications_preview),
+                        lastSystem
+                    )
+                )
+                sortedConvs.forEach { items.add(ChatListItem.Conversation(it)) }
+                items.sortByDescending { it.time }
+                chatListAdapter.submitList(items)
+            } catch (_: Exception) {
+                // ignore fetch errors
+            }
+        }
+    }
 
     /**
      * Select a conversation to display messages and set up chat UI.
