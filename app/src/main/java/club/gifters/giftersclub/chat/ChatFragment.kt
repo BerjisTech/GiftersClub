@@ -298,6 +298,10 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                         lastSystem
                     )
                 )
+                if (sortedConvs.isEmpty()) {
+                    // show placeholder when no chats
+                    items.add(ChatListItem.Empty)
+                }
                 sortedConvs.forEach { items.add(ChatListItem.Conversation(it)) }
                 items.sortByDescending { it.time }
                 chatListAdapter.submitList(items)
