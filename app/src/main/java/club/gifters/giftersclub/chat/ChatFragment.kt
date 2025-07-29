@@ -47,6 +47,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import retrofit2.HttpException
 import java.time.Instant
+import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
@@ -242,13 +243,13 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 emptyList()
             }
             val followNotes = notes.filter { it.type == "follow" || it.type == "friend_request" }
-            val lastFollow = followNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
+            val lastFollow = followNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
             val activityNotes = notes.filter {
                 it.type != "transaction" && it.type != "withdrawal" && it.type != "follow" && it.type != "friend_request"
             }
-            val lastActivity = activityNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
+            val lastActivity = activityNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
             val systemNotes = notes.filter { it.type == "transaction" || it.type == "withdrawal" }
-            val lastSystem = systemNotes.maxOfOrNull { Instant.parse(it.createdAt).toEpochMilli() } ?: 0L
+            val lastSystem = systemNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
 
             // fetch conversation overviews, but continue on error
             val sortedConvs = try {
@@ -286,7 +287,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                             detail.unreadCount
                         )
                     }
-                }.sortedByDescending { Instant.parse(it.overview.lastMessageAt).toEpochMilli() }
+                }.sortedByDescending { parseInstant(it.overview.lastMessageAt)?.toEpochMilli() ?: 0L }
                  .distinctBy { it.partner.userId }
             } catch (_: Exception) {
                 emptyList()
