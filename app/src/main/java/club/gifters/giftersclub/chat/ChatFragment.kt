@@ -259,12 +259,15 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 emptyList()
             }
             val followNotes = notes.filter { it.type == "follow" || it.type == "friend_request" }
-            val lastFollow = followNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
+            val cutoff = Instant.now().minusSeconds(24 * 3600)
+            val followCount = followNotes.count { parseInstant(it.createdAt)?.isAfter(cutoff) == true }
             val activityNotes = notes.filter {
                 it.type != "transaction" && it.type != "withdrawal" && it.type != "follow" && it.type != "friend_request"
             }
-            val lastActivity = activityNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
+            val activityCount = activityNotes.count { parseInstant(it.createdAt)?.isAfter(cutoff) == true }
             val systemNotes = notes.filter { it.type == "transaction" || it.type == "withdrawal" }
+            val lastFollow = followNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
+            val lastActivity = activityNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
             val lastSystem = systemNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
 
             // fetch conversation overviews, but continue on error
