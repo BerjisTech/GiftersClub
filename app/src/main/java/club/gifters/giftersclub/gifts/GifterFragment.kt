@@ -170,6 +170,8 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
                         else -> ""
                     }
                 }.attach()
+                // default to Wishlists tab
+                viewPager.currentItem = 1
             }
         }
     }

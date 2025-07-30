@@ -178,7 +178,7 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
                 emptyTextView?.movementMethod = LinkMovementMethod.getInstance()
                 spannable
             } else {
-                "@${'$'}{username} has not uploaded anything yet"
+                "@${username} has not uploaded anything yet"
             }
         }
     }
