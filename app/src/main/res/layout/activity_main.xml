@@ -24,7 +24,7 @@
         app:layout_constraintBottom_toTopOf="@id/bottomNavView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/topAppBar"/>
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <FrameLayout
         android:id="@+id/mainContentContainer"
@@ -84,11 +84,3 @@
         app:menu="@menu/bottom_nav_menu" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-
-<!--
-For posts, check the search term against the post details stored in content column and prioritize #tags,  you can also check the comments table where content re lates to searchterm and fetch the
-posts from the post_id you get. Still on posts, check the searchterm agains name and username columns in profiles table and return the posts posted by the resulting users and order them by interaction ie most commented followed
-by most liked. Now you have 3 sets of posts results, 1: searchterm matches post.content, 2: searchterm matches comment.content 3: searchterm matches profiles.username or profiles.name order them in that order, the direct
-post.content matches come first, then followed by comments'content posts then laster from users that match search term. Also users don't return any results still so fix that and for live check live_streams.title and
-live_streams.description first then check searchterm against profiles name and username and fetch livestreams where host_id is one of those users and the live_streazm_status is live
--->

@@ -1,7 +1,12 @@
 package club.gifters.giftersclub.network
 
 import club.gifters.giftersclub.model.SearchQuery
+import retrofit2.Response
+import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Headers
+import retrofit2.http.POST
 import retrofit2.http.Query
 
 /**
@@ -19,4 +24,42 @@ interface SearchQueriesApi {
         @Query("order", encoded = true) order: String = "suggestion_index.desc,result_clicked_index.desc",
         @Query("limit") limit: Int = 10
     ): List<SearchQuery>
+
+    /**
+     * Fetch distinct queries for current user ordered by most recent.
+     */
+    @GET("search_queries")
+    suspend fun getUserSearchQueries(
+        @Query("select",   encoded = true) select: String = "query,created_at",
+        @Query("distinct", encoded = true) distinct: String = "query",
+        @Query("user_id",  encoded = true) userIdFilter: String,
+        @Query("order",    encoded = true) order: String = "created_at.desc",
+        @Query("limit") limit: Int = 10
+    ): List<SearchQuery>
+
+    /**
+     * Record a search event for current user.
+     */
+    @Headers("Prefer: return=representation")
+    @POST("search_queries")
+    suspend fun insertSearchQuery(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): List<SearchQuery>
+
+    /**
+     * Delete a specific search query for current user.
+     */
+    @DELETE("search_queries")
+    suspend fun deleteSearchQuery(
+        @Query("query",    encoded = true) queryFilter: String,
+        @Query("user_id",  encoded = true) userIdFilter: String
+    ): Response<Unit>
+
+    /**
+     * Delete all search queries for current user.
+     */
+    @DELETE("search_queries")
+    suspend fun deleteAllSearchQueries(
+        @Query("user_id", encoded = true) userIdFilter: String
+    ): Response<Unit>
 }

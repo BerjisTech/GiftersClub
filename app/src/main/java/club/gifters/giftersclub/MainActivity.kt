@@ -121,6 +121,10 @@ class MainActivity : AppCompatActivity() {
                 3 -> WishlistsFragment()
                 else -> PostsFragment()
             }
+            // check current fragment type and set padding accordingly
+            override fun getItemId(position: Int): Long {
+                return position.toLong()
+            }
         }
         // Link TabLayout and ViewPager2
         TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
@@ -133,6 +137,16 @@ class MainActivity : AppCompatActivity() {
                 .commit()
         }
 
+        // if viewpager tab is PostFragment, set layout_constraintTop_toBottomOf to @+id/topAppBar else set it to @+id/topTabLayout
+        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                if (position == 0) {
+                    viewPager.setPadding(0, 0, 0, 0)
+                } else {
+                    viewPager.setPadding(0, 150, 0, 0)
+                }
+            }
+        })
 
         // Setup bottom navigation
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavView)
