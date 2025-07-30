@@ -14,6 +14,8 @@ import club.gifters.giftersclub.model.FilteredWord
 import club.gifters.giftersclub.model.UserBlock
 import club.gifters.giftersclub.model.UserReport
 import club.gifters.giftersclub.model.UserSettings
+import club.gifters.giftersclub.model.BlockedUserItem
+import club.gifters.giftersclub.model.ReportedUserItem
 
 /**
  * Retrofit interface for fetching user profiles.
@@ -127,12 +129,42 @@ interface ProfileApi {
         @Query("blocked_user_id", encoded = true) blockedFilter: String
     ): Response<Unit>
 
+    /**
+     * Unblock all users blocked by the current user.
+     */
+    @DELETE("user_blocks")
+    suspend fun unblockAll(
+        @Query("blocker_user_id", encoded = true) blockerFilter: String
+    ): Response<Unit>
+
     /** Fetch user reports for current user */
     @GET("user_reports")
     suspend fun getUserReports(
         @Query("select", encoded = true) select: String = "*",
         @Query("reporter_user_id", encoded = true) reporterFilter: String
     ): List<UserReport>
+
+    /**
+     * Fetch blocked users with nested profile information (paginated).
+     */
+    @GET("user_blocks")
+    suspend fun getBlockedUserItems(
+        @Query("select", encoded = true) select: String = "blocked_user_id(user_id,username)",
+        @Query("blocker_user_id", encoded = true) blockerFilter: String,
+        @Query("limit", encoded = true) limit: Int,
+        @Query("offset", encoded = true) offset: Int
+    ): List<BlockedUserItem>
+
+    /**
+     * Fetch reported users with nested profile information (paginated).
+     */
+    @GET("user_reports")
+    suspend fun getReportedUserItems(
+        @Query("select", encoded = true) select: String = "reported_user_id(user_id,username),reason,status,created_at",
+        @Query("reporter_user_id", encoded = true) reporterFilter: String,
+        @Query("limit", encoded = true) limit: Int,
+        @Query("offset", encoded = true) offset: Int
+    ): List<ReportedUserItem>
 
     /** Report a user */
     @Headers("Prefer: return=representation")

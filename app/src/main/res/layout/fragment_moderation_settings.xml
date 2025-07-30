@@ -28,19 +28,20 @@
             android:layout_marginTop="8dp"
             android:text="Add Word" />
 
-        <Spinner
-            android:id="@+id/spinnerFilteredWords"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp" />
-
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnRemoveFilteredWord"
+            android:id="@+id/btnRemoveSelectedWords"
             style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Remove Selected" />
+            android:layout_marginTop="16dp"
+            android:text="Remove Selected"
+            android:enabled="false" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvFilteredWords"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" />
 
     </LinearLayout>
 </ScrollView>

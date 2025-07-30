@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:padding="16dp">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
@@ -27,20 +23,6 @@
             android:layout_height="wrap_content"
             android:text="Block User" />
 
-        <Spinner
-            android:id="@+id/spinnerBlockedUsers"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnUnblockUser"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Unblock Selected" />
-
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnReportUser"
             style="?attr/materialButtonOutlinedStyle"
@@ -49,11 +31,17 @@
             android:layout_marginTop="16dp"
             android:text="Report User" />
 
-        <Spinner
-            android:id="@+id/spinnerUserReports"
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/securitySubTabLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="24dp" />
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/securitySubViewPager"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:layout_marginTop="8dp" />
 
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>
