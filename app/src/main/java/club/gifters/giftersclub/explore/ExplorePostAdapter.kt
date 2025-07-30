@@ -22,7 +22,9 @@ import java.util.TimeZone
 /**
  * Adapter for showing post search results in Explore.
  */
-class ExplorePostAdapter : ListAdapter<Post, ExplorePostAdapter.VH>(Diff) {
+class ExplorePostAdapter(
+    private val onPostClick: (List<Post>, Int) -> Unit
+) : ListAdapter<Post, ExplorePostAdapter.VH>(Diff) {
     companion object {
         private val Diff = object : DiffUtil.ItemCallback<Post>() {
             override fun areItemsTheSame(old: Post, new: Post) = old.id == new.id
@@ -43,6 +45,10 @@ class ExplorePostAdapter : ListAdapter<Post, ExplorePostAdapter.VH>(Diff) {
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         holder.bind(getItem(position))
+        holder.itemView.setOnClickListener {
+            val pos = holder.bindingAdapterPosition
+            if (pos != RecyclerView.NO_POSITION) onPostClick(currentList, pos)
+        }
     }
 
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {

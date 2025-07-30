@@ -95,7 +95,10 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
                     togglePostSelection(post)
                 } else {
                     requireActivity().supportFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, PostsFragment.newInstance(post.id))
+                        .replace(
+                            R.id.mainContentContainer,
+                            PostsFragment.newInstanceForUser(post.id, requireNotNull(userId))
+                        )
                         .addToBackStack(null)
                         .commit()
                 }

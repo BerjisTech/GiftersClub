@@ -11,6 +11,7 @@ import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.gifts.PostsFragment
 import club.gifters.giftersclub.social.SubscriptionApiHolder
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -73,7 +74,12 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
         super.onViewCreated(view, savedInstanceState)
         val swipe = view.findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
         val rv = view.findViewById<RecyclerView>(R.id.rvPosts)
-        adapter = ExplorePostAdapter()
+        adapter = ExplorePostAdapter { list, pos ->
+            requireActivity().supportFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, PostsFragment.newInstanceFromList(list, pos))
+                .addToBackStack(null)
+                .commit()
+        }
         rv.layoutManager = GridLayoutManager(requireContext(), 2)
         rv.adapter = adapter
         swipe.isRefreshing = true

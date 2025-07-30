@@ -11,6 +11,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
@@ -29,9 +31,34 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     companion object {
         private const val TAG = "PostsFragment"
         private const val ARG_POST_ID = "post_id"
+        private const val ARG_LIST = "arg_list"
+        private const val ARG_START_POSITION = "start_position"
+        private const val ARG_USER_ID = "user_id"
 
         fun newInstance(postId: String): PostsFragment {
             val args = Bundle().apply { putString(ARG_POST_ID, postId) }
+            return PostsFragment().apply { arguments = args }
+        }
+
+        /**
+         * Instantiate with a preloaded list of posts and initial index.
+         */
+        fun newInstanceFromList(list: List<Post>, startPosition: Int): PostsFragment {
+            val args = Bundle().apply {
+                putString(ARG_LIST, Gson().toJson(list))
+                putInt(ARG_START_POSITION, startPosition)
+            }
+            return PostsFragment().apply { arguments = args }
+        }
+
+        /**
+         * Instantiate for user context so only that user's posts are shown.
+         */
+        fun newInstanceForUser(postId: String, userId: String): PostsFragment {
+            val args = Bundle().apply {
+                putString(ARG_POST_ID, postId)
+                putString(ARG_USER_ID, userId)
+            }
             return PostsFragment().apply { arguments = args }
         }
     }
@@ -98,21 +125,30 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         )
         pager.adapter = adapter
 
+        // If instantiated with explicit list, show it and return
+        arguments?.getString(ARG_LIST)?.let { json ->
+            val type = object : TypeToken<List<Post>>() {}.type
+            val list: List<Post> = Gson().fromJson(json, type)
+            adapter.submitList(list)
+            val pos = arguments?.getInt(ARG_START_POSITION) ?: 0
+            pager.setCurrentItem(pos, false)
+            swipeRefresh.isEnabled = false
+            return
+        }
+
         // Enable pull-to-refresh only when at top (first post)
         swipeRefresh.setOnChildScrollUpCallback { _, _ -> pager.currentItem != 0 }
         swipeRefresh.setOnRefreshListener {
-            // reset pagination and reload newest posts
             page = 0
             isLastPage = false
             hasRetry401 = false
             loadPosts(clear = true)
         }
 
-        val postId = arguments?.getString("post_id")
+        val postId = arguments?.getString(ARG_POST_ID)
         if (postId != null) {
             loadPostById(postId)
         } else {
-            // Load initial posts
             swipeRefresh.isRefreshing = true
             loadPosts(clear = true)
         }
@@ -216,29 +252,39 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         isLoading = true
         lifecycleScope.launch {
             try {
-                val currentUser = AuthUtils.getCurrentUserId(requireContext())
-                val feedParams = mapOf(
-                    "_user_id"           to currentUser,
-                    "_limit"             to limit,
-                    "_offset"            to page * limit,
-                    // "_per_author_limit"  to perAuthorLimit
-                )
-                val feedItems = api.getFeedPosts(feedParams)
-                val items = feedItems.map { f ->
-                    Post(
-                        id = f.id,
-                        userId = f.userId,
-                        content = f.content,
-                        quotePostId = null,
-                        replyCommentId = null,
-                        createdAt = f.createdAt,
-                        profile = f.profile,
-                        media = f.media,
-                        reactionCounts = null,
-                        accessType = f.accessType,
-                        price = f.price,
-                        tags = null
-                    )
+                val items: List<Post> = when (arguments?.getString(ARG_USER_ID)) {
+                    null -> {
+                        val currentUser = AuthUtils.getCurrentUserId(requireContext())
+                        val feedParams = mapOf(
+                            "_user_id" to currentUser,
+                            "_limit" to limit,
+                            "_offset" to page * limit
+                        )
+                        api.getFeedPosts(feedParams).map { f ->
+                            Post(
+                                id = f.id,
+                                userId = f.userId,
+                                content = f.content,
+                                quotePostId = null,
+                                replyCommentId = null,
+                                createdAt = f.createdAt,
+                                profile = f.profile,
+                                media = f.media,
+                                reactionCounts = null,
+                                accessType = f.accessType,
+                                price = f.price,
+                                tags = null
+                            )
+                        }
+                    }
+                    else -> {
+                        api.getUserPosts(
+                            order = "created_at.desc",
+                            limit = limit,
+                            offset = page * limit,
+                            userIdFilter = "eq.${arguments?.getString(ARG_USER_ID)}"
+                        )
+                    }
                 }
                 if (clear) adapter.submitList(items)
                 else adapter.submitList(adapter.currentList + items)
