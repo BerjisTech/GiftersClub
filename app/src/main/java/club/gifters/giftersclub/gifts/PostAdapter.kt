@@ -170,39 +170,35 @@ class PostAdapter(
             }
             timestamp.text = formatRelativeTime(post.createdAt)
             content.text = post.content ?: ""
-            // Gate subscription/paid posts: show placeholder if no access
+            // Gate subscription/paid posts: hide everything until access is checked
             val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
             val lockAction = itemView.findViewById<TextView>(R.id.tvLockAction)
             val mediaPager = itemView.findViewById<ViewPager2>(R.id.mediaPager)
             val indicatorLayout = itemView.findViewById<LinearLayout>(R.id.mediaIndicatorLayout)
             val postDetails = itemView.findViewById<View>(R.id.postDetails)
+            mediaPager.visibility = View.GONE
+            indicatorLayout.visibility = View.GONE
+            postDetails.visibility = View.GONE
             overlay.visibility = View.GONE
             scope.launch {
-            val hasAccess = if (AuthUtils.getCurrentUserId(itemView.context) == post.userId) {
-                true
-            } else {
-                when (post.accessType) {
+                val currentUser = AuthUtils.getCurrentUserId(itemView.context)
+                val hasAccess = if (currentUser == post.userId) true else when (post.accessType) {
                     "subscription" -> SubscriptionApiHolder.hasSubscription(post.userId)
                     "paid"         -> SubscriptionApiHolder.hasPostAccess(post.id)
                     else            -> true
                 }
-            }
                 if (!hasAccess) {
-                    mediaPager.visibility = View.GONE
-                    indicatorLayout.visibility = View.GONE
-                    postDetails.visibility = View.GONE
                     overlay.visibility = View.VISIBLE
                     lockAction.text = if (post.accessType == "subscription")
                         itemView.context.getString(R.string.subscribe_to_creator)
                     else
                         itemView.context.getString(R.string.purchase_access)
                     overlay.setOnClickListener { onLocked(post) }
-                    return@launch
+                } else {
+                    mediaPager.visibility = View.VISIBLE
+                    postDetails.visibility = View.VISIBLE
+                    overlay.visibility = View.GONE
                 }
-                // user has access: restore normal UI
-                mediaPager.visibility = View.VISIBLE
-                postDetails.visibility = View.VISIBLE
-                overlay.visibility = View.GONE
             }
             // Setup media carousel (images/videos)
             val mediaList = post.media ?: emptyList()

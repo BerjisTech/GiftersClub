@@ -68,32 +68,28 @@ class ExplorePostAdapter(
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private val timestampText: TextView = view.findViewById(R.id.timestampText)
         fun bind(post: Post) {
-            // Gate subscription/paid posts: show lock overlay if no access
+            // Gate subscription/paid posts: hide post UI and lock overlay until check completes
+            mediaPager.visibility = View.GONE
+            mediaIndicatorLayout.visibility = View.GONE
+            itemView.findViewById<View>(R.id.postDetails).visibility = View.GONE
+            val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
+            overlay.visibility = View.GONE
             scope.launch {
-                val ctx = itemView.context
-                val currentUser = AuthUtils.getCurrentUserId(ctx)
-                val hasAccess = if (post.userId == currentUser) {
-                    true
-                } else {
-                    when (post.accessType) {
-                        "subscription" -> SubscriptionApiHolder.hasSubscription(post.userId)
-                        "paid"         -> SubscriptionApiHolder.hasPostAccess(post.id)
-                        else            -> true
-                    }
+                val currentUser = AuthUtils.getCurrentUserId(itemView.context)
+                val hasAccess = if (currentUser == post.userId) true else when (post.accessType) {
+                    "subscription" -> SubscriptionApiHolder.hasSubscription(post.userId)
+                    "paid"         -> SubscriptionApiHolder.hasPostAccess(post.id)
+                    else            -> true
                 }
                 if (!hasAccess) {
-                    mediaPager.visibility = View.GONE
-                    mediaIndicatorLayout.visibility = View.GONE
-                    itemView.findViewById<View>(R.id.postDetails).visibility = View.GONE
-                    val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
                     overlay.visibility = View.VISIBLE
                     overlay.setOnClickListener { onLocked(post) }
-                    return@launch
+                } else {
+                    mediaPager.visibility = View.VISIBLE
+                    mediaIndicatorLayout.visibility = if (mediaPager.adapter?.itemCount ?: 0 > 1) View.VISIBLE else View.GONE
+                    itemView.findViewById<View>(R.id.postDetails).visibility = View.VISIBLE
+                    overlay.visibility = View.GONE
                 }
-                mediaPager.visibility = View.VISIBLE
-                mediaIndicatorLayout.visibility = if (mediaPager.adapter?.itemCount ?: 0 > 1) View.VISIBLE else View.GONE
-                itemView.findViewById<View>(R.id.postDetails).visibility = View.VISIBLE
-                itemView.findViewById<FrameLayout>(R.id.lockOverlay).visibility = View.GONE
             }
             // Navigate to full-post pager when tapping on details overlay
             val details = itemView.findViewById<View>(R.id.postDetails)
