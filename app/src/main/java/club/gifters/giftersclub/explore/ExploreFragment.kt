@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import android.util.Base64
 import org.json.JSONObject
 import retrofit2.HttpException
+import android.util.Log
 
 /**
  * Fragment for explore search with suggestions and tabbed results.
@@ -31,6 +32,7 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
     companion object {
         private const val TAG = "ExploreFragment"
     }
+
     private lateinit var etSearch: EditText
     private lateinit var rvSuggestions: RecyclerView
     private lateinit var suggestionAdapter: SuggestionAdapter
@@ -41,6 +43,7 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
     private lateinit var tvRecentClearAll: TextView
     private var isRecentExpanded = false
     private var recentFullList = emptyList<String>()
+    private val recentDisplayLimit = 3
     private lateinit var rvRecommendedQueries: RecyclerView
     private lateinit var recommendedAdapter: SuggestionAdapter
     private lateinit var tvRefreshRecommended: TextView
@@ -89,7 +92,7 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         tvRefreshRecommended.setOnClickListener { loadRecommendedQueries() }
 
         // Load initial recent and recommended queries
-        loadRecentQueries(3)
+        loadRecentQueries()
         loadRecommendedQueries()
 
         tabLayout = view.findViewById(R.id.tabLayout)
@@ -101,37 +104,38 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                 initialSearchContainer.visibility = View.GONE
                 // Log.d(TAG, "Suggest query='$q'")
                 // Log.d("ExploreFragment", "Using BASE_URL=${RetrofitClient.BASE_URL}")
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val results = RetrofitClient.searchQueriesApi.searchQueries(
-                    queryFilter = "ilike.*${q}*"
-                )
-                val suggestions = results.map { it.query }
-                // Log.d(TAG, "Suggestions count=${suggestions.size}")
-                if (suggestions.isNotEmpty()) {
-                    suggestionAdapter.submitList(suggestions)
-                    rvSuggestions.visibility = View.VISIBLE
-                } else {
-                    suggestionAdapter.submitList(emptyList())
-                    rvSuggestions.visibility = View.GONE
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        val results = RetrofitClient.searchQueriesApi.searchQueries(
+                            queryFilter = "ilike.*${q}*"
+                        )
+                        val suggestions = results.map { it.query }
+                        // Log.d(TAG, "Suggestions count=${suggestions.size}")
+                        if (suggestions.isNotEmpty()) {
+                            suggestionAdapter.submitList(suggestions)
+                            rvSuggestions.visibility = View.VISIBLE
+                        } else {
+                            suggestionAdapter.submitList(emptyList())
+                            rvSuggestions.visibility = View.GONE
+                        }
+                    } catch (e: HttpException) {
+                        val url = e.response()?.raw()?.request?.url
+                        val code = e.code()
+                        val errorBody = e.response()?.errorBody()?.string()
+                        // Log.w(TAG, "Suggestion fetch failed HTTP $code for $url: $errorBody")
+                        suggestionAdapter.submitList(emptyList())
+                        rvSuggestions.visibility = View.GONE
+                    } catch (e: Exception) {
+                        // Log.w(TAG, "Suggestion fetch failed", e)
+                        suggestionAdapter.submitList(emptyList())
+                        rvSuggestions.visibility = View.GONE
+                    }
                 }
-            } catch (e: HttpException) {
-                val url = e.response()?.raw()?.request?.url
-                val code = e.code()
-                val errorBody = e.response()?.errorBody()?.string()
-                // Log.w(TAG, "Suggestion fetch failed HTTP $code for $url: $errorBody")
-                suggestionAdapter.submitList(emptyList())
-                rvSuggestions.visibility = View.GONE
-            } catch (e: Exception) {
-                // Log.w(TAG, "Suggestion fetch failed", e)
-                suggestionAdapter.submitList(emptyList())
-                rvSuggestions.visibility = View.GONE
-            }
-        }
             } else {
                 suggestionAdapter.submitList(emptyList())
                 rvSuggestions.visibility = View.GONE
                 initialSearchContainer.visibility = View.VISIBLE
+                loadRecentQueries()
             }
         }
 
@@ -154,8 +158,16 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         // record search event
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                RetrofitClient.searchQueriesApi.insertSearchQuery(mapOf("query" to query))
-            } catch (_: Exception) {
+                // record the search event (tab is required by table schema)
+                val body = mutableMapOf<String, Any>(
+                    "query" to query,
+                    "tab" to tabTitles.getOrNull(viewPager.currentItem)?.lowercase().orEmpty()
+                )
+                getCurrentUserId()?.let { uid -> body["user_id"] = uid }
+                RetrofitClient.searchQueriesApi.insertSearchQuery(body)
+                loadRecentQueries()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to record search query", e)
             }
         }
         // Log.d("ExploreFragment", "Using BASE_URL=${RetrofitClient.BASE_URL}")
@@ -173,7 +185,11 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                         2 -> ExplorePostsFragment.newInstanceFromList(result.photos)
                         3 -> ExploreUsersFragment.newInstanceFromList(result.users)
                         4 -> ExploreLiveFragment.newInstanceFromList(result.live)
-                        else -> ExploreTopFragment.newInstance(result.top, result.users, result.live)
+                        else -> ExploreTopFragment.newInstance(
+                            result.top,
+                            result.users,
+                            result.live
+                        )
                     }
                 }
                 TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
@@ -205,12 +221,21 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                     viewPager.adapter = object : FragmentStateAdapter(this@ExploreFragment) {
                         override fun getItemCount() = tabTitles.size
                         override fun createFragment(position: Int) = when (position) {
-                            0 -> ExploreTopFragment.newInstance(emptyList(), emptyList(), emptyList())
+                            0 -> ExploreTopFragment.newInstance(
+                                emptyList(),
+                                emptyList(),
+                                emptyList()
+                            )
+
                             1 -> ExplorePostsFragment.newInstanceFromList(emptyList())
                             2 -> ExplorePostsFragment.newInstanceFromList(emptyList())
                             3 -> ExploreUsersFragment.newInstanceFromList(emptyList())
                             4 -> ExploreLiveFragment.newInstanceFromList(emptyList())
-                            else -> ExploreTopFragment.newInstance(emptyList(), emptyList(), emptyList())
+                            else -> ExploreTopFragment.newInstance(
+                                emptyList(),
+                                emptyList(),
+                                emptyList()
+                            )
                         }
                     }
                     TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
@@ -229,39 +254,57 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         val parts = token.split('.')
         if (parts.size < 2) return null
         return try {
-            val decoded = String(Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP))
-            JSONObject(decoded).optString("sub", null)
+            val decoded = String(
+                Base64.decode(
+                    parts[1],
+                    Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
+                )
+            )
+            JSONObject(decoded).optString("sub").takeIf { it.isNotBlank() }
         } catch (_: Exception) {
             null
         }
     }
 
-    private fun loadRecentQueries(limit: Int) {
+    private fun loadRecentQueries() {
         val uid = getCurrentUserId() ?: return
         viewLifecycleOwner.lifecycleScope.launch {
             try {
+                Log.d(TAG, "loadRecentQueries: userId=$uid")
                 val results = RetrofitClient.searchQueriesApi.getUserSearchQueries(
-                    userIdFilter = "eq.$uid",
-                    limit = limit
+                    userIdFilter = "eq.$uid"
                 )
+                Log.d(TAG, "loadRecentQueries: fetched ${results.size} recents")
                 recentFullList = results.map { it.query }
                 isRecentExpanded = false
                 updateRecentDisplay()
-            } catch (_: Exception) {
+            } catch (e: HttpException) {
+                val url = e.response()?.raw()?.request?.url
+                val code = e.code()
+                val errorBody = e.response()?.errorBody()?.string()
+                Log.w(TAG, "Recent fetch failed HTTP $code for $url: $errorBody")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to load recent queries", e)
             }
         }
     }
 
     private fun updateRecentDisplay() {
-        val display = if (!isRecentExpanded && recentFullList.size > 3) {
-            recentFullList.take(3)
+        val display = if (!isRecentExpanded && recentFullList.size > recentDisplayLimit) {
+            recentFullList.take(recentDisplayLimit)
         } else {
             recentFullList
         }
+        Log.d(
+            TAG,
+            "updateRecentDisplay: displayCount=${display.size}, fullList=${recentFullList.size}, expanded=$isRecentExpanded"
+        )
         recentAdapter.submitList(display)
         rvRecentQueries.visibility = if (display.isNotEmpty()) View.VISIBLE else View.GONE
-        tvRecentSeeMore.visibility = if (!isRecentExpanded && recentFullList.size > 3) View.VISIBLE else View.GONE
-        tvRecentClearAll.visibility = if (isRecentExpanded && recentFullList.isNotEmpty()) View.VISIBLE else View.GONE
+        tvRecentSeeMore.visibility =
+            if (!isRecentExpanded && recentFullList.size > recentDisplayLimit) View.VISIBLE else View.GONE
+        tvRecentClearAll.visibility =
+            if (isRecentExpanded && recentFullList.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun toggleRecentExpansion() {
@@ -301,13 +344,31 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
     private fun loadRecommendedQueries() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val results = RetrofitClient.searchQueriesApi.searchQueries(
-                    queryFilter = "not.is.null"
+                val uid = getCurrentUserId()
+                Log.d(TAG, "loadRecommendedQueries: excludeUid=$uid")
+                // Fetch raw queries and group locally to compute frequencies
+                val raw = RetrofitClient.searchQueriesApi.searchRecommendedQueries(
+                    userId = "not.eq.$uid",
                 )
-                val list = results.map { it.query }
-                recommendedAdapter.submitList(list)
-                rvRecommendedQueries.visibility = if (list.isNotEmpty()) View.VISIBLE else View.GONE
-            } catch (_: Exception) {
+                val freq = raw.groupingBy { it.query }.eachCount()
+                val trending = freq.entries
+                    .sortedByDescending { it.value }
+                    .map { it.key }
+                    .take(10)
+                Log.d(
+                    TAG,
+                    "loadRecommendedQueries: computed ${trending.size} trending from ${raw.size} raw"
+                )
+                recommendedAdapter.submitList(trending)
+                rvRecommendedQueries.visibility =
+                    if (trending.isNotEmpty()) View.VISIBLE else View.GONE
+            } catch (e: HttpException) {
+                val url = e.response()?.raw()?.request?.url
+                val code = e.code()
+                val errorBody = e.response()?.errorBody()?.string()
+                Log.w(TAG, "Recommended fetch failed HTTP $code for $url: $errorBody")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to load recommended queries", e)
             }
         }
     }

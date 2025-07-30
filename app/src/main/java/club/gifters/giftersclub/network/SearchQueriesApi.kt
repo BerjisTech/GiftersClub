@@ -18,11 +18,25 @@ interface SearchQueriesApi {
      */
     @GET("search_queries")
     suspend fun searchQueries(
-        @Query("select",   encoded = true) select: String   = "query",
+        @Query("select", encoded = true) select: String = "query",
         @Query("distinct", encoded = true) distinct: String = "query",
-        @Query("query") queryFilter: String,
-        @Query("order", encoded = true) order: String = "suggestion_index.desc,result_clicked_index.desc",
+        @Query("query") queryFilter: String? = null,
+        @Query("user_id", encoded = true) userIdFilter: String? = null,
+        @Query(
+            "order",
+            encoded = true
+        ) order: String = "suggestion_index.desc,result_clicked_index.desc",
         @Query("limit") limit: Int = 10
+    ): List<SearchQuery>
+
+    /**
+     * Fetch querry suggestions count(query) as query_frequency group by query where user is not passed user_id ie current user
+     */
+    @GET("search_queries")
+    suspend fun searchRecommendedQueries(
+        @Query("select", encoded = true) select: String = "query",
+        @Query("user_id", encoded = true) userId: String,
+        @Query("limit") limit: Int = 1000
     ): List<SearchQuery>
 
     /**
@@ -30,10 +44,9 @@ interface SearchQueriesApi {
      */
     @GET("search_queries")
     suspend fun getUserSearchQueries(
-        @Query("select",   encoded = true) select: String = "query,created_at",
-        @Query("distinct", encoded = true) distinct: String = "query",
-        @Query("user_id",  encoded = true) userIdFilter: String,
-        @Query("order",    encoded = true) order: String = "created_at.desc",
+        @Query("select", encoded = true) select: String = "query,created_at",
+        @Query("user_id", encoded = true) userIdFilter: String,
+        @Query("order", encoded = true) order: String = "created_at.desc",
         @Query("limit") limit: Int = 10
     ): List<SearchQuery>
 
@@ -51,8 +64,8 @@ interface SearchQueriesApi {
      */
     @DELETE("search_queries")
     suspend fun deleteSearchQuery(
-        @Query("query",    encoded = true) queryFilter: String,
-        @Query("user_id",  encoded = true) userIdFilter: String
+        @Query("query", encoded = true) queryFilter: String,
+        @Query("user_id", encoded = true) userIdFilter: String
     ): Response<Unit>
 
     /**
