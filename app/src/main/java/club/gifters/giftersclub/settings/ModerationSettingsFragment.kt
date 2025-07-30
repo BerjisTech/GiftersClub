@@ -34,7 +34,7 @@ class ModerationSettingsFragment : Fragment(R.layout.fragment_moderation_setting
         rvFilteredWords = view.findViewById(R.id.rvFilteredWords)
 
         adapter = FilteredWordsAdapter(
-            onItemSelectionChanged = { count -> btnRemoveSelected.isEnabled = count > 0 },
+            onItemSelectionChanged = { count -> btnRemoveSelected.visibility = if (count > 0) View.VISIBLE else View.GONE },
             onRemoveClick = { word -> removeWords(listOf(word)) }
         )
         rvFilteredWords.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())

@@ -32,7 +32,6 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
     private val profileApi = RetrofitClient.profileApi
     private var userId: String = ""
     private lateinit var ivAvatar: ImageView
-    private lateinit var btnChooseAvatar: MaterialButton
     private lateinit var etUsername: TextInputEditText
     private lateinit var etDisplayName: TextInputEditText
     private lateinit var etBio: TextInputEditText
@@ -43,7 +42,6 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
         super.onViewCreated(view, savedInstanceState)
         userId = AuthUtils.getCurrentUserId(requireContext()) ?: return
         ivAvatar = view.findViewById(R.id.ivAvatar)
-        btnChooseAvatar = view.findViewById(R.id.btnChooseAvatar)
         etUsername = view.findViewById(R.id.etUsername)
         etDisplayName = view.findViewById(R.id.etDisplayName)
         etBio = view.findViewById(R.id.etBio)
@@ -73,7 +71,7 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
             }
         }
 
-        btnChooseAvatar.setOnClickListener {
+        ivAvatar.setOnClickListener {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
                 type = "image/*"

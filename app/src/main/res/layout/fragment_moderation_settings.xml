@@ -2,6 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:padding="16dp">
 
     <LinearLayout
@@ -26,6 +27,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="5dp"
+            android:textSize="11sp"
+            app:cornerRadius="20dp"
             android:text="Add Word" />
 
         <com.google.android.material.button.MaterialButton
@@ -35,7 +40,12 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="Remove Selected"
-            android:enabled="false" />
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="5dp"
+            android:textSize="11sp"
+            app:cornerRadius="20dp"
+            android:visibility="gone"
+            android:layout_gravity="end"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvFilteredWords"

@@ -193,4 +193,6 @@
     <string name="_dislike_emoji">👎</string>
     <string name="account">Account</string>
     <string name="share_icon">Share icon</string>
+    <string name="username_to_block_report">Username to block/report</string>
+    <string name="change_avatar">Change Avatar</string>
 </resources>

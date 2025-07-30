@@ -37,7 +37,7 @@ class BlockedUsersFragment : Fragment(R.layout.fragment_blocked_users) {
         val recycler = view.findViewById<RecyclerView>(R.id.rvBlockedUsers)
 
         adapter = BlockedUsersAdapter(
-            onItemSelectionChanged = { count -> btnUnblockSelected.isEnabled = count > 0 },
+            onItemSelectionChanged = { count -> btnUnblockSelected.visibility = if (count > 0) View.VISIBLE else View.GONE },
             onUnblockClick = { item -> confirmUnblock(listOf(item.userId)) }
         )
         recycler.layoutManager = LinearLayoutManager(requireContext())
