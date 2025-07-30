@@ -15,6 +15,11 @@ import club.gifters.giftersclub.R
 import club.gifters.giftersclub.gifts.PostMediaAdapter
 import club.gifters.giftersclub.model.Post
 import coil.load
+import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.social.SubscriptionApiHolder
+import android.widget.FrameLayout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -23,7 +28,9 @@ import java.util.TimeZone
  * Adapter for showing post search results in Explore.
  */
 class ExplorePostAdapter(
-    private val onPostClick: (List<Post>, Int) -> Unit
+    private val scope: kotlinx.coroutines.CoroutineScope,
+    private val onPostClick: (List<Post>, Int) -> Unit,
+    private val onLocked: (Post) -> Unit
 ) : ListAdapter<Post, ExplorePostAdapter.VH>(Diff) {
     companion object {
         private val Diff = object : DiffUtil.ItemCallback<Post>() {
@@ -61,6 +68,39 @@ class ExplorePostAdapter(
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private val timestampText: TextView = view.findViewById(R.id.timestampText)
         fun bind(post: Post) {
+            // Gate subscription/paid posts: show lock overlay if no access
+            scope.launch {
+                val ctx = itemView.context
+                val currentUser = AuthUtils.getCurrentUserId(ctx)
+                val hasAccess = if (post.userId == currentUser) {
+                    true
+                } else {
+                    when (post.accessType) {
+                        "subscription" -> SubscriptionApiHolder.hasSubscription(post.userId)
+                        "paid"         -> SubscriptionApiHolder.hasPostAccess(post.id)
+                        else            -> true
+                    }
+                }
+                if (!hasAccess) {
+                    mediaPager.visibility = View.GONE
+                    mediaIndicatorLayout.visibility = View.GONE
+                    itemView.findViewById<View>(R.id.postDetails).visibility = View.GONE
+                    val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
+                    overlay.visibility = View.VISIBLE
+                    overlay.setOnClickListener { onLocked(post) }
+                    return@launch
+                }
+                mediaPager.visibility = View.VISIBLE
+                mediaIndicatorLayout.visibility = if (mediaPager.adapter?.itemCount ?: 0 > 1) View.VISIBLE else View.GONE
+                itemView.findViewById<View>(R.id.postDetails).visibility = View.VISIBLE
+                itemView.findViewById<FrameLayout>(R.id.lockOverlay).visibility = View.GONE
+            }
+            // Navigate to full-post pager when tapping on details overlay
+            val details = itemView.findViewById<View>(R.id.postDetails)
+            details.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) onPostClick(currentList, pos)
+            }
             post.profile?.let { p ->
                 usernameText.text = p.username
                 if (p.image.isNotBlank()) {

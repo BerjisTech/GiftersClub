@@ -74,12 +74,27 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
         super.onViewCreated(view, savedInstanceState)
         val swipe = view.findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
         val rv = view.findViewById<RecyclerView>(R.id.rvPosts)
-        adapter = ExplorePostAdapter { list, pos ->
-            requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.mainContentContainer, PostsFragment.newInstanceFromList(list, pos))
-                .addToBackStack(null)
-                .commit()
-        }
+        adapter = ExplorePostAdapter(
+            viewLifecycleOwner.lifecycleScope,
+            onPostClick = { list, pos ->
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .replace(
+                        R.id.mainContentContainer,
+                        PostsFragment.newInstanceFromList(list, pos)
+                    )
+                    .addToBackStack(null)
+                    .commit()
+            },
+            onLocked = { post ->
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .replace(
+                        R.id.mainContentContainer,
+                        PostsFragment.newInstance(post.id)
+                    )
+                    .addToBackStack(null)
+                    .commit()
+            }
+        )
         rv.layoutManager = GridLayoutManager(requireContext(), 2)
         rv.adapter = adapter
         swipe.isRefreshing = true

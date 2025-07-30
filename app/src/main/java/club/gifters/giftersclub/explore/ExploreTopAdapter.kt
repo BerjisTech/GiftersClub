@@ -21,13 +21,21 @@ import club.gifters.giftersclub.gifts.PostMediaAdapter
 import club.gifters.giftersclub.model.LiveStream
 import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.model.Profile
+import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.social.SubscriptionApiHolder
+import android.widget.FrameLayout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * Adapter for mixed explore 'Top' feed (posts, users, live streams).
  * @param onUserClick optional callback invoked when a user item is clicked.
  */
 class ExploreTopAdapter(
-    private val onUserClick: (Profile) -> Unit = {}
+    private val scope: kotlinx.coroutines.CoroutineScope,
+    private val onPostClick: (List<Post>, Int) -> Unit = { _, _ -> },
+    private val onUserClick: (Profile) -> Unit = {},
+    private val onLocked: (Post) -> Unit = {}
 ) : ListAdapter<Any, RecyclerView.ViewHolder>(Diff) {
     companion object {
         const val TYPE_POST = 0
@@ -93,7 +101,7 @@ class ExploreTopAdapter(
         }
     }
 
-    private class PostVH(view: View) : RecyclerView.ViewHolder(view) {
+    private inner class PostVH(view: View) : RecyclerView.ViewHolder(view) {
         private val avatarImage: com.google.android.material.imageview.ShapeableImageView =
             view.findViewById(R.id.avatarImage)
         private val usernameText: TextView = view.findViewById(R.id.usernameText)
@@ -105,6 +113,40 @@ class ExploreTopAdapter(
 
         fun bind(item: Any) {
             val post = item as Post
+            // Gate subscription/paid posts: paywall overlay in top mixed feed
+            scope.launch {
+                val ctx = itemView.context
+                val currentUser = AuthUtils.getCurrentUserId(ctx)
+                val hasAccess = if (post.userId == currentUser) {
+                    true
+                } else {
+                    when (post.accessType) {
+                        "subscription" -> SubscriptionApiHolder.hasSubscription(post.userId)
+                        "paid"         -> SubscriptionApiHolder.hasPostAccess(post.id)
+                        else            -> true
+                    }
+                }
+                if (!hasAccess) {
+                    mediaPager.visibility = View.GONE
+                    mediaIndicatorLayout.visibility = View.GONE
+                    itemView.findViewById<View>(R.id.postDetails).visibility = View.GONE
+                    val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
+                    overlay.visibility = View.VISIBLE
+                    overlay.setOnClickListener { onLocked(post) }
+                    return@launch
+                }
+                mediaPager.visibility = View.VISIBLE
+                mediaIndicatorLayout.visibility = if (mediaPager.adapter?.itemCount ?: 0 > 1) View.VISIBLE else View.GONE
+                itemView.findViewById<View>(R.id.postDetails).visibility = View.VISIBLE
+                itemView.findViewById<FrameLayout>(R.id.lockOverlay).visibility = View.GONE
+            }
+            // click navigates to full post view, paging through only posts in this mixed list
+            val details = itemView.findViewById<View>(R.id.postDetails)
+            details.setOnClickListener {
+                val allPosts = currentList.filterIsInstance<Post>()
+                val idx = allPosts.indexOf(post)
+                if (idx >= 0) onPostClick(allPosts, idx)
+            }
             post.profile?.let { p ->
                 usernameText.text = p.username
                 if (p.image.isNotBlank()) {

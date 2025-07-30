@@ -5,8 +5,10 @@ import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.lifecycleScope
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.gifts.GifterFragment
+import club.gifters.giftersclub.gifts.PostsFragment
 import club.gifters.giftersclub.model.LiveStream
 import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.model.Profile
@@ -43,12 +45,33 @@ class ExploreTopFragment : Fragment(R.layout.fragment_explore_top) {
                 if (rv.adapter?.getItemViewType(position) == ExploreTopAdapter.TYPE_POST) 1 else 2
         }
         rv.layoutManager = grid
-        val adapter = ExploreTopAdapter { profile ->
-            requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.mainContentContainer, GifterFragment.newInstance(profile.username))
-                .addToBackStack(null)
-                .commit()
-        }
+        val adapter = ExploreTopAdapter(
+            viewLifecycleOwner.lifecycleScope,
+            onPostClick = { posts, pos ->
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .replace(
+                        R.id.mainContentContainer,
+                        club.gifters.giftersclub.gifts.PostsFragment.newInstanceFromList(posts, pos)
+                    )
+                    .addToBackStack(null)
+                    .commit()
+            },
+            onUserClick = { profile ->
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .replace(R.id.mainContentContainer, GifterFragment.newInstance(profile.username))
+                    .addToBackStack(null)
+                    .commit()
+            }
+            , onLocked = { post ->
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .replace(
+                        R.id.mainContentContainer,
+                        PostsFragment.newInstance(post.id)
+                    )
+                    .addToBackStack(null)
+                    .commit()
+            }
+        )
         rv.adapter = adapter
 
         arguments?.let { args ->
