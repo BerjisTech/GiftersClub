@@ -195,4 +195,10 @@
     <string name="share_icon">Share icon</string>
     <string name="username_to_block_report">Username to block/report</string>
     <string name="change_avatar">Change Avatar</string>
+    <string name="x">X</string>
+    <string name="check_these_out">Check these out</string>
+    <string name="refresh">Refresh ↻</string>
+    <string name="load_more">Load more ▼</string>
+    <string name="clear_all">Clear all</string>
+    <string name="history_icon">⌛</string>
 </resources>

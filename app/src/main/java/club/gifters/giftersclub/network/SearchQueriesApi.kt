@@ -26,7 +26,7 @@ interface SearchQueriesApi {
             "order",
             encoded = true
         ) order: String = "suggestion_index.desc,result_clicked_index.desc",
-        @Query("limit") limit: Int = 10
+        @Query("limit") limit: Int = 20
     ): List<SearchQuery>
 
     /**

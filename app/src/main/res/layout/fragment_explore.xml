@@ -49,7 +49,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="8dp"
-            android:text="Load more ▼"
+            android:text="@string/load_more"
             android:textColor="@color/gray_400"
             android:gravity="center"
             android:textAppearance="?attr/textAppearanceBody2"
@@ -60,11 +60,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="8dp"
-            android:text="Clear all"
+            android:text="@string/clear_all"
             android:textColor="@color/gray_400"
             android:gravity="center"
             android:textAppearance="?attr/textAppearanceBody2"
             android:visibility="gone" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@drawable/bg_sky_slate_gradient"
+            android:layout_margin="10dp"/>
 
         <!-- Recommended trending search queries -->
         <LinearLayout
@@ -80,16 +86,17 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Check these out"
-                android:textColor="@color/gray_800"
-                android:textAppearance="?attr/textAppearanceBody1" />
+                android:text="@string/check_these_out"
+                android:layout_marginBottom="10dp"
+                android:textStyle="bold"
+                android:textSize="20sp" />
 
             <TextView
                 android:id="@+id/tvRefreshRecommended"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="4dp"
-                android:text="refresh"
+                android:text="@string/refresh"
                 android:textColor="@color/gray_400"
                 android:textAppearance="?attr/textAppearanceBody2" />
         </LinearLayout>

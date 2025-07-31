@@ -275,7 +275,14 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                     userIdFilter = "eq.$uid"
                 )
                 Log.d(TAG, "loadRecentQueries: fetched ${results.size} recents")
-                recentFullList = results.map { it.query }
+                // filter results to only include non-empty queries, only diplay an item once, calculate frequencies and sort by frequencies
+                recentFullList = results
+                    .map { it.query }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .sortedByDescending { it.length } // Sort by length as a simple heuristic
+                    .take(10)
+                // recentFullList = results.map { it.query }
                 isRecentExpanded = false
                 updateRecentDisplay()
             } catch (e: HttpException) {
