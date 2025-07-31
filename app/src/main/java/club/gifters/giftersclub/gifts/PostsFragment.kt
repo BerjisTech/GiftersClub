@@ -104,8 +104,8 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                     .show(parentFragmentManager, "comments")
             },
             onShare = { post ->
-                val deepLink = "giftersclub://post/${post.id}"
-                val webLink = "https://gifters.club/post/${post.id}"
+                val deepLink = "giftersclub://posts/${post.id}"
+                val webLink = "https://gifters.club/posts/${post.id}"
                 val shareText = "Check out this post on Gifters Club!\n$webLink"
 
                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND)
