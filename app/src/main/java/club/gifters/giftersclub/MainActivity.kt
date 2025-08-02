@@ -254,12 +254,8 @@ class MainActivity : BaseActivity() {
             }
             when (item.itemId) {
                 R.id.nav_home -> {
-                    supportFragmentManager.popBackStack(
-                        null,
-                        androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
-                    )
-                    // Switch to the Posts tab
-                    findViewById<ViewPager2>(R.id.viewPagerMain).setCurrentItem(0, false)
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finish()
                     true
                 }
                 R.id.nav_friends -> {
