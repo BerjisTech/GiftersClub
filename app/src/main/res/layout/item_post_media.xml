@@ -6,8 +6,10 @@
     <ImageView
         android:id="@+id/mediaImageView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
         android:scaleType="fitCenter"
+        android:layout_gravity="center"
         android:contentDescription="Post image" />
 
     <VideoView

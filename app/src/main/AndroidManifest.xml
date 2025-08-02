@@ -18,9 +18,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GiftersClub"
         tools:targetApi="31">
-        <activity
-            android:name=".NoNetworkActivity"
-            android:exported="false" />
+        <activity android:name=".NoNetworkActivity" />
         <activity
             android:name=".AuthActivity"
             android:exported="true">

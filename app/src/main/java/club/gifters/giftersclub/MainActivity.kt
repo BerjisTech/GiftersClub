@@ -242,17 +242,31 @@ class MainActivity : BaseActivity() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavView)
         bottomNav.itemIconTintList = null
         bottomNav.setOnItemSelectedListener { item ->
+            if (NetworkUtils.isOnline(this)) {
+                startActivity(Intent(this, NoNetworkActivity::class.java))
+                finish()
+                return@setOnItemSelectedListener true
+            }
             when (item.itemId) {
                 R.id.nav_home -> {
                     supportFragmentManager.popBackStack(
                         null,
                         androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
                     )
+                    // Switch ViewPager to PostsFragment (index 0)
+                    findViewById<ViewPager2>(R.id.viewPagerMain).setCurrentItem(0, false)
+                    // Refresh posts list if fragment is attached
+                    val postsFragment = supportFragmentManager.findFragmentByTag("f0") as? PostsFragment
+                    postsFragment?.let {
+                        if (it.isAdded && it.view != null) {
+                            it.refreshPosts() // Assumes PostsFragment has a refreshPosts() method
+                        }
+                    }
                     true
                 }
                 R.id.nav_friends -> {
                     supportFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, 
+                        .replace(R.id.mainContentContainer,
                             FriendsFragment.newInstance(0)
                         )
                         .addToBackStack(null)

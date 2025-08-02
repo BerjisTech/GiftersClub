@@ -471,14 +471,14 @@
 
             <club.gifters.giftersclub.gifts.SafeGPUImageView
                 android:id="@+id/imageEditView"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:scaleType="centerCrop"
-                app:layout_constraintBottom_toBottomOf="@id/layoutEdit"
-                app:layout_constraintEnd_toEndOf="@id/layoutEdit"
-                app:layout_constraintStart_toStartOf="@id/layoutEdit"
-                app:layout_constraintTop_toTopOf="@id/layoutEdit" />
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/rvFilters" />
 
             <!-- Filter picker -->
             <androidx.recyclerview.widget.RecyclerView
