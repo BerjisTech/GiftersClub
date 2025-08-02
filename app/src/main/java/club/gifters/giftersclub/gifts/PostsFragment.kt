@@ -19,6 +19,7 @@ import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import club.gifters.giftersclub.social.SubscriptionApiHolder
+import club.gifters.giftersclub.social.PostViewApiHolder
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.launch
 import club.gifters.giftersclub.util.NetworkUtils
@@ -29,6 +30,8 @@ import club.gifters.giftersclub.util.NetworkUtils
  */
 class PostsFragment : Fragment(R.layout.fragment_posts) {
     private lateinit var pager: ViewPager2
+    private var lastViewedPostId: String? = null
+    private var lastViewStart: Long = 0L
     companion object {
         private const val TAG = "PostsFragment"
         private const val ARG_POST_ID = "post_id"
@@ -61,6 +64,17 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 putString(ARG_USER_ID, userId)
             }
             return PostsFragment().apply { arguments = args }
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // log view duration for last viewed post
+        lastViewedPostId?.let { prevId ->
+            val durationSec = ((System.currentTimeMillis() - lastViewStart) / 1000).toInt()
+            lifecycleScope.launch {
+                PostViewApiHolder.logPostView(prevId, durationSec)
+            }
         }
     }
 
@@ -149,14 +163,29 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         val postId = arguments?.getString(ARG_POST_ID)
         if (postId != null) {
             loadPostById(postId)
+            lastViewedPostId = postId
         } else {
             swipeRefresh.isRefreshing = true
             loadPosts(clear = true)
         }
+        // start timing for view_duration
+        lastViewStart = System.currentTimeMillis()
 
         // Listen for scroll to end to load more
         pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
+                // log duration for previous post view
+                val now = System.currentTimeMillis()
+                lastViewedPostId?.let { prevId ->
+                    val durationSec = ((now - lastViewStart) / 1000).toInt()
+                    lifecycleScope.launch {
+                        PostViewApiHolder.logPostView(prevId, durationSec)
+                    }
+                }
+                // start timing new post view
+                lastViewedPostId = adapter.currentList.getOrNull(position)?.id
+                lastViewStart = now
+                // load more if at end
                 if (!isLoading && !isLastPage && position >= adapter.itemCount - 1) {
                     loadPosts(clear = false)
                 }

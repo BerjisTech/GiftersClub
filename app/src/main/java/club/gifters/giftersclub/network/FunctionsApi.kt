@@ -54,6 +54,15 @@ interface FunctionsApi {
     ): Response<Unit>
 
     /**
+     * Record a post view via Supabase Edge Function.
+     * viewDuration is optional and measured in seconds.
+     */
+    @POST("log-post-view")
+    suspend fun logPostView(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /**
      * Update interaction privacy settings via Edge Function.
      */
     @POST("update-interaction-settings")
