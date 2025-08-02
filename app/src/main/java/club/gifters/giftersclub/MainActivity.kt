@@ -76,7 +76,14 @@ class MainActivity : BaseActivity() {
         // Track and compare installed version against DB records for update prompting
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val userId = AuthUtils.getCurrentUserId(this@MainActivity) ?: return@launch
+                val userId = AuthUtils.getCurrentUserId(this@MainActivity)
+                if (userId == null || userId.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        startActivity(Intent(this@MainActivity, AuthActivity::class.java))
+                        finish()
+                    }
+                    return@launch
+                }
                 val platform = "android"
                 val pkgInfo = packageManager.getPackageInfo(packageName, 0)
                 val currentVersion = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
