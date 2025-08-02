@@ -4,10 +4,11 @@ import android.os.Bundle
 import android.content.Intent
 import club.gifters.giftersclub.AuthActivity
 import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.BaseActivity
 import androidx.appcompat.app.AppCompatActivity
 import club.gifters.giftersclub.gifts.PostsFragment
 
-class PostsActivity : AppCompatActivity() {
+class PostsActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

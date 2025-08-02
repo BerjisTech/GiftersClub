@@ -3,6 +3,7 @@ package club.gifters.giftersclub
 import club.gifters.giftersclub.network.RetrofitClient
 
 import android.os.Bundle
+import club.gifters.giftersclub.BaseActivity
 import androidx.appcompat.app.AppCompatActivity
 import android.view.View
 import com.google.android.material.appbar.MaterialToolbar
@@ -36,8 +37,19 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
+import androidx.cardview.widget.CardView
+import android.widget.Button
+import android.widget.TextView
+import android.net.Uri
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import kotlinx.coroutines.withContext
+import java.io.IOException
+import retrofit2.HttpException
+import club.gifters.giftersclub.util.NetworkUtils
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
     companion object {
         private const val NOTIF_PERMISSION_REQUEST_CODE = 1001
     }
@@ -51,6 +63,95 @@ class MainActivity : AppCompatActivity() {
         }
         RetrofitClient.init(this)
         setContentView(R.layout.activity_main)
+
+
+        // Global offline overlay (visible when no network)
+        val offlineOverlay = findViewById<View>(R.id.noNetworkOverlay)
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    runOnUiThread { offlineOverlay.visibility = View.GONE }
+                }
+
+                override fun onLost(network: Network) {
+                    runOnUiThread { offlineOverlay.visibility = View.VISIBLE }
+                }
+            })
+        } else {
+            offlineOverlay.visibility = if (NetworkUtils.isOnline(this)) View.GONE else View.VISIBLE
+        }
+
+        // Track and compare installed version against DB records for update prompting
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val userId = AuthUtils.getCurrentUserId(this@MainActivity) ?: return@launch
+                val platform = "android"
+                val pkgInfo = packageManager.getPackageInfo(packageName, 0)
+                val currentVersion = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    pkgInfo.longVersionCode.toInt()
+                } else {
+                    @Suppress("DEPRECATION")
+                    pkgInfo.versionCode
+                }
+
+                // Get the user's last recorded app entry
+                val last = RetrofitClient.userAppsApi.queryUserApps(
+                    select = "id,version_number",
+                    userId = "eq.$userId",
+                    platform = "eq.$platform",
+                    order = "date_installed.desc",
+                    limit = 1
+                ).firstOrNull()
+                if (last?.versionNumber != currentVersion) {
+                    last?.let {
+                        RetrofitClient.userAppsApi.updateUserApp(
+                            id = "eq.${it.id}",
+                            updates = mapOf("updated_at" to "now()")
+                        )
+                    }
+                    RetrofitClient.userAppsApi.insertUserApp(
+                        mapOf(
+                            "user_id" to userId,
+                            "platform" to platform,
+                            "version_number" to currentVersion,
+                            "date_installed" to "now()"
+                        )
+                    )
+                }
+
+                // Get the latest published version (developer updates this record)
+                val latestVersion = RetrofitClient.userAppsApi.queryUserApps(
+                    select = "version_number",
+                    platform = "eq.$platform",
+                    order = "version_number.desc",
+                    limit = 1
+                ).firstOrNull()?.versionNumber ?: currentVersion
+
+                if (currentVersion < latestVersion) {
+                    withContext(Dispatchers.Main) {
+                        val banner = findViewById<CardView>(R.id.updateBanner)
+                        val text = findViewById<TextView>(R.id.updateBannerText)
+                        val btn = findViewById<Button>(R.id.updateBannerButton)
+                        val diff = latestVersion - currentVersion
+                        banner.visibility = View.VISIBLE
+                        text.text =
+                            "You are $diff version${if (diff > 1) "s" else ""} behind. " +
+                            "Update GiftersClub for the best experience."
+                        btn.setOnClickListener {
+                            startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("market://details?id=$packageName")
+                                )
+                            )
+                        }
+                    }
+                }
+            } catch (ioe: IOException) {
+            } catch (e: HttpException) {
+            }
+        }
         // Handle deep links: wishlist (/wishlist/{id}) and gifter profiles (/u/{username}, /g/{username})
         intent?.data?.let { uri ->
             val segments = uri.pathSegments
@@ -97,11 +198,15 @@ class MainActivity : AppCompatActivity() {
                     val fcmToken = task.result
                     AuthUtils.getCurrentUserId(this)?.let { userId ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            RetrofitClient.profileApi.updateProfile(
-                                select = "*",
-                                userIdFilter = "eq.$userId",
-                                updates = mapOf("fcm_token" to fcmToken)
-                            )
+                            try {
+                                RetrofitClient.profileApi.updateProfile(
+                                    select = "*",
+                                    userIdFilter = "eq.$userId",
+                                    updates = mapOf("fcm_token" to fcmToken)
+                                )
+                            } catch (ioe: IOException) {
+                            } catch (e: HttpException) {
+                            }
                         }
                     }
                 }

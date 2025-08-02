@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.ImageView
 import android.widget.VideoView
+import club.gifters.giftersclub.BaseActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import coil.load
@@ -12,7 +13,7 @@ import club.gifters.giftersclub.R
 /**
  * Fullscreen viewer for image or video attachments.
  */
-class FullscreenMediaActivity : AppCompatActivity() {
+class FullscreenMediaActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_fullscreen_media)

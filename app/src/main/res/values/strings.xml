@@ -163,6 +163,7 @@
     <string name="contribute_tokens">Contribute Tokens</string>
     <string name="enter_amount">Enter amount</string>
     <string name="contribute">Contribute</string>
+    <string name="no_network_message">No internet connection</string>
     <string name="_100">100</string>
     <string name="message_content">Message content</string>
     <string name="profile_image">Profile Image</string>
@@ -201,4 +202,5 @@
     <string name="load_more">Load more ▼</string>
     <string name="clear_all">Clear all</string>
     <string name="history_icon">⌛</string>
+    <string name="no_network_connection">You have no internet connection</string>
 </resources>

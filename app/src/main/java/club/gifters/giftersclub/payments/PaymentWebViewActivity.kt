@@ -7,13 +7,14 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.widget.Toast
+import club.gifters.giftersclub.BaseActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.network.RetrofitClient
 import kotlinx.coroutines.launch
 
-class PaymentWebViewActivity : AppCompatActivity() {
+class PaymentWebViewActivity : BaseActivity() {
     companion object {
         private const val TAG = "PaymentWebView"
         private const val EXTRA_USER_ID = "extra_user_id"

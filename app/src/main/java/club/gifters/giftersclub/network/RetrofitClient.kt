@@ -10,9 +10,13 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.Route
+import okhttp3.Protocol
+import okhttp3.ResponseBody.Companion.toResponseBody
+import java.io.IOException
 import org.json.JSONObject
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import club.gifters.giftersclub.network.UserAppsApi
 
 /**
  * Singleton Retrofit client configured with Supabase REST URL and API key interceptor.
@@ -93,6 +97,21 @@ object RetrofitClient {
         .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .addInterceptor { chain ->
+            try {
+                chain.proceed(chain.request())
+            } catch (ioe: IOException) {
+                val req = chain.request()
+                // Swallow network errors: return empty JSON array so Retrofit calls yield empty lists instead of HttpException
+                Response.Builder()
+                    .request(req)
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(200)
+                    .message("OK")
+                    .body("[]".toResponseBody("application/json; charset=utf-8".toMediaTypeOrNull()))
+                    .build()
+            }
+        }
         // Log all REST requests and responses for debugging
         .addInterceptor { chain ->
             val request = chain.request()
@@ -179,6 +198,21 @@ object RetrofitClient {
         .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .addInterceptor { chain ->
+            try {
+                chain.proceed(chain.request())
+            } catch (ioe: IOException) {
+                val req = chain.request()
+                // Swallow network errors: empty JSON array as a successful response
+                Response.Builder()
+                    .request(req)
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(200)
+                    .message("OK")
+                    .body("[]".toResponseBody("application/json; charset=utf-8".toMediaTypeOrNull()))
+                    .build()
+            }
+        }
+        .addInterceptor { chain ->
             val original = chain.request()
             // Host for our presign-Lambda endpoint (API Gateway)
             val presignHost = AwsConfig.API_URL
@@ -217,4 +251,8 @@ object RetrofitClient {
      * API for searching tags (hashtags) for explore suggestions.
      */
     val tagApi: TagApi = retrofit.create(TagApi::class.java)
+    /**
+     * API for tracking user app install/version history.
+     */
+    val userAppsApi: UserAppsApi = retrofit.create(UserAppsApi::class.java)
 }

@@ -10,6 +10,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import club.gifters.giftersclub.BaseActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.lifecycleScope
@@ -28,7 +29,7 @@ import java.text.NumberFormat
  * Activity displaying the live stream UI (stream view, comments, and gift drawer).
  * UI only; functionality to be implemented.
  */
-class LiveStreamActivity : AppCompatActivity() {
+class LiveStreamActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live_stream)

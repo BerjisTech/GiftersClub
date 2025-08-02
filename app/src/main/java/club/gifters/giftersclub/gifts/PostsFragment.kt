@@ -21,6 +21,7 @@ import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import club.gifters.giftersclub.social.SubscriptionApiHolder
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.launch
+import club.gifters.giftersclub.util.NetworkUtils
 
 
 /**
@@ -298,11 +299,14 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                     loadPosts(clear)
                     return@launch
                 }
-                // Log.e(TAG, "Failed to load posts", e)
-                Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
+                // Let global overlay show the offline state; show failure toast if list empty
+                if (adapter.currentList.isEmpty()) {
+                    Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
-                // Log.e(TAG, "Failed to load posts", e)
-                Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
+                if (adapter.currentList.isEmpty()) {
+                    Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
+                }
             } finally {
                 isLoading = false
                 swipeRefresh.isRefreshing = false
