@@ -52,6 +52,12 @@ class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // If offline at startup, redirect to NoNetworkActivity and abort
+        if (!NetworkUtils.isOnline(this)) {
+            startActivity(Intent(this, NoNetworkActivity::class.java))
+            finish()
+            return
+        }
         // If no internet redirect to NoNetworkActivity
         if (!NetworkUtils.isOnline(this)) {
             startActivity(Intent(this, NoNetworkActivity::class.java))
@@ -242,9 +248,8 @@ class MainActivity : BaseActivity() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavView)
         bottomNav.itemIconTintList = null
         bottomNav.setOnItemSelectedListener { item ->
-            if (NetworkUtils.isOnline(this)) {
+            if (!NetworkUtils.isOnline(this)) {
                 startActivity(Intent(this, NoNetworkActivity::class.java))
-                finish()
                 return@setOnItemSelectedListener true
             }
             when (item.itemId) {
@@ -253,15 +258,8 @@ class MainActivity : BaseActivity() {
                         null,
                         androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
                     )
-                    // Switch ViewPager to PostsFragment (index 0)
+                    // Switch to the Posts tab
                     findViewById<ViewPager2>(R.id.viewPagerMain).setCurrentItem(0, false)
-                    // Refresh posts list if fragment is attached
-                    val postsFragment = supportFragmentManager.findFragmentByTag("f0") as? PostsFragment
-                    postsFragment?.let {
-                        if (it.isAdded && it.view != null) {
-                            it.refreshPosts() // Assumes PostsFragment has a refreshPosts() method
-                        }
-                    }
                     true
                 }
                 R.id.nav_friends -> {

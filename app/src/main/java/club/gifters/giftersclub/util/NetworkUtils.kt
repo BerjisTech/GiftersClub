@@ -14,10 +14,9 @@ object NetworkUtils {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = cm.activeNetwork ?: return false
             val caps = cm.getNetworkCapabilities(network) ?: return false
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ||
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+            // Require validated internet capability to ensure actual data connectivity
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
         } else {
             @Suppress("DEPRECATION")
             val ni = cm.activeNetworkInfo

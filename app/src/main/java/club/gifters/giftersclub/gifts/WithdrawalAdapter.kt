@@ -53,7 +53,7 @@ class WithdrawalAdapter(
             val nf = NumberFormat.getNumberInstance()
             val kes = nf.format(wr.kesAmount)
             val converted = String.format(Locale.getDefault(), "%.2f", wr.convertedAmount)
-            tvInfo.text = "$kes KES (~ ${wr.targetCurrency} $converted) via ${wr.paymentMethod}"
+            tvInfo.text = "$kes KES (~ KES ${nf.format(wr.kesAmount * 0.7)}) via ${wr.paymentMethod}})"
             // Format the date
             val raw = wr.createdAt
             tvDate.text = try {

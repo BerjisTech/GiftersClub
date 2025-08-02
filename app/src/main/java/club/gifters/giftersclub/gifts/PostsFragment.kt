@@ -284,13 +284,6 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         }
     }
 
-    fun refreshPosts() {
-        page = 0
-        isLastPage = false
-        hasRetry401 = false
-        swipeRefresh.isRefreshing = true
-        loadPosts(clear = true)
-    }
 
     private fun loadPosts(clear: Boolean) {
         if (isLoading || isLastPage) return

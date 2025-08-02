@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.util.NetworkUtils
 import java.net.URL
 
 class AuthActivity : BaseActivity() {
@@ -21,6 +22,11 @@ class AuthActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!NetworkUtils.isOnline(this)) {
+            startActivity(Intent(this, NoNetworkActivity::class.java))
+            finish()
+            return
+        }
         window.setFlags(
             android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
             android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
