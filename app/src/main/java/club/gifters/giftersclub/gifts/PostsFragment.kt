@@ -1,6 +1,7 @@
 package club.gifters.giftersclub.gifts
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -14,6 +15,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.NoNetworkActivity
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.network.RetrofitClient
@@ -90,6 +92,11 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // If no internet redirect to NoNetworkActivity
+        if (!NetworkUtils.isOnline(requireContext())) {
+            startActivity(Intent(requireContext(), NoNetworkActivity::class.java))
+            return
+        }
         swipeRefresh = view.findViewById(R.id.swipeRefresh)
         pager = view.findViewById(R.id.viewPagerPosts)
         adapter = PostAdapter(

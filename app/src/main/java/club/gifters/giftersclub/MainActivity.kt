@@ -1,7 +1,6 @@
 package club.gifters.giftersclub
 
 import club.gifters.giftersclub.network.RetrofitClient
-
 import android.os.Bundle
 import club.gifters.giftersclub.BaseActivity
 import androidx.appcompat.app.AppCompatActivity
@@ -41,13 +40,10 @@ import androidx.cardview.widget.CardView
 import android.widget.Button
 import android.widget.TextView
 import android.net.Uri
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.Network
+import club.gifters.giftersclub.util.NetworkUtils
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import retrofit2.HttpException
-import club.gifters.giftersclub.util.NetworkUtils
 
 class MainActivity : BaseActivity() {
     companion object {
@@ -56,31 +52,20 @@ class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // If no internet redirect to NoNetworkActivity
+        if (!NetworkUtils.isOnline(this)) {
+            startActivity(Intent(this, NoNetworkActivity::class.java))
+            finish()
+        }
         if (AuthUtils.getCurrentUserId(this) == null) {
             startActivity(Intent(this, AuthActivity::class.java))
             finish()
             return
         }
-        RetrofitClient.init(this)
         setContentView(R.layout.activity_main)
+        RetrofitClient.init(this)
 
 
-        // Global offline overlay (visible when no network)
-        val offlineOverlay = findViewById<View>(R.id.noNetworkOverlay)
-        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) {
-                    runOnUiThread { offlineOverlay.visibility = View.GONE }
-                }
-
-                override fun onLost(network: Network) {
-                    runOnUiThread { offlineOverlay.visibility = View.VISIBLE }
-                }
-            })
-        } else {
-            offlineOverlay.visibility = if (NetworkUtils.isOnline(this)) View.GONE else View.VISIBLE
-        }
 
         // Track and compare installed version against DB records for update prompting
         lifecycleScope.launch(Dispatchers.IO) {
@@ -335,6 +320,12 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        // If no internet redirect to NoNetworkActivity
+        if (!NetworkUtils.isOnline(this)) {
+            startActivity(Intent(this, NoNetworkActivity::class.java))
+            finish()
+        }
+        // If no user logged in, redirect to AuthActivity
         if (AuthUtils.getCurrentUserId(this) == null) {
             startActivity(Intent(this, AuthActivity::class.java))
             finish()

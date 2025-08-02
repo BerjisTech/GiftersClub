@@ -7,4 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".NoNetworkActivity">
 
+    <include layout="@layout/no_network_overlay"
+        android:id="@+id/noNetworkOverlay" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

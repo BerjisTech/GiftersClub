@@ -7,9 +7,6 @@
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
-    <!-- Global offline overlay: appears atop all fragments when no connectivity -->
-    <include layout="@layout/no_network_overlay" />
-
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/topAppBar"
         android:layout_width="match_parent"
@@ -26,7 +23,7 @@
         app:layout_constraintBottom_toTopOf="@id/bottomNavView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <FrameLayout
         android:id="@+id/mainContentContainer"
@@ -52,10 +49,10 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="10dp"
         android:background="@android:color/transparent"
-        app:layout_constraintStart_toEndOf="@id/placeholderView"
-        app:layout_constraintEnd_toStartOf="@id/exploreIcon"
-        app:layout_constraintTop_toTopOf="@id/exploreIcon"
         app:layout_constraintBottom_toBottomOf="@id/exploreIcon"
+        app:layout_constraintEnd_toStartOf="@id/exploreIcon"
+        app:layout_constraintStart_toEndOf="@id/placeholderView"
+        app:layout_constraintTop_toTopOf="@id/exploreIcon"
         app:tabGravity="center"
         app:tabIndicatorColor="@color/gray_500"
         app:tabIndicatorFullWidth="false"
@@ -78,8 +75,8 @@
         android:id="@+id/bottomNavView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:itemTextColor="@color/pink_500"
         app:itemIconTint="@null"
+        app:itemTextColor="@color/pink_500"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

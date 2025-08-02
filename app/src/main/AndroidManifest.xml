@@ -2,18 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Needed to post notifications on Android 13+ -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Camera and audio for live photo/video capture -->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- Needed to post notifications on Android 13+ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- Camera and audio for live photo/video capture -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-
     <application
-        android:enableOnBackInvokedCallback="true"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@drawable/logo"
         android:label="@string/app_name"
@@ -21,96 +18,159 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GiftersClub"
         tools:targetApi="31">
-
-        <activity android:name=".AuthActivity" android:exported="true">
+        <activity
+            android:name=".NoNetworkActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AuthActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="gifterclub" android:host="login-callback" />
+
+                <data
+                    android:host="login-callback"
+                    android:scheme="gifterclub" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
 
-        <activity android:name=".MainActivity" android:exported="true">
             <!-- Deep link for wishlists: https://gifters.club/wishlist/{id} -->
             <!-- App Links verification for https://gifters.club/wishlist -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" android:host="gifters.club" android:pathPrefix="/wishlist" />
-                <data android:scheme="https" android:host="gifters.club" android:pathPrefix="/wishlist" />
+
+                <data
+                    android:host="gifters.club"
+                    android:pathPrefix="/wishlist"
+                    android:scheme="http" />
+                <data
+                    android:host="gifters.club"
+                    android:pathPrefix="/wishlist"
+                    android:scheme="https" />
             </intent-filter>
             <!-- Custom URI scheme for wishlist (no App Links verification) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="giftersclub" android:host="wishlist" />
+
+                <data
+                    android:host="wishlist"
+                    android:scheme="giftersclub" />
             </intent-filter>
 
             <!-- App Links verification for user profiles: https://gifters.club/u/{username} -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" android:host="gifters.club" android:pathPrefix="/u" />
-                <data android:scheme="https" android:host="gifters.club" android:pathPrefix="/u" />
+
+                <data
+                    android:host="gifters.club"
+                    android:pathPrefix="/u"
+                    android:scheme="http" />
+                <data
+                    android:host="gifters.club"
+                    android:pathPrefix="/u"
+                    android:scheme="https" />
             </intent-filter>
             <!-- Custom URI scheme for user profiles (no App Links verification) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="giftersclub" android:host="u" />
+
+                <data
+                    android:host="u"
+                    android:scheme="giftersclub" />
             </intent-filter>
 
             <!-- App Links verification for user profiles: https://gifters.club/g/{username} -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" android:host="gifters.club" android:pathPrefix="/g" />
-                <data android:scheme="https" android:host="gifters.club" android:pathPrefix="/g" />
+
+                <data
+                    android:host="gifters.club"
+                    android:pathPrefix="/g"
+                    android:scheme="http" />
+                <data
+                    android:host="gifters.club"
+                    android:pathPrefix="/g"
+                    android:scheme="https" />
             </intent-filter>
             <!-- Custom URI scheme for user profiles (no App Links verification) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="giftersclub" android:host="g" />
+
+                <data
+                    android:host="g"
+                    android:scheme="giftersclub" />
             </intent-filter>
         </activity>
-        <activity android:name=".PostsActivity" android:exported="true">
+        <activity
+            android:name=".PostsActivity"
+            android:exported="true">
+
             <!-- App Links verification for https://gifters.club/post -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" android:host="gifters.club" android:pathPrefix="/post" />
-                <data android:scheme="https" android:host="gifters.club" android:pathPrefix="/post" />
+
+                <data
+                    android:host="gifters.club"
+                    android:pathPrefix="/post"
+                    android:scheme="http" />
+                <data
+                    android:host="gifters.club"
+                    android:pathPrefix="/post"
+                    android:scheme="https" />
             </intent-filter>
             <!-- Custom URI scheme for posts (no App Links verification) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="giftersclub" android:host="post" />
+
+                <data
+                    android:host="post"
+                    android:scheme="giftersclub" />
             </intent-filter>
         </activity>
-        <activity android:name=".payments.PaymentWebViewActivity" />
-        <!-- uCrop activity for avatar cropping -->
+        <activity android:name=".payments.PaymentWebViewActivity" /> <!-- uCrop activity for avatar cropping -->
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
-        <activity android:name=".chat.FullscreenMediaActivity"
+        <activity
+            android:name=".chat.FullscreenMediaActivity"
             android:exported="false"
             android:theme="@style/Theme.GiftersClub" />
+
         <service
             android:name=".notifications.MyFirebaseMessagingService"
             android:exported="false">
@@ -118,8 +178,8 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-        <activity android:name=".live.LiveStreamActivity" />
 
+        <activity android:name=".live.LiveStreamActivity" />
     </application>
 
 </manifest>
