@@ -14,6 +14,13 @@ import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.PostMedia
 import android.widget.ProgressBar
 import android.view.MotionEvent
+import android.media.MediaMetadataRetriever
+import android.graphics.Bitmap
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 /**
  * Adapter for media carousel in a post (images & videos).
@@ -45,36 +52,69 @@ class PostMediaAdapter(
         private val videoView: VideoView = itemView.findViewById(R.id.mediaVideoView)
         private val spinner: ProgressBar = itemView.findViewById(R.id.mediaLoadingSpinner)
 
+        /**
+         * Extract a single video frame for thumbnail (background thread).
+         */
+        private suspend fun getVideoFrame(url: String): Bitmap? = withContext(Dispatchers.IO) {
+            try {
+                val retriever = MediaMetadataRetriever()
+                retriever.setDataSource(url, HashMap())
+                val frame = retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                retriever.release()
+                frame
+            } catch (_: Exception) {
+                null
+            }
+        }
+
         fun bind(media: PostMedia) {
-            spinner.visibility = View.VISIBLE
             if (media.mediaType == "video") {
-                imageView.visibility = View.GONE
-                videoView.visibility = View.VISIBLE
+                // Fetch and display thumbnail
+                spinner.visibility = View.VISIBLE
+                imageView.visibility = View.VISIBLE
+                videoView.visibility = View.GONE
+                (itemView.context as? LifecycleOwner)
+                    ?.lifecycleScope
+                    ?.launch {
+                        val bmp = getVideoFrame(media.url)
+                        if (bmp != null) imageView.setImageBitmap(bmp)
+                        else imageView.setImageResource(android.R.color.darker_gray)
+                        spinner.visibility = View.GONE
+                    }
+                // Prepare video view
                 videoView.setVideoURI(Uri.parse(media.url))
                 videoView.setOnPreparedListener { mp ->
                     spinner.visibility = View.GONE
                     if (!playOnHover) {
                         mp.isLooping = true
+                        imageView.visibility = View.GONE
+                        videoView.visibility = View.VISIBLE
                         videoView.start()
                     }
                 }
                 if (playOnHover) {
-                    videoView.setOnHoverListener { _, event ->
+                    imageView.visibility = View.VISIBLE
+                    videoView.visibility = View.GONE
+                    imageView.setOnHoverListener { _, event ->
                         if (event.actionMasked == MotionEvent.ACTION_HOVER_ENTER) {
                             spinner.visibility = View.VISIBLE
+                            imageView.visibility = View.GONE
+                            videoView.visibility = View.VISIBLE
                             videoView.start()
                         }
                         true
                     }
                 }
-                if (onVideoCompleted != null) {
+                onVideoCompleted?.let { cb ->
                     videoView.setOnCompletionListener {
-                        onVideoCompleted.invoke(bindingAdapterPosition)
+                        cb.invoke(bindingAdapterPosition)
                     }
                 }
             } else {
+                // Image media
                 videoView.visibility = View.GONE
                 imageView.visibility = View.VISIBLE
+                spinner.visibility = View.VISIBLE
                 imageView.load(media.url) {
                     placeholder(android.R.color.darker_gray)
                     error(android.R.color.darker_gray)

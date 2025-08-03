@@ -1,4 +1,4 @@
-- [x] In search results when the result is a video prevent it from autoplaying; a user has to "hover" on it to play. When it's done playing, if the next result is also a video then autoplay it.
+- [x] In search results and gifter page under posts tab, if the post is video, can we have a thumbnail instead of just leaving it as a black box
 - [ ] Clicking on partner name in chat should send me to their profile
 - [ ] Add dates in the format of --------------- 2 days ago -------------- etc in chat to group the chats by date within the UI
 
