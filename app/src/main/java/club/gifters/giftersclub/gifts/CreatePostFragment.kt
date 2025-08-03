@@ -935,8 +935,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             originalBitmap = BitmapFactory.decodeStream(stream)
             editedBitmap = originalBitmap
             editedBitmap?.let { bitmap ->
-                gpuImageView.setScaleType(GPUImage.ScaleType.CENTER_INSIDE)
-                gpuImageView.setRatio(bitmap.width.toFloat() / bitmap.height.toFloat())
+            gpuImageView.setScaleType(GPUImage.ScaleType.CENTER_INSIDE)
                 gpuImageView.setImage(bitmap)
             }
         }
