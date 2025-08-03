@@ -8,17 +8,18 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
+        android:scaleType="centerInside"
         android:layout_gravity="center"
-        android:contentDescription="Post image" />
+        android:contentDescription="@string/post_image" />
 
     <VideoView
         android:id="@+id/mediaVideoView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="center"
+        android:scaleType="centerInside"
         android:visibility="gone"
-        android:contentDescription="Post video" />
+        android:contentDescription="@string/post_video" />
 
     <ProgressBar
         android:id="@+id/mediaLoadingSpinner"

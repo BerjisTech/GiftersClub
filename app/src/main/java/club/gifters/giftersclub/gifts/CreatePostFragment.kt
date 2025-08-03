@@ -58,6 +58,7 @@ import club.gifters.giftersclub.network.RetrofitClient
 import com.akaita.android.circularseekbar.CircularSeekBar
 import com.akaita.android.circularseekbar.CircularSeekBar.OnCircularSeekBarChangeListener
 import com.google.android.material.progressindicator.CircularProgressIndicator
+import club.gifters.giftersclub.gifts.VideoCaptureHelper
 import com.google.android.material.tabs.TabLayout
 import com.yalantis.ucrop.UCrop
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageBrightnessFilter
@@ -67,6 +68,7 @@ import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilterGroup
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageGrayscaleFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
+import jp.co.cyberagent.android.gpuimage.GPUImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -808,23 +810,24 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         if (isRecording) return
         val videoFile =
             java.io.File(requireContext().cacheDir, "VID_${System.currentTimeMillis()}.mp4")
-        val outputOptions = VideoCapture.OutputFileOptions.Builder(videoFile).build()
-        videoCapture?.startRecording(
-            outputOptions,
-            ContextCompat.getMainExecutor(requireContext()),
-            object : VideoCapture.OnVideoSavedCallback {
-                override fun onError(videoCaptureError: Int, message: String, cause: Throwable?) {
-                    // Log.e(TAG, "Video capture failed: $message", cause)
-                    Toast.makeText(requireContext(), "Video capture failed", Toast.LENGTH_SHORT)
-                        .show()
-                }
+        videoCapture?.let { vc ->
+            VideoCaptureHelper.startRecording(
+                vc,
+                videoFile,
+                ContextCompat.getMainExecutor(requireContext()),
+                object : VideoCapture.OnVideoSavedCallback {
+                    override fun onError(videoCaptureError: Int, message: String, cause: Throwable?) {
+                        Toast.makeText(requireContext(), "Video capture failed", Toast.LENGTH_SHORT)
+                            .show()
+                    }
 
-                override fun onVideoSaved(output: VideoCapture.OutputFileResults) {
-                    val savedUri = Uri.fromFile(videoFile)
-                    handleSelectedMedia(listOf(savedUri))
+                    override fun onVideoSaved(output: VideoCapture.OutputFileResults) {
+                        val savedUri = Uri.fromFile(videoFile)
+                        handleSelectedMedia(listOf(savedUri))
+                    }
                 }
-            }
-        )
+            )
+        }
         isRecording = true
         btnCapture.setImageResource(R.drawable.stop_record)
         pbRecordProgress.isVisible = true
@@ -931,7 +934,11 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         requireContext().contentResolver.openInputStream(uri)?.use { stream: InputStream ->
             originalBitmap = BitmapFactory.decodeStream(stream)
             editedBitmap = originalBitmap
-            editedBitmap?.let { gpuImageView.setImage(it) }
+            editedBitmap?.let { bitmap ->
+                gpuImageView.setScaleType(GPUImage.ScaleType.CENTER_INSIDE)
+                gpuImageView.setRatio(bitmap.width.toFloat() / bitmap.height.toFloat())
+                gpuImageView.setImage(bitmap)
+            }
         }
         initialCameraFilter?.let { baseFilter = it }
         applyFilters()

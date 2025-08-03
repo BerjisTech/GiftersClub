@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.util.AttributeSet
 import android.widget.FrameLayout
+import jp.co.cyberagent.android.gpuimage.GPUImage
 import jp.co.cyberagent.android.gpuimage.GPUImageView
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
 
@@ -59,5 +60,15 @@ class SafeGPUImageView @JvmOverloads constructor(
     /** Sets the image on which the filter should be applied from a Uri. */
     fun setImage(uri: Uri) {
         gpuImageView?.setImage(uri)
+    }
+
+    /** Sets how the image should be scaled within the view (e.g., CENTER_INSIDE). */
+    fun setScaleType(type: GPUImage.ScaleType) {
+        gpuImageView?.setScaleType(type)
+    }
+
+    /** Sets the width/height ratio (width/height) for the view so it measures correctly. */
+    fun setRatio(ratio: Float) {
+        gpuImageView?.setRatio(ratio)
     }
 }

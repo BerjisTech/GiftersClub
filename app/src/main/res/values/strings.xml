@@ -203,4 +203,6 @@
     <string name="clear_all">Clear all</string>
     <string name="history_icon">⌛</string>
     <string name="no_network_connection">You have no internet connection</string>
+    <string name="post_video">Post video</string>
+    <string name="post_image">Post image</string>
 </resources>
