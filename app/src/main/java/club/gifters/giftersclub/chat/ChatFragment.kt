@@ -34,6 +34,7 @@ import club.gifters.giftersclub.chat.ChatListItem.HeaderType
 import club.gifters.giftersclub.social.FriendsFragment
 import club.gifters.giftersclub.chat.NotificationListFragment
 import club.gifters.giftersclub.chat.SystemNotificationsFragment
+import club.gifters.giftersclub.gifts.GifterFragment
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -177,7 +178,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
 
                 selectConversation(
                     ui.partner.userId,
-                    ui.partner.name ?: ui.partner.username,
+                    ui.partner.username,
                     innerMsgAdapter,
                     rvMsgs
                 )
@@ -348,13 +349,20 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
      */
     private fun selectConversation(
         partnerId: String,
-        partnerName: String,
+        partnerUserName: String,
         msgAdapter: MessageAdapter,
         rvMessages: RecyclerView
     ) {
-        requireActivity().title = partnerName
+        requireActivity().title = partnerUserName
         val chatPane = requireView().findViewById<ConstraintLayout>(R.id.chatPane)
-        chatPane.findViewById<TextView>(R.id.tvPartnerName).text = partnerName
+        val tvPartnerUserName = chatPane.findViewById<TextView>(R.id.tvPartnerName)
+        tvPartnerUserName.text = partnerUserName
+        tvPartnerUserName.setOnClickListener {
+            // Open partner profile when tapped
+            requireActivity().supportFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, GifterFragment.newInstance(partnerUserName))
+                .addToBackStack(null).commit()
+        }
         pollingJob?.cancel()
         pollingJob = lifecycleScope.launch {
             // mark unread messages as read on first load
