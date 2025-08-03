@@ -1,14 +1,11 @@
 package club.gifters.giftersclub.gifts
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -18,19 +15,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import club.gifters.giftersclub.AuthActivity
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.SupabaseConfig
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.model.WishlistItem
-import club.gifters.giftersclub.network.PresignRequest
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
-import coil.load
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 import java.text.NumberFormat
 import java.time.Instant
@@ -41,9 +30,6 @@ import java.time.ZoneId
  */
 class AccountFragment : Fragment(R.layout.fragment_account) {
     private val profileApi = RetrofitClient.profileApi
-    private lateinit var ivProfileImage: ImageView
-    private lateinit var tvUsername: TextView
-    private lateinit var tvFullName: TextView
     private lateinit var tvTokenBalance: TextView
     private lateinit var tvTokensReceived: TextView
     private lateinit var tvTokensSent: TextView
@@ -113,7 +99,6 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
         }
         // initial activity summary
         loadActivitySummary(tvActivitySummary)
-        tvUsername = view.findViewById(R.id.tvUsername)
         tvTokenBalance = view.findViewById(R.id.tvTokenBalance)
         tvTokensReceived = view.findViewById(R.id.tvTokensReceived)
         tvTokensSent = view.findViewById(R.id.tvTokensSent)
@@ -184,17 +169,7 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
 
     private fun bindProfile(profile: Profile) {
         this.profile = profile
-        // Load image
-        if (profile.image.isNotBlank()) {
-            ivProfileImage.load(profile.image) {
-                placeholder(android.R.color.darker_gray)
-                error(android.R.color.darker_gray)
-            }
-        } else {
-            ivProfileImage.setImageResource(android.R.color.darker_gray)
-        }
-        tvUsername.text = profile.username
-        tvFullName.text = profile.name.orEmpty()
+
         // Bind token and gift stats from profile
         tvTokenBalance.text = NumberFormat.getInstance().format(profile.tokenBalance ?: 0)
         tvTokensReceived.text = NumberFormat.getInstance().format(profile.tokensReceived ?: 0)
@@ -284,93 +259,6 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
                     "Failed to initiate token purchase",
                     Toast.LENGTH_SHORT
                 ).show()
-            }
-        }
-    }
-
-    private fun pickImage() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "image/*"
-        }
-        startActivityForResult(intent, REQUEST_PICK_IMAGE)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_PICK_IMAGE && resultCode == Activity.RESULT_OK) {
-            data?.data?.let { uri ->
-                ivProfileImage.setImageURI(uri)
-                uploadProfileImage(uri)
-            }
-        }
-    }
-
-    private fun uploadProfileImage(uri: Uri) {
-        lifecycleScope.launch {
-            try {
-                val type =
-                    requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
-                val ext = type.substringAfterLast('/', "bin")
-                val filename = "profile-${userId}.${ext}"
-                val bytes = withContext(Dispatchers.IO) {
-                    requireContext().contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                } ?: throw Exception("Failed to read image data")
-
-                val body = bytes.toRequestBody(type.toMediaTypeOrNull())
-                val presignResp = withContext(Dispatchers.IO) {
-                    RetrofitClient.functionsApi.uploadMedia(
-                        PresignRequest(
-                            fileName = filename,
-                            fileType = type,
-                            bucket = "profile",
-                            overwrite = true
-                        )
-                    )
-                }
-                if (!presignResp.isSuccessful) throw HttpException(presignResp)
-                val presignData = presignResp.body()!!
-
-                val putReq = Request.Builder()
-                    .url(presignData.uploadUrl)
-                    .put(body)
-                    .build()
-                val putResp = withContext(Dispatchers.IO) {
-                    RetrofitClient.awsClient.newCall(putReq).execute()
-                }
-                if (!putResp.isSuccessful) {
-                    val errorBody = withContext(Dispatchers.IO) { putResp.body?.string().orEmpty() }
-                    // Log.e(TAG, "S3 profile upload failed: HTTP ${putResp.code} body=$errorBody")
-                    throw Exception("Upload failed: ${putResp.code} body=$errorBody")
-                }
-
-                val publicUrl = presignData.publicUrl
-                updateProfileField(mapOf("image" to publicUrl))
-            } catch (e: Exception) {
-                // Log.e(TAG, "Failed to upload profile image", e)
-                Toast.makeText(requireContext(), "Failed to upload image", Toast.LENGTH_SHORT)
-                    .show()
-            }
-        }
-    }
-
-
-    private fun updateProfileField(updates: Map<String, Any>) {
-        lifecycleScope.launch {
-            try {
-                val updatedProfile = profileApi.updateProfile(
-                    userIdFilter = "eq.$userId",
-                    updates = updates
-                )
-                if (updatedProfile.isNotEmpty()) {
-                    bindProfile(updatedProfile[0])
-                } else {
-                    // Log.e(TAG, "Failed to update profile: empty list returned")}
-                }
-            } catch (e: Exception) {
-                // Log.e(TAG, "Failed to update profile", e)
-                Toast.makeText(requireContext(), "Failed to update profile", Toast.LENGTH_SHORT)
-                    .show()
             }
         }
     }
