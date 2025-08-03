@@ -1,4 +1,5 @@
 @file:Suppress("DEPRECATION")
+
 package club.gifters.giftersclub.chat
 
 import android.app.Activity
@@ -126,17 +127,18 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             rvMessages.adapter = msgAdapter
 
             val etMessage = chatPane.findViewById<EditText>(R.id.etMessage)
-            chatPane.findViewById<ImageButton>(R.id.btnAttach).setOnClickListener { pickAttachment() }
+            chatPane.findViewById<ImageButton>(R.id.btnAttach)
+                .setOnClickListener { pickAttachment() }
             chatPane.findViewById<ImageButton>(R.id.btnSend).setOnClickListener {
                 sendMessage(msgAdapter, rvMessages, etMessage, partnerIdArg)
             }
 
-        selectConversation(
-            partnerIdArg!!,
-            partnerNameArg!!,
-            msgAdapter,
-            rvMessages
-        )
+            selectConversation(
+                partnerIdArg!!,
+                partnerNameArg!!,
+                msgAdapter,
+                rvMessages
+            )
             return
         }
         // Initialize unified chat/notification list
@@ -151,9 +153,11 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     HeaderType.NEW_FOLLOWERS -> parentFragmentManager.beginTransaction()
                         .replace(R.id.mainContentContainer, FriendsFragment.newInstance(0))
                         .addToBackStack(null).commit()
+
                     HeaderType.ACTIVITY -> parentFragmentManager.beginTransaction()
                         .replace(R.id.mainContentContainer, NotificationListFragment())
                         .addToBackStack(null).commit()
+
                     HeaderType.SYSTEM_NOTIFICATIONS -> parentFragmentManager.beginTransaction()
                         .replace(R.id.mainContentContainer, SystemNotificationsFragment())
                         .addToBackStack(null).commit()
@@ -171,7 +175,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 rvMsgs.adapter = innerMsgAdapter
 
                 val etMsg = chatPane.findViewById<EditText>(R.id.etMessage)
-                chatPane.findViewById<ImageButton>(R.id.btnAttach).setOnClickListener { pickAttachment() }
+                chatPane.findViewById<ImageButton>(R.id.btnAttach)
+                    .setOnClickListener { pickAttachment() }
                 chatPane.findViewById<ImageButton>(R.id.btnSend).setOnClickListener {
                     sendMessage(innerMsgAdapter, rvMsgs, etMsg, ui.partner.userId)
                 }
@@ -186,27 +191,29 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         )
         rvConvs.adapter = chatListAdapter
         // show static headers + empty placeholder immediately for new users
-        chatListAdapter.submitList(listOf(
-            ChatListItem.Header(
-                HeaderType.NEW_FOLLOWERS,
-                getString(R.string.new_followers),
-                getString(R.string.new_followers_preview),
-                0L
-            ),
-            ChatListItem.Header(
-                HeaderType.ACTIVITY,
-                getString(R.string.activity),
-                getString(R.string.activity_preview),
-                0L
-            ),
-            ChatListItem.Header(
-                HeaderType.SYSTEM_NOTIFICATIONS,
-                getString(R.string.system_notifications),
-                getString(R.string.system_notifications_preview),
-                0L
-            ),
-            ChatListItem.Empty
-        ))
+        chatListAdapter.submitList(
+            listOf(
+                ChatListItem.Header(
+                    HeaderType.NEW_FOLLOWERS,
+                    getString(R.string.new_followers),
+                    getString(R.string.new_followers_preview),
+                    0L
+                ),
+                ChatListItem.Header(
+                    HeaderType.ACTIVITY,
+                    getString(R.string.activity),
+                    getString(R.string.activity_preview),
+                    0L
+                ),
+                ChatListItem.Header(
+                    HeaderType.SYSTEM_NOTIFICATIONS,
+                    getString(R.string.system_notifications),
+                    getString(R.string.system_notifications_preview),
+                    0L
+                ),
+                ChatListItem.Empty
+            )
+        )
         loadChatList()
 
         // Poll every few seconds to refresh chats and notifications
@@ -219,9 +226,10 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         }
 
         // attachment preview controls
-        val attachmentPreviewContainer = view.findViewById<FrameLayout>(R.id.attachmentPreviewContainer)
-        val ivAttachmentPreview = view.findViewById<ImageView>(R.id.ivAttachmentPreview)
-        val pbAttachmentUpload = view.findViewById<ProgressBar>(R.id.pbAttachmentUpload)
+        val attachmentPreviewContainer =
+            view.findViewById<FrameLayout>(R.id.attachmentPreviewContainer)
+        view.findViewById<ImageView>(R.id.ivAttachmentPreview)
+        view.findViewById<ProgressBar>(R.id.pbAttachmentUpload)
         val btnCancelAttachment = view.findViewById<ImageButton>(R.id.btnCancelAttachment)
         btnCancelAttachment.setOnClickListener {
             uploadJob?.cancel()
@@ -261,15 +269,20 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             }
             val followNotes = notes.filter { it.type == "follow" || it.type == "friend_request" }
             val cutoff = Instant.now().minusSeconds(24 * 3600)
-            val followCount = followNotes.count { parseInstant(it.createdAt)?.isAfter(cutoff) == true }
+            val followCount =
+                followNotes.count { parseInstant(it.createdAt)?.isAfter(cutoff) == true }
             val activityNotes = notes.filter {
                 it.type != "transaction" && it.type != "withdrawal" && it.type != "follow" && it.type != "friend_request"
             }
-            val activityCount = activityNotes.count { parseInstant(it.createdAt)?.isAfter(cutoff) == true }
+            val activityCount =
+                activityNotes.count { parseInstant(it.createdAt)?.isAfter(cutoff) == true }
             val systemNotes = notes.filter { it.type == "transaction" || it.type == "withdrawal" }
-            val lastFollow = followNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
-            val lastActivity = activityNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
-            val lastSystem = systemNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
+            val lastFollow =
+                followNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
+            val lastActivity =
+                activityNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
+            val lastSystem =
+                systemNotes.maxOfOrNull { parseInstant(it.createdAt)?.toEpochMilli() ?: 0L } ?: 0L
 
             // fetch conversation overviews, but continue on error
             val sortedConvs = try {
@@ -307,32 +320,40 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                             detail.unreadCount
                         )
                     }
-                }.sortedByDescending { parseInstant(it.overview.lastMessageAt)?.toEpochMilli() ?: 0L }
-                 .distinctBy { it.partner.userId }
+                }.sortedByDescending {
+                    parseInstant(it.overview.lastMessageAt)?.toEpochMilli() ?: 0L
+                }
+                    .distinctBy { it.partner.userId }
             } catch (_: Exception) {
                 emptyList()
             }
 
             // always show the static headers, then placeholder if no chats, then chats
             val items = mutableListOf<ChatListItem>().apply {
-                add(ChatListItem.Header(
-                    HeaderType.NEW_FOLLOWERS,
-                    getString(R.string.new_followers),
-                    getString(R.string.new_followers_preview),
-                    lastFollow
-                ))
-                add(ChatListItem.Header(
-                    HeaderType.ACTIVITY,
-                    getString(R.string.activity),
-                    getString(R.string.activity_preview),
-                    lastActivity
-                ))
-                add(ChatListItem.Header(
-                    HeaderType.SYSTEM_NOTIFICATIONS,
-                    getString(R.string.system_notifications),
-                    getString(R.string.system_notifications_preview),
-                    lastSystem
-                ))
+                add(
+                    ChatListItem.Header(
+                        HeaderType.NEW_FOLLOWERS,
+                        getString(R.string.new_followers),
+                        getString(R.string.new_followers_preview),
+                        lastFollow
+                    )
+                )
+                add(
+                    ChatListItem.Header(
+                        HeaderType.ACTIVITY,
+                        getString(R.string.activity),
+                        getString(R.string.activity_preview),
+                        lastActivity
+                    )
+                )
+                add(
+                    ChatListItem.Header(
+                        HeaderType.SYSTEM_NOTIFICATIONS,
+                        getString(R.string.system_notifications),
+                        getString(R.string.system_notifications_preview),
+                        lastSystem
+                    )
+                )
                 if (sortedConvs.isEmpty()) {
                     // show placeholder when no chats
                     add(ChatListItem.Empty)
@@ -349,19 +370,26 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
      */
     private fun selectConversation(
         partnerId: String,
-        partnerUserName: String,
+        partnerName: String,
         msgAdapter: MessageAdapter,
         rvMessages: RecyclerView
     ) {
-        requireActivity().title = partnerUserName
-        val chatPane = requireView().findViewById<ConstraintLayout>(R.id.chatPane)
-        val tvPartnerUserName = chatPane.findViewById<TextView>(R.id.tvPartnerName)
-        tvPartnerUserName.text = partnerUserName
-        tvPartnerUserName.setOnClickListener {
-            // Open partner profile when tapped
-            requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.mainContentContainer, GifterFragment.newInstance(partnerUserName))
-                .addToBackStack(null).commit()
+        lifecycleScope.launch {
+            val partnerProfile =
+                RetrofitClient.profileApi.getProfileByUserId("*", "eq.$partnerId").firstOrNull()
+                    ?: throw IllegalArgumentException("No profile found for userId: $partnerId")
+            val partnerUserName = partnerProfile.username
+            requireActivity().title = partnerName
+            val chatPane = requireView().findViewById<ConstraintLayout>(R.id.chatPane)
+            val tvPartnerUserName = chatPane.findViewById<TextView>(R.id.tvPartnerName)
+            tvPartnerUserName.text = partnerUserName
+            tvPartnerUserName.setOnClickListener {
+                // Open partner profile when tapped
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .replace(R.id.mainContentContainer, GifterFragment.newInstance(partnerUserName))
+                    .addToBackStack(null).commit()
+            }
+            // The rest of your logic that depends on partnerProfile should go here
         }
         pollingJob?.cancel()
         pollingJob = lifecycleScope.launch {
@@ -384,7 +412,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     val msgs = chatApi.getMessages(
                         select = "*",
                         orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId)," +
-                                   "and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
+                                "and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
                         order = "created_at.asc"
                     )
                     msgAdapter.submitList(msgs)
@@ -432,16 +460,22 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 requireView().findViewById<ProgressBar>(R.id.pbAttachmentUpload).isVisible = true
                 val job = lifecycleScope.launch {
                     try {
-                        val type = requireContext().contentResolver.getType(uri) ?: "application/octet-stream"
+                        val type = requireContext().contentResolver.getType(uri)
+                            ?: "application/octet-stream"
                         val ext = type.substringAfterLast('/', "bin")
                         val filename = "${System.currentTimeMillis()}-${UUID.randomUUID()}.$ext"
                         val bytes = withContext(Dispatchers.IO) {
-                            requireContext().contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                            requireContext().contentResolver.openInputStream(uri)
+                                ?.use { it.readBytes() }
                         } ?: throw Exception("Failed to read attachment data")
                         val body = bytes.toRequestBody(type.toMediaTypeOrNull())
                         val presignResp = withContext(Dispatchers.IO) {
                             RetrofitClient.functionsApi.uploadMedia(
-                                PresignRequest(fileName = filename, fileType = type, bucket = "post")
+                                PresignRequest(
+                                    fileName = filename,
+                                    fileType = type,
+                                    bucket = "post"
+                                )
                             )
                         }
                         if (!presignResp.isSuccessful) throw HttpException(presignResp)
@@ -464,7 +498,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 uploadJob = job
                 job.join()
                 requireView().findViewById<ProgressBar>(R.id.pbAttachmentUpload).isVisible = false
-                requireView().findViewById<FrameLayout>(R.id.attachmentPreviewContainer).isVisible = false
+                requireView().findViewById<FrameLayout>(R.id.attachmentPreviewContainer).isVisible =
+                    false
                 selectedAttachment = null
             }
             try {
