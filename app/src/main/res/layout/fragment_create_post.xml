@@ -471,14 +471,15 @@
 
             <club.gifters.giftersclub.gifts.SafeGPUImageView
                 android:id="@+id/imageEditView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
                 android:adjustViewBounds="true"
                 android:scaleType="fitCenter"
+                android:background="@color/black"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toTopOf="@id/rvFilters" />
+                app:layout_constraintBottom_toTopOf="@id/rvFilters"/>
 
             <!-- Filter picker -->
             <androidx.recyclerview.widget.RecyclerView
