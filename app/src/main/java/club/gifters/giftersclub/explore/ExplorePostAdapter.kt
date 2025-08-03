@@ -1,9 +1,13 @@
 package club.gifters.giftersclub.explore
 
+
 import android.text.format.DateUtils
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -17,7 +21,6 @@ import club.gifters.giftersclub.model.Post
 import coil.load
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.social.SubscriptionApiHolder
-import android.widget.FrameLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -68,6 +71,29 @@ class ExplorePostAdapter(
         private val mediaIndicatorLayout: LinearLayout = view.findViewById(R.id.mediaIndicatorLayout)
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private val timestampText: TextView = view.findViewById(R.id.timestampText)
+
+        init {
+            // Allow double-tap anywhere to open the post viewer (same as click on details)
+            val doubleTap = GestureDetector(itemView.context,
+                object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onDoubleTap(e: MotionEvent): Boolean {
+                        val pos = bindingAdapterPosition
+                        if (pos != RecyclerView.NO_POSITION) onPostClick(currentList, pos)
+                        return true
+                    }
+                }
+            )
+            itemView.setOnTouchListener { _, ev ->
+                doubleTap.onTouchEvent(ev)
+                false
+            }
+            mediaPager.post {
+                (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { _, ev ->
+                    doubleTap.onTouchEvent(ev)
+                    false
+                }
+            }
+        }
         fun bind(post: Post) {
             // Gate subscription/paid posts: hide post UI and lock overlay until check completes
             mediaPager.visibility = View.GONE

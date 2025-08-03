@@ -89,6 +89,13 @@ class PostAdapter(
                 doubleTap.onTouchEvent(ev)
                 false
             }
+            // Also intercept touches on the mediaPager (video/image area) for double-tap
+            mediaPager.post {
+                (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { _, ev ->
+                    doubleTap.onTouchEvent(ev)
+                    false
+                }
+            }
         }
 
         fun bind(post: Post) {
