@@ -75,81 +75,20 @@ class PostAdapter(
         private var startY = 0f
         private var isCarouselTouch = false
         private val postDetails: View = itemView.findViewById(R.id.postDetails)
-        private val gestureDetector = GestureDetector(itemView.context,
-            object : GestureDetector.SimpleOnGestureListener() {
-                override fun onDoubleTap(e: MotionEvent): Boolean {
-                    current?.let(onLike)
-                    showHeart(e.x, e.y)
-                    return true
-                }
-            }
-        )
         init {
-            // Only intercept horizontal drags that start in the media (above the details overlay);
-            // let other gestures bubble up to parent ViewPagers (post scrolling or tab swipes).
-            mediaPager.post {
-                (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { v, ev ->
-                    when (ev.actionMasked) {
-                        MotionEvent.ACTION_DOWN -> {
-                            // Determine if the touch began above the postDetails overlay
-                            val rawY = ev.rawY.toInt()
-                            val loc = IntArray(2)
-                            postDetails.getLocationOnScreen(loc)
-                            isCarouselTouch = rawY < loc[1]
-                            if (!isCarouselTouch) return@setOnTouchListener false
-                            startX = ev.x; startY = ev.y
-                            var parent = v.parent
-                            while (parent is ViewGroup) {
-                                parent.requestDisallowInterceptTouchEvent(true)
-                                parent = parent.parent
-                            }
-                        }
-                        MotionEvent.ACTION_MOVE -> if (isCarouselTouch) {
-                            val dx = ev.x - startX
-                            val dy = ev.y - startY
-                            val disallow = abs(dx) > abs(dy)
-                            var parent = v.parent
-                            while (parent is ViewGroup) {
-                                parent.requestDisallowInterceptTouchEvent(disallow)
-                                parent = parent.parent
-                            }
-                        }
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> if (isCarouselTouch) {
-                            isCarouselTouch = false
-                            var parent = v.parent
-                            while (parent is ViewGroup) {
-                                parent.requestDisallowInterceptTouchEvent(false)
-                                parent = parent.parent
-                            }
-                        }
+            // Allow double-tap anywhere on the item to like/unlike
+            val doubleTap = GestureDetector(itemView.context,
+                object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onDoubleTap(e: MotionEvent): Boolean {
+                        current?.let(onLike)
+                        return true
                     }
-                    false
                 }
-            }
+            )
             itemView.setOnTouchListener { _, ev ->
-                gestureDetector.onTouchEvent(ev)
+                doubleTap.onTouchEvent(ev)
                 false
             }
-        }
-
-        private fun showHeart(xPos: Float, yPos: Float) {
-            val size = (100 * itemView.context.resources.displayMetrics.density).toInt()
-            val heart = ImageView(itemView.context).apply {
-                setImageResource(R.drawable.ic_heart_red)
-                layoutParams = ViewGroup.LayoutParams(size, size)
-                scaleX = 0.3f
-                scaleY = 0.3f
-                alpha = 1f
-                x = xPos - size / 2
-                y = yPos - size / 2
-            }
-            (itemView as ViewGroup).addView(heart)
-            heart.animate()
-                .scaleX(1.5f).scaleY(1.5f)
-                .alpha(0f)
-                .setDuration(600)
-                .withEndAction { (itemView as ViewGroup).removeView(heart) }
-                .start()
         }
 
         fun bind(post: Post) {
@@ -202,7 +141,10 @@ class PostAdapter(
             }
             // Setup media carousel (images/videos)
             val mediaList = post.media ?: emptyList()
-            mediaPager.adapter = PostMediaAdapter(mediaList)
+            mediaPager.adapter = PostMediaAdapter(
+                mediaList = mediaList,
+                playOnHover = false
+            )
 //            val indicatorLayout = itemView.findViewById<LinearLayout>(R.id.mediaIndicatorLayout)
             indicatorLayout.removeAllViews()
             if (mediaList.size <= 1) {

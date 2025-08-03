@@ -87,4 +87,6 @@ dependencies {
     // Add the dependencies for any other desired Firebase products
     // https://firebase.google.com/docs/android/setup#available-libraries
     implementation(libs.firebase.messaging.ktx)
+    // Lottie for like/unlike animations overlay
+    implementation("com.airbnb.android:lottie:5.2.0")
 }

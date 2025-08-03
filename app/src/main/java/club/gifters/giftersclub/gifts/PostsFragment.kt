@@ -15,6 +15,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.MainActivity
 import club.gifters.giftersclub.NoNetworkActivity
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
@@ -40,6 +41,12 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         private const val ARG_LIST = "arg_list"
         private const val ARG_START_POSITION = "start_position"
         private const val ARG_USER_ID = "user_id"
+
+        // URLs for like/unlike Lottie animations
+        private const val LIKE_LOTTIE_URL =
+            "https://lottie.host/fe660a41-2c70-4105-afb4-bab713f7e77b/AcLybokfnG.lottie"
+        private const val UNLIKE_LOTTIE_URL =
+            "https://lottie.host/810116a8-7247-45df-a8b2-f2d777b491f0/JDVtLuvkEG.lottie"
 
         fun newInstance(postId: String): PostsFragment {
             val args = Bundle().apply { putString(ARG_POST_ID, postId) }
@@ -104,13 +111,17 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             onLike = { post ->
                 lifecycleScope.launch {
                     val userId = AuthUtils.getCurrentUserId(requireContext()) ?: return@launch
-                    val liked = CommentApiHolder.isPostLikedByUser(post.id)
+                    val likedBefore = CommentApiHolder.isPostLikedByUser(post.id)
+                    // show like/unlike Lottie animation
+                    (activity as? MainActivity)?.showLottieAnimation(
+                        if (!likedBefore) LIKE_LOTTIE_URL else UNLIKE_LOTTIE_URL
+                    )
                     val body = mapOf(
                         "post_id" to post.id,
                         "user_id" to userId,
                         "type" to "like"
                     )
-                    if (!liked) CommentApiHolder.reactToPost(body)
+                    if (!likedBefore) CommentApiHolder.reactToPost(body)
                     else CommentApiHolder.unreactToPost(
                         postIdFilter = "eq.${post.id}",
                         userIdFilter = "eq.$userId",

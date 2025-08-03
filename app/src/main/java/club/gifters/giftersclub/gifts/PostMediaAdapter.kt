@@ -69,32 +69,35 @@ class PostMediaAdapter(
 
         fun bind(media: PostMedia) {
             if (media.mediaType == "video") {
-                // Fetch and display thumbnail
                 spinner.visibility = View.VISIBLE
-                imageView.visibility = View.VISIBLE
-                videoView.visibility = View.GONE
-                (itemView.context as? LifecycleOwner)
-                    ?.lifecycleScope
-                    ?.launch {
-                        val bmp = getVideoFrame(media.url)
-                        if (bmp != null) imageView.setImageBitmap(bmp)
-                        else imageView.setImageResource(android.R.color.darker_gray)
-                        spinner.visibility = View.GONE
-                    }
-                // Prepare video view
+                if (playOnHover) {
+                    imageView.visibility = View.VISIBLE
+                    videoView.visibility = View.GONE
+                    (itemView.context as? LifecycleOwner)
+                        ?.lifecycleScope
+                        ?.launch {
+                            val bmp = getVideoFrame(media.url)
+                            if (bmp != null) imageView.setImageBitmap(bmp)
+                            else imageView.setImageResource(android.R.color.darker_gray)
+                            spinner.visibility = View.GONE
+                        }
+                } else {
+                    imageView.visibility = View.GONE
+                    videoView.visibility = View.VISIBLE
+                }
                 videoView.setVideoURI(Uri.parse(media.url))
                 videoView.setOnPreparedListener { mp ->
                     spinner.visibility = View.GONE
-                    if (!playOnHover) {
-                        mp.isLooping = true
+                    mp.isLooping = true
+                    if (playOnHover) {
                         imageView.visibility = View.GONE
                         videoView.visibility = View.VISIBLE
+                        videoView.start()
+                    } else {
                         videoView.start()
                     }
                 }
                 if (playOnHover) {
-                    imageView.visibility = View.VISIBLE
-                    videoView.visibility = View.GONE
                     imageView.setOnHoverListener { _, event ->
                         if (event.actionMasked == MotionEvent.ACTION_HOVER_ENTER) {
                             spinner.visibility = View.VISIBLE
@@ -111,7 +114,6 @@ class PostMediaAdapter(
                     }
                 }
             } else {
-                // Image media
                 videoView.visibility = View.GONE
                 imageView.visibility = View.VISIBLE
                 spinner.visibility = View.VISIBLE
@@ -124,6 +126,10 @@ class PostMediaAdapter(
                         onError = { _, _ -> spinner.visibility = View.GONE }
                     )
                 }
+            }
+            // allow tap to toggle play/pause
+            videoView.setOnClickListener {
+                if (videoView.isPlaying) videoView.pause() else videoView.start()
             }
         }
 

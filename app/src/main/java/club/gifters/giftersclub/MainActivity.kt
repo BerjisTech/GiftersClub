@@ -44,6 +44,9 @@ import club.gifters.giftersclub.util.NetworkUtils
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import retrofit2.HttpException
+import com.airbnb.lottie.LottieAnimationView
+import com.airbnb.lottie.LottieCompositionFactory
+import android.animation.Animator
 
 class MainActivity : BaseActivity() {
     companion object {
@@ -345,5 +348,31 @@ class MainActivity : BaseActivity() {
             startActivity(Intent(this, AuthActivity::class.java))
             finish()
         }
+    }
+
+    /**
+     * Show a full-screen Lottie animation from a URL, then hide overlay when done.
+     */
+    fun showLottieAnimation(url: String) {
+        val overlay = findViewById<FrameLayout>(R.id.animationOverlayContainer)
+        val lottieView = findViewById<LottieAnimationView>(R.id.overlayLottieView)
+        overlay.visibility = View.VISIBLE
+        lottieView.visibility = View.VISIBLE
+        LottieCompositionFactory.fromUrl(this, url).addListener { composition ->
+            lottieView.setComposition(composition)
+            lottieView.playAnimation()
+        }
+        lottieView.addAnimatorListener(object : Animator.AnimatorListener {
+            override fun onAnimationStart(animation: Animator) {}
+            override fun onAnimationEnd(animation: Animator) {
+                lottieView.removeAllAnimatorListeners()
+                lottieView.visibility = View.GONE
+                overlay.visibility = View.GONE
+            }
+            override fun onAnimationCancel(animation: Animator) {
+                onAnimationEnd(animation)
+            }
+            override fun onAnimationRepeat(animation: Animator) {}
+        })
     }
 }
