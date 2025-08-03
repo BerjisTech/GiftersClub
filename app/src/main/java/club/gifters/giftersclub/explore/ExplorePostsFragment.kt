@@ -10,6 +10,8 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
+import club.gifters.giftersclub.gifts.PostMediaAdapter
+import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.gifts.PostsFragment
 import club.gifters.giftersclub.social.SubscriptionApiHolder
@@ -93,6 +95,21 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
                     )
                     .addToBackStack(null)
                     .commit()
+            },
+            onVideoComplete = { position ->
+                val nextPos = position + 1
+                if (nextPos < adapter.currentList.size) {
+                    val nextPost = adapter.currentList[nextPos]
+                    if (nextPost.media?.firstOrNull()?.mediaType == "video") {
+                        val nextVH = rv.findViewHolderForAdapterPosition(nextPos) as? ExplorePostAdapter.VH
+                        nextVH?.itemView?.findViewById<ViewPager2>(R.id.mediaPager)?.let { pager ->
+                            val pagerRv = (pager.getChildAt(0) as? RecyclerView)
+                            val mediaVH = pagerRv?.findViewHolderForAdapterPosition(pager.currentItem)
+                                    as? PostMediaAdapter.MediaViewHolder
+                            mediaVH?.startPlayback()
+                        }
+                    }
+                }
             }
         )
         rv.layoutManager = GridLayoutManager(requireContext(), 2)

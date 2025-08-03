@@ -14,6 +14,8 @@ import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.model.Profile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import androidx.viewpager2.widget.ViewPager2
+import club.gifters.giftersclub.gifts.PostMediaAdapter
 
 /**
  * Fragment for displaying a mixed 'Top' feed of posts, users, and live streams.
@@ -35,6 +37,7 @@ class ExploreTopFragment : Fragment(R.layout.fragment_explore_top) {
             }
         }
     }
+    private lateinit var adapter: ExploreTopAdapter
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -45,7 +48,7 @@ class ExploreTopFragment : Fragment(R.layout.fragment_explore_top) {
                 if (rv.adapter?.getItemViewType(position) == ExploreTopAdapter.TYPE_POST) 1 else 2
         }
         rv.layoutManager = grid
-        val adapter = ExploreTopAdapter(
+        adapter = ExploreTopAdapter(
             viewLifecycleOwner.lifecycleScope,
             onPostClick = { posts, pos ->
                 requireActivity().supportFragmentManager.beginTransaction()
@@ -61,8 +64,8 @@ class ExploreTopFragment : Fragment(R.layout.fragment_explore_top) {
                     .replace(R.id.mainContentContainer, GifterFragment.newInstance(profile.username))
                     .addToBackStack(null)
                     .commit()
-            }
-            , onLocked = { post ->
+            },
+            onLocked = { post ->
                 requireActivity().supportFragmentManager.beginTransaction()
                     .replace(
                         R.id.mainContentContainer,
@@ -70,6 +73,21 @@ class ExploreTopFragment : Fragment(R.layout.fragment_explore_top) {
                     )
                     .addToBackStack(null)
                     .commit()
+            },
+            onVideoComplete = { position ->
+                val nextPos = position + 1
+                if (nextPos < adapter.currentList.size) {
+                    val nextItem = adapter.currentList[nextPos]
+                    if (nextItem is Post && nextItem.media?.firstOrNull()?.mediaType == "video") {
+                        val nextVH = rv.findViewHolderForAdapterPosition(nextPos) as? ExploreTopAdapter.PostVH
+                        nextVH?.itemView?.findViewById<ViewPager2>(R.id.mediaPager)?.let { pager ->
+                            val pagerRv = (pager.getChildAt(0) as? RecyclerView)
+                            val mediaVH = pagerRv?.findViewHolderForAdapterPosition(pager.currentItem)
+                                    as? PostMediaAdapter.MediaViewHolder
+                            mediaVH?.startPlayback()
+                        }
+                    }
+                }
             }
         )
         rv.adapter = adapter

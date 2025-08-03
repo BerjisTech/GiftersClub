@@ -13,12 +13,15 @@ import coil.load
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.PostMedia
 import android.widget.ProgressBar
+import android.view.MotionEvent
 
 /**
  * Adapter for media carousel in a post (images & videos).
  */
 class PostMediaAdapter(
-    private val mediaList: List<PostMedia>
+    private val mediaList: List<PostMedia>,
+    private val playOnHover: Boolean = false,
+    private val onVideoCompleted: ((Int) -> Unit)? = null
 ) : ListAdapter<PostMedia, PostMediaAdapter.MediaViewHolder>(MediaDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MediaViewHolder {
@@ -49,9 +52,25 @@ class PostMediaAdapter(
                 videoView.visibility = View.VISIBLE
                 videoView.setVideoURI(Uri.parse(media.url))
                 videoView.setOnPreparedListener { mp ->
-                    mp.isLooping = true
                     spinner.visibility = View.GONE
-                    videoView.start()
+                    if (!playOnHover) {
+                        mp.isLooping = true
+                        videoView.start()
+                    }
+                }
+                if (playOnHover) {
+                    videoView.setOnHoverListener { _, event ->
+                        if (event.actionMasked == MotionEvent.ACTION_HOVER_ENTER) {
+                            spinner.visibility = View.VISIBLE
+                            videoView.start()
+                        }
+                        true
+                    }
+                }
+                if (onVideoCompleted != null) {
+                    videoView.setOnCompletionListener {
+                        onVideoCompleted.invoke(bindingAdapterPosition)
+                    }
                 }
             } else {
                 videoView.visibility = View.GONE
@@ -65,6 +84,15 @@ class PostMediaAdapter(
                         onError = { _, _ -> spinner.visibility = View.GONE }
                     )
                 }
+            }
+        }
+
+        /**
+         * Manually start playback of a video, if bound to a video media item.
+         */
+        fun startPlayback() {
+            if (videoView.visibility == View.VISIBLE) {
+                videoView.start()
             }
         }
     }

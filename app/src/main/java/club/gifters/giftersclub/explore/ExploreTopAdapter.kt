@@ -35,7 +35,8 @@ class ExploreTopAdapter(
     private val scope: kotlinx.coroutines.CoroutineScope,
     private val onPostClick: (List<Post>, Int) -> Unit = { _, _ -> },
     private val onUserClick: (Profile) -> Unit = {},
-    private val onLocked: (Post) -> Unit = {}
+    private val onLocked: (Post) -> Unit = {},
+    private val onVideoComplete: ((Int) -> Unit)? = null
 ) : ListAdapter<Any, RecyclerView.ViewHolder>(Diff) {
     companion object {
         const val TYPE_POST = 0
@@ -101,7 +102,7 @@ class ExploreTopAdapter(
         }
     }
 
-    private inner class PostVH(view: View) : RecyclerView.ViewHolder(view) {
+    inner class PostVH(view: View) : RecyclerView.ViewHolder(view) {
         private val avatarImage: com.google.android.material.imageview.ShapeableImageView =
             view.findViewById(R.id.avatarImage)
         private val usernameText: TextView = view.findViewById(R.id.usernameText)
@@ -161,7 +162,12 @@ class ExploreTopAdapter(
             timestampText.text = formatRelativeTime(post.createdAt)
             contentText.text = post.content.orEmpty()
             val mediaList = post.media ?: emptyList()
-            mediaPager.adapter = PostMediaAdapter(mediaList)
+            val onCompleted = onVideoComplete?.let { cb -> { _: Int -> cb(bindingAdapterPosition) } }
+            mediaPager.adapter = PostMediaAdapter(
+                mediaList,
+                playOnHover = true,
+                onVideoCompleted = onCompleted
+            )
             mediaIndicatorLayout.removeAllViews()
             if (mediaList.size <= 1) {
                 mediaIndicatorLayout.visibility = View.GONE

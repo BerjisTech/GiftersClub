@@ -30,7 +30,8 @@ import java.util.TimeZone
 class ExplorePostAdapter(
     private val scope: kotlinx.coroutines.CoroutineScope,
     private val onPostClick: (List<Post>, Int) -> Unit,
-    private val onLocked: (Post) -> Unit
+    private val onLocked: (Post) -> Unit,
+    private val onVideoComplete: ((Int) -> Unit)? = null
 ) : ListAdapter<Post, ExplorePostAdapter.VH>(Diff) {
     companion object {
         private val Diff = object : DiffUtil.ItemCallback<Post>() {
@@ -111,7 +112,12 @@ class ExplorePostAdapter(
             timestampText.text = formatRelativeTime(post.createdAt)
             contentText.text = post.content.orEmpty()
             val mediaList = post.media ?: emptyList()
-            mediaPager.adapter = PostMediaAdapter(mediaList)
+            val onCompleted = onVideoComplete?.let { cb -> { _: Int -> cb(bindingAdapterPosition) } }
+            mediaPager.adapter = PostMediaAdapter(
+                mediaList,
+                playOnHover = true,
+                onVideoCompleted = onCompleted
+            )
             mediaIndicatorLayout.removeAllViews()
             if (mediaList.size <= 1) {
                 mediaIndicatorLayout.visibility = View.GONE
