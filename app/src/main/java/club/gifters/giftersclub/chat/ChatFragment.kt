@@ -417,7 +417,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     )
                     msgAdapter.submitList(msgs)
                     if (msgs.isNotEmpty()) {
-                        rvMessages.scrollToPosition(msgs.size - 1)
+                        // rvMessages.scrollToPosition(msgs.size - 1)
                     }
                 } catch (e: Exception) {
                     // Log.w("ChatFragment", "Error polling messages", e)

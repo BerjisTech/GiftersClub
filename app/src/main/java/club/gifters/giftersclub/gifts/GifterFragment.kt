@@ -236,12 +236,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
     }
 
     private fun shareProfile() {
-        val shareUrl = "${
-            SupabaseConfig.SUPABASE_URL.replace(
-                ".supabase.co",
-                ".supabase.co/profile/"
-            )
-        }${username}"
+        val shareUrl = "https://gifters.club/u/${username}"
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, shareUrl)
