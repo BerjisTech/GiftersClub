@@ -3,6 +3,11 @@ package club.gifters.giftersclub.network
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
+import retrofit2.http.GET
+import retrofit2.http.PATCH
+import retrofit2.http.Query
+import club.gifters.giftersclub.model.CreateLiveStreamRequest
+import club.gifters.giftersclub.model.LiveStream
 
 interface FunctionsApi {
     /**
@@ -61,6 +66,31 @@ interface FunctionsApi {
     suspend fun logPostView(
         @Body body: Map<String, @JvmSuppressWildcards Any>
     ): Response<Unit>
+
+    /**
+     * Create a new live stream session via Edge Function.
+     */
+    @POST("live-session")
+    suspend fun createLiveSession(
+        @Body request: CreateLiveStreamRequest
+    ): Response<LiveStream>
+
+    /**
+     * Fetch an existing live stream session via Edge Function.
+     */
+    @GET("live-session")
+    suspend fun getLiveSession(
+        @Query("id") id: String
+    ): Response<LiveStream>
+
+    /**
+     * Update a live stream session via Edge Function.
+     */
+    @PATCH("live-session")
+    suspend fun updateLiveSession(
+        @Query("id") id: String,
+        @Body updates: Map<String, @JvmSuppressWildcards Any>
+    ): Response<LiveStream>
 
     /**
      * Update interaction privacy settings via Edge Function.

@@ -140,6 +140,21 @@
     <string name="write_a_comment">Write a comment...</string>
     <string name="recharge">Recharge</string>
     <string name="streamer_name">Streamer Name</string>
+    <!-- Live streaming -->
+    <string name="start_live_stream">Start Live Stream</string>
+    <string name="start">Start</string>
+    <string name="permission_denied">Camera &amp; audio permissions are required</string>
+    <string name="stream_title_required">Please enter a stream title</string>
+    <string name="failed_start_stream">Unable to start stream</string>
+    <string name="stream_title">Stream Title</string>
+    <string name="stream_description_optional">Description (optional)</string>
+
+    <!-- Live stream controls -->
+    <string name="end_live_stream">End Live Stream?</string>
+    <string name="confirm_end_live_stream">Are you sure you want to end the live stream?</string>
+    <string name="failed_end_stream">Failed to end stream</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
     <string name="welcome_back">Welcome back!</string>
     <string name="you_have_3_new_gifts">You have 3 new gifts</string>
     <string name="you_have_n_gifts_today">You have %1$d new gifts today</string>

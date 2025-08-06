@@ -278,10 +278,7 @@ class MainActivity : BaseActivity() {
                     true
                 }
                 R.id.nav_create -> {
-                    supportFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, CreatePostFragment())
-                        .addToBackStack(null)
-                        .commit()
+                    startActivity(Intent(this, CreateOrGoLiveActivity::class.java))
                     true
                 }
                 R.id.nav_inbox -> {
