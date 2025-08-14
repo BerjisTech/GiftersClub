@@ -10,6 +10,7 @@ import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.R
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import club.gifters.giftersclub.settings.SubscriptionSettingsFragment
 
 /**
  * Settings screen with tabs for Profile, Security, Moderation, Interaction.
@@ -26,6 +27,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 1 -> "Security"
                 2 -> "Moderation"
                 3 -> "Interaction"
+                4 -> "Subscriptions"
                 else -> ""
             }
         }.attach()
@@ -33,12 +35,13 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 }
 
 private class SettingsPagerAdapter(fa: FragmentActivity) : FragmentStateAdapter(fa) {
-    override fun getItemCount(): Int = 4
+    override fun getItemCount(): Int = 5
     override fun createFragment(position: Int) = when (position) {
         0 -> ProfileSettingsFragment()
         1 -> SecuritySettingsFragment()
         2 -> ModerationSettingsFragment()
         3 -> InteractionSettingsFragment()
+        4 -> SubscriptionSettingsFragment()
         else -> ProfileSettingsFragment()
     }
 }

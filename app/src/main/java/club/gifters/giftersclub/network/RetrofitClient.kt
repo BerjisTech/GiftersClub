@@ -17,6 +17,7 @@ import org.json.JSONObject
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import club.gifters.giftersclub.network.UserAppsApi
+import club.gifters.giftersclub.network.SubscriptionPlanApi
 
 /**
  * Singleton Retrofit client configured with Supabase REST URL and API key interceptor.
@@ -169,6 +170,10 @@ object RetrofitClient {
      * API for fetching wishlists of a user.
      */
     val wishlistApi: WishlistApi = retrofit.create(WishlistApi::class.java)
+    /**
+     * API for subscription plans management via Supabase PostgREST.
+     */
+    val subscriptionPlanApi: SubscriptionPlanApi = retrofit.create(SubscriptionPlanApi::class.java)
     val liveStreamApi: LiveStreamApi = retrofit.create(LiveStreamApi::class.java)
     val withdrawalApi: WithdrawalApi = retrofit.create(WithdrawalApi::class.java)
     val tokenApi: TokenApi = retrofit.create(TokenApi::class.java)
