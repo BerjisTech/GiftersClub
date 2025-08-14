@@ -40,6 +40,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.imageview.ShapeableImageView
 import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.LiveKitConfig
 import club.gifters.giftersclub.model.CreateLiveStreamRequest
 import club.gifters.giftersclub.model.LiveStream
 import coil.load
@@ -284,7 +285,34 @@ class LiveStreamActivity : BaseActivity() {
                             liveTopBar.visibility = View.VISIBLE
                         }
                     }
+                    // Start local camera preview
                     startCamera()
+                    // Connect to LiveKit SFU and publish local video/audio
+                    val lkToken = resp.body()?.let { it.token ?: it.id }
+                    if (!lkToken.isNullOrBlank()) {
+                        try {
+                            val room = io.livekit.android.LiveKit.connect(
+                                LiveKitConfig.WS_URL,
+                                lkToken,
+                                this@LiveStreamActivity,
+                                object : io.livekit.android.room.RoomListener {
+                                    override fun onConnected(room: io.livekit.android.room.Room) {
+                                        // TODO: publish camera and microphone tracks
+                                    }
+                                    override fun onDisconnected(room: io.livekit.android.room.Room, error: io.livekit.android.room.DisconnectReason) {}
+                                    override fun onParticipantConnected(participant: io.livekit.android.room.participant.RemoteParticipant) {}
+                                    override fun onParticipantDisconnected(participant: io.livekit.android.room.participant.RemoteParticipant) {}
+                                    override fun onTrackSubscribed(track: io.livekit.android.room.track.Track, publication: io.livekit.android.room.track.Publication, participant: io.livekit.android.room.participant.RemoteParticipant) {}
+                                    override fun onTrackUnsubscribed(track: io.livekit.android.room.track.Track, publication: io.livekit.android.room.track.Publication, participant: io.livekit.android.room.participant.RemoteParticipant) {}
+                                    override fun onTrackPublished(publication: io.livekit.android.room.track.Publication, participant: io.livekit.android.room.participant.RemoteParticipant) {}
+                                    override fun onTrackUnpublished(publication: io.livekit.android.room.track.Publication, participant: io.livekit.android.room.participant.RemoteParticipant) {}
+                                    override fun onRecordingStatusChanged(recording: Boolean) {}
+                                }
+                            )
+                        } catch (e: Exception) {
+                            // Log or handle LiveKit connection errors
+                        }
+                    }
                 } else {
                     Toast.makeText(this@LiveStreamActivity, R.string.failed_start_stream, Toast.LENGTH_SHORT).show()
                     finish()

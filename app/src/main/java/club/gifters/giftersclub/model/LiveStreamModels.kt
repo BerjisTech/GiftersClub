@@ -15,7 +15,11 @@ data class LiveStream(
     @SerializedName("started_at") val startedAt: String?,
     @SerializedName("ended_at") val endedAt: String?,
     @SerializedName("created_at") val createdAt: String,
-    @SerializedName("updated_at") val updatedAt: String
+    @SerializedName("updated_at") val updatedAt: String,
+    /**
+     * LiveKit access token for connecting to SFU (via Edge Function)
+     */
+    val token: String? = null
 )
 
 /**
