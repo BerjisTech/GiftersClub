@@ -152,6 +152,7 @@
     <!-- Live stream controls -->
     <string name="end_live_stream">End Live Stream?</string>
     <string name="confirm_end_live_stream">Are you sure you want to end the live stream?</string>
+    <string name="end_live">End Live</string>
     <string name="failed_end_stream">Failed to end stream</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>

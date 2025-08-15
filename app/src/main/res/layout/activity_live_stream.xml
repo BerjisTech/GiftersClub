@@ -83,6 +83,17 @@
             app:layout_constraintTop_toTopOf="@id/streamerDetails"
             app:layout_constraintBottom_toBottomOf="@id/streamerDetails" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEndLive"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/end_live"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/streamerDetails"
+            app:layout_constraintBottom_toBottomOf="@id/streamerDetails" />
         <ImageButton
             android:id="@+id/btnCloseLive"
             android:layout_width="wrap_content"
@@ -91,8 +102,8 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/cancel"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/streamerDetails"
-            app:layout_constraintBottom_toBottomOf="@id/streamerDetails" />
+            app:layout_constraintTop_toTopOf="@id/btnEndLive"
+            app:layout_constraintBottom_toBottomOf="@id/btnEndLive" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

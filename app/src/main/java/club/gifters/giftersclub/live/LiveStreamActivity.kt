@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Gift
@@ -39,7 +40,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
+import android.widget.LinearLayout
 import com.google.android.material.imageview.ShapeableImageView
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.LiveKitConfig
@@ -84,18 +85,29 @@ class LiveStreamActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live_stream)
-        // initialize comments list overlay
-        rvLiveComments = findViewById(R.id.rvLiveComments)
-        commentsAdapter = CommentsAdapter()
-        rvLiveComments.layoutManager = LinearLayoutManager(this).apply { reverseLayout = true }
-        rvLiveComments.adapter = commentsAdapter
-
+        // comments list overlay (bottom-up) – max half-screen height, bring above video
+        rvLiveComments = findViewById<RecyclerView>(R.id.rvLiveComments).also { rv ->
+            commentsAdapter = CommentsAdapter()
+            rv.layoutManager = LinearLayoutManager(this).apply { reverseLayout = true }
+            rv.adapter = commentsAdapter
+            // limit height to half screen
+            val half = resources.displayMetrics.heightPixels / 2
+            rv.layoutParams.height = half
+            rv.bringToFront()
+        }
         // Top bar for streamer details (hidden until stream starts)
         liveTopBar = findViewById(R.id.liveTopBar)
+        liveTopBar.bringToFront()
         liveTopBar.visibility = View.GONE
+        findViewById<LinearLayout>(R.id.liveBottomBar).bringToFront()
+
         ivStreamerImage = findViewById(R.id.ivStreamerImage)
         tvStreamerName = findViewById(R.id.tvStreamerName)
         btnCloseLive = findViewById(R.id.btnCloseLive)
+        val btnEndLive = findViewById<MaterialButton>(R.id.btnEndLive)
+        // follower count & follow button
+        tvFollowerCount = findViewById(R.id.tvFollowerCount)
+        btnFollowStreamer = findViewById(R.id.btnFollowStreamer)
 
         // Request camera and audio permissions
         if (!allPermissionsGranted()) {
@@ -120,14 +132,13 @@ class LiveStreamActivity : BaseActivity() {
         }
 
         // End stream when user taps close; ask for confirmation
-        btnCloseLive.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle(R.string.end_live_stream)
-                .setMessage(R.string.confirm_end_live_stream)
-                .setPositiveButton(R.string.yes) { _, _ -> endLiveSession() }
-                .setNegativeButton(R.string.no, null)
-                .show()
-        }
+        val endDialog = AlertDialog.Builder(this)
+            .setTitle(R.string.end_live_stream)
+            .setMessage(R.string.confirm_end_live_stream)
+            .setPositiveButton(R.string.yes) { _, _ -> endLiveSession() }
+            .setNegativeButton(R.string.no, null)
+        btnEndLive.setOnClickListener { endDialog.show() }
+        btnCloseLive.setOnClickListener { finish() }
 
         // Enter key sends comment
         val etLiveComment = findViewById<EditText>(R.id.etLiveComment)
@@ -333,6 +344,19 @@ class LiveStreamActivity : BaseActivity() {
                                 }
                             }
                             liveTopBar.visibility = View.VISIBLE
+                            liveTopBar.bringToFront()
+                            liveTopBar.bringToFront()
+                            // initial comments load
+                            currentStream?.id?.let { sid ->
+                                val initial = RetrofitClient.liveStreamApi.getLiveStreamComments(
+                                    select = "*,profile:profiles(*)",
+                                    streamFilter = "eq.$sid"
+                                )
+                                commentsAdapter.submitList(initial)
+                                if (initial.isNotEmpty()) {
+                                    rvLiveComments.scrollToPosition(initial.size - 1)
+                                }
+                            }
                         }
                     }
                     // Start local camera preview
@@ -441,6 +465,15 @@ class LiveStreamActivity : BaseActivity() {
                 )
                 if (resp.isSuccessful) {
                     etLiveComment.setText("")
+                    // refresh comments list
+                    currentStream?.id?.let { sid ->
+                        val updated = RetrofitClient.liveStreamApi.getLiveStreamComments(
+                            select = "*,profile:profiles(*)",
+                            streamFilter = "eq.$sid"
+                        )
+                        commentsAdapter.submitList(updated)
+                        if (updated.isNotEmpty()) rvLiveComments.scrollToPosition(updated.size - 1)
+                    }
                 }
             } catch (_: Exception) {}
         }
