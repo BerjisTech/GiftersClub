@@ -5,7 +5,7 @@ package club.gifters.giftersclub
  */
 object LiveKitConfig {
     /** WebSocket URL for your LiveKit server */
-    const val WS_URL = "<YOUR_LIVEKIT_WS_URL>"
+    const val WS_URL = "wss://giftersclub-1ej914uy.livekit.cloud"
 
     /** Supabase Edge Function endpoint name for fetching access tokens */
     const val TOKEN_ENDPOINT = "live-session"

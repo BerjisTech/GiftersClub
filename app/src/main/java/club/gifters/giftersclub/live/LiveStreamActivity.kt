@@ -22,6 +22,7 @@ import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import kotlinx.coroutines.launch
+import android.util.Log
 import org.json.JSONObject
 import java.text.NumberFormat
 import android.text.InputType
@@ -269,6 +270,7 @@ class LiveStreamActivity : BaseActivity() {
                 val resp = RetrofitClient.functionsApi.createLiveSession(
                     CreateLiveStreamRequest(userId, title, description)
                 )
+                Log.d("LiveStreamActivity", "createLiveSession() HTTP ${resp.code()} error=${resp.errorBody()?.string()}")
                 if (resp.isSuccessful) {
                     currentStream = resp.body()
                     // Populate top bar and show streamer info
@@ -292,23 +294,11 @@ class LiveStreamActivity : BaseActivity() {
                     if (!lkToken.isNullOrBlank()) {
                         try {
                             val room = io.livekit.android.LiveKit.connect(
-                                LiveKitConfig.WS_URL,
-                                lkToken,
                                 this@LiveStreamActivity,
-                                object : io.livekit.android.room.RoomListener {
-                                    override fun onConnected(room: io.livekit.android.room.Room) {
-                                        // TODO: publish camera and microphone tracks
-                                    }
-                                    override fun onDisconnected(room: io.livekit.android.room.Room, error: io.livekit.android.room.DisconnectReason) {}
-                                    override fun onParticipantConnected(participant: io.livekit.android.room.participant.RemoteParticipant) {}
-                                    override fun onParticipantDisconnected(participant: io.livekit.android.room.participant.RemoteParticipant) {}
-                                    override fun onTrackSubscribed(track: io.livekit.android.room.track.Track, publication: io.livekit.android.room.track.Publication, participant: io.livekit.android.room.participant.RemoteParticipant) {}
-                                    override fun onTrackUnsubscribed(track: io.livekit.android.room.track.Track, publication: io.livekit.android.room.track.Publication, participant: io.livekit.android.room.participant.RemoteParticipant) {}
-                                    override fun onTrackPublished(publication: io.livekit.android.room.track.Publication, participant: io.livekit.android.room.participant.RemoteParticipant) {}
-                                    override fun onTrackUnpublished(publication: io.livekit.android.room.track.Publication, participant: io.livekit.android.room.participant.RemoteParticipant) {}
-                                    override fun onRecordingStatusChanged(recording: Boolean) {}
-                                }
+                                LiveKitConfig.WS_URL,
+                                lkToken
                             )
+                            // TODO: publish camera and microphone tracks via room.localParticipant
                         } catch (e: Exception) {
                             // Log or handle LiveKit connection errors
                         }
