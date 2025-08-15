@@ -6,7 +6,8 @@ import com.google.gson.annotations.SerializedName
  * Request body for creating a new live stream.
  */
 data class CreateLiveStreamRequest(
-    @SerializedName("host_id") val hostId: String,
+    // use camelCase so JSON property matches server expectation (hostId)
+    val hostId: String,
     val title: String,
     val description: String = ""
 )

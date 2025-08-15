@@ -67,8 +67,8 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
-    // LiveKit Android SDK for WebRTC SFU streaming
-    implementation("io.livekit:livekit-android:1.3.0")
+    // LiveKit Android SDK for WebRTC SFU streaming (v2.x)
+    implementation("io.livekit:livekit-android:2.+")
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     coreLibraryDesugaring(libs.desugar.jdk.libs)

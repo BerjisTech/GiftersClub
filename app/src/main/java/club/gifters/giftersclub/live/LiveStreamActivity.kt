@@ -39,12 +39,20 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.imageview.ShapeableImageView
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.LiveKitConfig
 import club.gifters.giftersclub.model.CreateLiveStreamRequest
 import club.gifters.giftersclub.model.LiveStream
 import coil.load
+import com.google.android.material.button.MaterialButton
+import io.livekit.android.LiveKit
+import io.livekit.android.ConnectOptions
+import io.livekit.android.LiveKitOverrides
+import io.livekit.android.RoomOptions
+import io.livekit.android.room.track.LocalAudioTrackOptions
+import io.livekit.android.room.track.LocalVideoTrackOptions
 
 /**
  * Activity displaying and managing a live streaming session (camera preview, comments, and gifts).
@@ -52,12 +60,18 @@ import coil.load
 class LiveStreamActivity : BaseActivity() {
 
     companion object {
+        private const val TAG = "LiveStreamActivity"
         private val REQUIRED_PERMISSIONS = arrayOf(
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO
         )
         private const val REQUEST_CODE_PERMISSIONS = 1001
     }
+
+    private lateinit var rvLiveComments: RecyclerView
+    private lateinit var commentsAdapter: CommentsAdapter
+    private lateinit var btnFollowStreamer: MaterialButton
+    private lateinit var tvFollowerCount: TextView
 
     private var currentStream: LiveStream? = null
 
@@ -70,6 +84,11 @@ class LiveStreamActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live_stream)
+        // initialize comments list overlay
+        rvLiveComments = findViewById(R.id.rvLiveComments)
+        commentsAdapter = CommentsAdapter()
+        rvLiveComments.layoutManager = LinearLayoutManager(this).apply { reverseLayout = true }
+        rvLiveComments.adapter = commentsAdapter
 
         // Top bar for streamer details (hidden until stream starts)
         liveTopBar = findViewById(R.id.liveTopBar)
@@ -116,7 +135,7 @@ class LiveStreamActivity : BaseActivity() {
         etLiveComment.setRawInputType(InputType.TYPE_CLASS_TEXT)
         etLiveComment.setOnEditorActionListener { _, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_SEND ||
-                (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
+                (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_UP)
             ) {
                 sendLiveComment()
                 true
@@ -270,10 +289,11 @@ class LiveStreamActivity : BaseActivity() {
                 val resp = RetrofitClient.functionsApi.createLiveSession(
                     CreateLiveStreamRequest(userId, title, description)
                 )
-                Log.d("LiveStreamActivity", "createLiveSession() HTTP ${resp.code()} error=${resp.errorBody()?.string()}")
+                val errorBody = resp.errorBody()?.string().orEmpty()
+                Log.e(TAG, "createLiveSession() HTTP ${resp.code()}: $errorBody")
                 if (resp.isSuccessful) {
                     currentStream = resp.body()
-                    // Populate top bar and show streamer info
+                    // Populate top bar and show streamer info, follower count, and follow button
                     resp.body()?.hostId?.let { hostId ->
                         lifecycleScope.launch {
                             val profiles = RetrofitClient.profileApi.getProfileByUserId(
@@ -284,27 +304,79 @@ class LiveStreamActivity : BaseActivity() {
                                 tvStreamerName.text = p.name ?: p.username
                                 ivStreamerImage.load(p.image)
                             }
+                            // follower count
+                            val followers = RetrofitClient.followsApi.getFollowers(
+                                select = "follower_id", followedIdFilter = "eq.$hostId"
+                            )
+                            tvFollowerCount.text = formatCount(followers.size)
+                            // follow/unfollow button for viewers
+                            btnFollowStreamer = findViewById(R.id.btnFollowStreamer)
+                            val currentId = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
+                            if (currentId != null && currentId != hostId) {
+                                val header = RetrofitClient.followsApi.isFollowingUser(
+                                    followedIdFilter = "eq.$hostId", followerIdFilter = "eq.$currentId"
+                                ).headers()["Content-Range"]
+                                val following = header?.substringAfterLast("/")?.toIntOrNull() ?: 0 > 0
+                                btnFollowStreamer.apply {
+                                    visibility = View.VISIBLE
+                                    text = if (following) getString(R.string.unfollow) else getString(R.string.follow)
+                                    setOnClickListener {
+                                        lifecycleScope.launch {
+                                            if (following) RetrofitClient.followsApi.unfollowUser(
+                                                    followedIdFilter = "eq.$hostId", followerIdFilter = "eq.$currentId"
+                                                ) else RetrofitClient.followsApi.followUser(
+                                                    mapOf("followed_id" to hostId, "follower_id" to currentId)
+                                                )
+                                            text = if (!following) getString(R.string.unfollow) else getString(R.string.follow)
+                                        }
+                                    }
+                                }
+                            }
                             liveTopBar.visibility = View.VISIBLE
                         }
                     }
                     // Start local camera preview
                     startCamera()
-                    // Connect to LiveKit SFU and publish local video/audio
+                    // Connect to LiveKit using v2 API (LiveKit.create + Room.connect)
                     val lkToken = resp.body()?.let { it.token ?: it.id }
                     if (!lkToken.isNullOrBlank()) {
                         try {
-                            val room = io.livekit.android.LiveKit.connect(
-                                this@LiveStreamActivity,
-                                LiveKitConfig.WS_URL,
-                                lkToken
+                            // configure RoomOptions (audio/video defaults + e2ee if needed)
+                            val roomOptions = RoomOptions(
+                                true,
+                                false,
+                                null,
+                                LocalAudioTrackOptions(),
+                                LocalVideoTrackOptions(),
+                                null,
+                                null
                             )
-                            // TODO: publish camera and microphone tracks via room.localParticipant
+                            // create Room instance
+                            val room = LiveKit.create(
+                                this@LiveStreamActivity,
+                                roomOptions,
+                                LiveKitOverrides()
+                            )
+                            lifecycleScope.launch {
+                                room.connect(
+                                    LiveKitConfig.WS_URL,
+                                    lkToken,
+                                    ConnectOptions()
+                                )
+                                // enable camera and microphone publishing
+                                room.localParticipant.setCameraEnabled(true)
+                                room.localParticipant.setMicrophoneEnabled(true)
+                            }
                         } catch (e: Exception) {
-                            // Log or handle LiveKit connection errors
+                            Log.e(TAG, "LiveKit v2 connect failed", e)
                         }
                     }
                 } else {
-                    Toast.makeText(this@LiveStreamActivity, R.string.failed_start_stream, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@LiveStreamActivity,
+                        "Failed to start live stream: HTTP ${resp.code()}",
+                        Toast.LENGTH_LONG
+                    ).show()
                     finish()
                 }
             } catch (e: Exception) {
@@ -401,6 +473,17 @@ class LiveStreamActivity : BaseActivity() {
                 Toast.makeText(this@LiveStreamActivity, R.string.failed_to_initiate_purchase,
                     Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    /**
+     * Format large counts into human-readable short form (e.g. 1.2k, 3.4m).
+     */
+    private fun formatCount(count: Int): String {
+        return when {
+            count >= 1_000_000 -> String.format("%.1fm", count / 1_000_000.0)
+            count >= 1_000 -> String.format("%.1fk", count / 1_000.0)
+            else -> count.toString()
         }
     }
 }

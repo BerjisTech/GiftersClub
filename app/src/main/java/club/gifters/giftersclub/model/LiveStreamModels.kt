@@ -7,7 +7,8 @@ import com.google.gson.annotations.SerializedName
  */
 data class LiveStream(
     val id: String,
-    @SerializedName("host_id") val hostId: String,
+    // use camelCase so request and response JSON properties align (hostId)
+    @SerializedName("hostId") val hostId: String,
     val title: String,
     val description: String,
     val status: String,
