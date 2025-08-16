@@ -128,7 +128,13 @@ class LiveStreamActivity : BaseActivity() {
             state = BottomSheetBehavior.STATE_HIDDEN
         }
         btnOpenGifts.setOnClickListener {
-            giftsBottomSheetBehavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
+            giftsBottomSheetBehavior.state = if (
+                giftsBottomSheetBehavior.state == BottomSheetBehavior.STATE_HALF_EXPANDED
+            ) {
+                BottomSheetBehavior.STATE_HIDDEN
+            } else {
+                BottomSheetBehavior.STATE_HALF_EXPANDED
+            }
         }
 
         // End stream when user taps close; ask for confirmation
@@ -146,11 +152,13 @@ class LiveStreamActivity : BaseActivity() {
         etLiveComment.setRawInputType(InputType.TYPE_CLASS_TEXT)
         etLiveComment.setOnEditorActionListener { _, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_SEND ||
-                (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_UP)
+                (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
             ) {
                 sendLiveComment()
                 true
-            } else false
+            } else {
+                false
+            }
         }
 
         // Existing UI setup for gifts carousel, comments, and viewer count
@@ -304,59 +312,55 @@ class LiveStreamActivity : BaseActivity() {
                 Log.e(TAG, "createLiveSession() HTTP ${resp.code()}: $errorBody")
                 if (resp.isSuccessful) {
                     currentStream = resp.body()
-                    // Populate top bar and show streamer info, follower count, and follow button
-                    resp.body()?.hostId?.let { hostId ->
-                        lifecycleScope.launch {
-                            val profiles = RetrofitClient.profileApi.getProfileByUserId(
-                                "*", "eq.$hostId"
-                            )
-                            if (profiles.isNotEmpty()) {
-                                val p = profiles[0]
-                                tvStreamerName.text = p.name ?: p.username
-                                ivStreamerImage.load(p.image)
-                            }
-                            // follower count
-                            val followers = RetrofitClient.followsApi.getFollowers(
-                                select = "follower_id", followedIdFilter = "eq.$hostId"
-                            )
-                            tvFollowerCount.text = formatCount(followers.size)
-                            // follow/unfollow button for viewers
-                            btnFollowStreamer = findViewById(R.id.btnFollowStreamer)
-                            val currentId = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
-                            if (currentId != null && currentId != hostId) {
-                                val header = RetrofitClient.followsApi.isFollowingUser(
-                                    followedIdFilter = "eq.$hostId", followerIdFilter = "eq.$currentId"
-                                ).headers()["Content-Range"]
-                                val following = header?.substringAfterLast("/")?.toIntOrNull() ?: 0 > 0
-                                btnFollowStreamer.apply {
-                                    visibility = View.VISIBLE
-                                    text = if (following) getString(R.string.unfollow) else getString(R.string.follow)
-                                    setOnClickListener {
-                                        lifecycleScope.launch {
-                                            if (following) RetrofitClient.followsApi.unfollowUser(
-                                                    followedIdFilter = "eq.$hostId", followerIdFilter = "eq.$currentId"
-                                                ) else RetrofitClient.followsApi.followUser(
-                                                    mapOf("followed_id" to hostId, "follower_id" to currentId)
-                                                )
-                                            text = if (!following) getString(R.string.unfollow) else getString(R.string.follow)
-                                        }
+                    liveTopBar.visibility = View.VISIBLE
+                    liveTopBar.bringToFront()
+                    lifecycleScope.launch {
+                        // Determine the host ID (fallback to current user if missing)
+                        val hostId = currentStream?.hostId ?: AuthUtils.getCurrentUserId(this@LiveStreamActivity)!!
+                        // Fetch and display host profile
+                        val profiles = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$hostId")
+                        if (profiles.isNotEmpty()) {
+                            val p = profiles[0]
+                            tvStreamerName.text = p.name ?: p.username
+                            ivStreamerImage.load(p.image)
+                        }
+                        // Display follower count
+                        val followers = RetrofitClient.followsApi.getFollowers(
+                            select = "follower_id", followedIdFilter = "eq.$hostId"
+                        )
+                        tvFollowerCount.text = formatCount(followers.size)
+                        // Show follow/unfollow only for viewers (host cannot follow self)
+                        val currentId = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
+                        if (currentId != null && currentId != hostId) {
+                            val header = RetrofitClient.followsApi.isFollowingUser(
+                                followedIdFilter = "eq.$hostId", followerIdFilter = "eq.$currentId"
+                            ).headers()["Content-Range"]
+                            val isFollowing = (header?.substringAfterLast("/")?.toIntOrNull() ?: 0) > 0
+                            btnFollowStreamer.apply {
+                                visibility = View.VISIBLE
+                                text = if (isFollowing) getString(R.string.unfollow) else getString(R.string.follow)
+                                setOnClickListener {
+                                    lifecycleScope.launch {
+                                        if (isFollowing) RetrofitClient.followsApi.unfollowUser(
+                                            followedIdFilter = "eq.$hostId", followerIdFilter = "eq.$currentId"
+                                        ) else RetrofitClient.followsApi.followUser(
+                                            mapOf("followed_id" to hostId, "follower_id" to currentId)
+                                        )
+                                        text = if (!isFollowing) getString(R.string.unfollow) else getString(R.string.follow)
                                     }
                                 }
                             }
-                            liveTopBar.visibility = View.VISIBLE
-                            liveTopBar.bringToFront()
-                            liveTopBar.bringToFront()
-                            // initial comments load
-                            currentStream?.id?.let { sid ->
-                                val initial = RetrofitClient.liveStreamApi.getLiveStreamComments(
-                                    select = "*,profile:profiles(*)",
-                                    streamFilter = "eq.$sid"
-                                )
-                                commentsAdapter.submitList(initial)
-                                if (initial.isNotEmpty()) {
-                                    rvLiveComments.scrollToPosition(initial.size - 1)
-                                }
-                            }
+                        } else {
+                            btnFollowStreamer.visibility = View.GONE
+                        }
+                        // Load and show initial comments
+                        currentStream?.id?.let { sid ->
+                            val initial = RetrofitClient.liveStreamApi.getLiveStreamComments(
+                                select = "*,profile:profiles(*)",
+                                streamFilter = "eq.$sid"
+                            )
+                            commentsAdapter.submitList(initial)
+                            if (initial.isNotEmpty()) rvLiveComments.scrollToPosition(initial.size - 1)
                         }
                     }
                     // Start local camera preview
