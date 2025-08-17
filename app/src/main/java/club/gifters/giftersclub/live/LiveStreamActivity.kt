@@ -41,8 +41,7 @@ import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.widget.LinearLayout
-import io.livekit.android.video.VideoView
-import io.livekit.android.room.track.LocalVideoTrack
+import io.livekit.android.renderer.SurfaceViewRenderer
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -58,6 +57,7 @@ import io.livekit.android.ConnectOptions
 import io.livekit.android.LiveKitOverrides
 import io.livekit.android.RoomOptions
 import io.livekit.android.room.track.LocalAudioTrackOptions
+import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.LocalVideoTrackOptions
 import io.livekit.android.room.Room
 
@@ -89,7 +89,7 @@ class LiveStreamActivity : BaseActivity() {
     // Microphone enabled state for mute/unmute
     private var isMicEnabled = true
     // LiveKit local preview
-    private var previewView: VideoView? = null
+    private var previewView: SurfaceViewRenderer? = null
     private var isFrontFacing = true
     // Job for polling comments
     private var commentsJob: Job? = null
@@ -430,11 +430,11 @@ class LiveStreamActivity : BaseActivity() {
                         btnSwitchCamera.visibility = View.VISIBLE
                         btnSwitchCamera.setOnClickListener {
                             try {
-                                val localPub = liveKitRoom?.localParticipant?.videoTracks?.firstOrNull()
-                                val localTrack = localPub?.track as? LocalVideoTrack
-                                localTrack?.switchCamera()
+                                val localPubPair = liveKitRoom?.localParticipant?.videoTrackPublications?.firstOrNull()
+                                val localTrack2 = localPubPair?.second as? LocalVideoTrack
+                                localTrack2?.switchCamera()
                                 isFrontFacing = !isFrontFacing
-                                previewView?.mirror = isFrontFacing
+                                previewView?.setMirror(isFrontFacing)
                             } catch (_: Exception) { }
                         }
                     } else {
@@ -488,20 +488,22 @@ class LiveStreamActivity : BaseActivity() {
                             room.localParticipant.setCameraEnabled(true)
                             room.localParticipant.setMicrophoneEnabled(true)
 
-                            // Attach local preview to container using LiveKit VideoView
+                            // Attach local preview to container using SurfaceViewRenderer
                             val container = findViewById<FrameLayout>(R.id.flLiveStream)
                             container.removeAllViews()
-                            val preview = VideoView(this@LiveStreamActivity)
+                            val preview = SurfaceViewRenderer(this@LiveStreamActivity)
                             preview.layoutParams = FrameLayout.LayoutParams(
                                 FrameLayout.LayoutParams.MATCH_PARENT,
                                 FrameLayout.LayoutParams.MATCH_PARENT
                             )
-                            preview.mirror = isFrontFacing
+                            preview.setMirror(isFrontFacing)
                             container.addView(preview)
                             previewView = preview
-                            // Bind the first local video track publication (if available)
-                            val localPub = room.localParticipant.videoTracks.firstOrNull()
-                            localPub?.track?.addRenderer(preview)
+                            // Initialize renderer and bind the first local video track (if available)
+                            room.initVideoRenderer(preview)
+                            val localPubPair = room.localParticipant.videoTrackPublications.firstOrNull()
+                            val localTrack = localPubPair?.second as? LocalVideoTrack
+                            localTrack?.addRenderer(preview)
                         }
                         } catch (e: Exception) {
                             Log.e(TAG, "LiveKit v2 connect failed", e)

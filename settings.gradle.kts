@@ -16,7 +16,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // JitPack for AmbilWarna color picker
+        // JitPack for LiveKit UI components and AmbilWarna color picker
         maven(url = "https://jitpack.io")
     }
 }
