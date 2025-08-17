@@ -66,6 +66,7 @@ class LiveStreamActivity : BaseActivity() {
 
     companion object {
         private const val TAG = "LiveStreamActivity"
+        private const val USE_LIVEKIT_CAMERA_PREVIEW = true
         private val REQUIRED_PERMISSIONS = arrayOf(
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO
@@ -413,8 +414,10 @@ class LiveStreamActivity : BaseActivity() {
                             }
                         }
                     }
-                    // Start local camera preview
-                    startCamera()
+                    // Prefer LiveKit-managed camera; skip CameraX preview to avoid camera conflicts
+                    if (!USE_LIVEKIT_CAMERA_PREVIEW) {
+                        startCamera()
+                    }
                     // Show host controls: switch camera and mute/unmute microphone
                     btnSwitchCamera.visibility = View.VISIBLE
                     btnToggleMic.visibility = View.VISIBLE
@@ -461,7 +464,7 @@ class LiveStreamActivity : BaseActivity() {
                             )
                             // keep reference for host mic controls
                             liveKitRoom = room
-                            // enable camera and microphone publishing
+                            // enable camera and microphone publishing (LiveKit manages camera capture)
                             room.localParticipant.setCameraEnabled(true)
                             room.localParticipant.setMicrophoneEnabled(true)
                         }
