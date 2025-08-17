@@ -41,6 +41,8 @@ import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.widget.LinearLayout
+import io.livekit.android.video.VideoView
+import io.livekit.android.room.track.LocalVideoTrack
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -86,6 +88,9 @@ class LiveStreamActivity : BaseActivity() {
     private var currentLensFacing = CameraSelector.LENS_FACING_FRONT
     // Microphone enabled state for mute/unmute
     private var isMicEnabled = true
+    // LiveKit local preview
+    private var previewView: VideoView? = null
+    private var isFrontFacing = true
     // Job for polling comments
     private var commentsJob: Job? = null
 
@@ -421,9 +426,19 @@ class LiveStreamActivity : BaseActivity() {
                     // Show host controls: switch camera and mute/unmute microphone
                     btnToggleMic.visibility = View.VISIBLE
                     if (USE_LIVEKIT_CAMERA_PREVIEW) {
-                        // Hide CameraX-based switch to avoid conflicts; LiveKit can manage camera internally if needed
-                        btnSwitchCamera.visibility = View.GONE
+                        // Show LiveKit-based flip (no CameraX)
+                        btnSwitchCamera.visibility = View.VISIBLE
+                        btnSwitchCamera.setOnClickListener {
+                            try {
+                                val localPub = liveKitRoom?.localParticipant?.videoTracks?.firstOrNull()
+                                val localTrack = localPub?.track as? LocalVideoTrack
+                                localTrack?.switchCamera()
+                                isFrontFacing = !isFrontFacing
+                                previewView?.mirror = isFrontFacing
+                            } catch (_: Exception) { }
+                        }
                     } else {
+                        // CameraX-based preview/flip (not used when LiveKit manages camera)
                         btnSwitchCamera.visibility = View.VISIBLE
                         btnSwitchCamera.setOnClickListener {
                             currentLensFacing = if (currentLensFacing == CameraSelector.LENS_FACING_FRONT)
@@ -472,6 +487,21 @@ class LiveStreamActivity : BaseActivity() {
                             // enable camera and microphone publishing (LiveKit manages camera capture)
                             room.localParticipant.setCameraEnabled(true)
                             room.localParticipant.setMicrophoneEnabled(true)
+
+                            // Attach local preview to container using LiveKit VideoView
+                            val container = findViewById<FrameLayout>(R.id.flLiveStream)
+                            container.removeAllViews()
+                            val preview = VideoView(this@LiveStreamActivity)
+                            preview.layoutParams = FrameLayout.LayoutParams(
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                                FrameLayout.LayoutParams.MATCH_PARENT
+                            )
+                            preview.mirror = isFrontFacing
+                            container.addView(preview)
+                            previewView = preview
+                            // Bind the first local video track publication (if available)
+                            val localPub = room.localParticipant.videoTracks.firstOrNull()
+                            localPub?.track?.addRenderer(preview)
                         }
                         } catch (e: Exception) {
                             Log.e(TAG, "LiveKit v2 connect failed", e)
