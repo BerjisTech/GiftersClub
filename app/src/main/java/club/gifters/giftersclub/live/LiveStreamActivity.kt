@@ -328,6 +328,18 @@ class LiveStreamActivity : BaseActivity() {
                 Log.e(TAG, "createLiveSession() HTTP ${resp.code()}: $errorBody")
                 if (resp.isSuccessful) {
                     currentStream = resp.body()
+                    // Ensure stream is marked live (in case backend defaulted to 'scheduled')
+                    currentStream?.let { ls ->
+                        if (ls.status.lowercase() != "live") {
+                            try {
+                                val nowIso = java.time.Instant.now().toString()
+                                RetrofitClient.functionsApi.updateLiveSession(
+                                    id = ls.id,
+                                    updates = mapOf("status" to "live", "started_at" to nowIso)
+                                )
+                            } catch (_: Exception) { }
+                        }
+                    }
                     liveTopBar.visibility = View.VISIBLE
                     liveTopBar.bringToFront()
                     lifecycleScope.launch {
