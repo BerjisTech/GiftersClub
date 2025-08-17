@@ -430,16 +430,30 @@ class LiveStreamActivity : BaseActivity() {
                         btnSwitchCamera.visibility = View.VISIBLE
                         btnSwitchCamera.setOnClickListener {
                             try {
-                                val localPubPair = liveKitRoom?.localParticipant?.videoTrackPublications?.firstOrNull()
-                                val localTrack2 = localPubPair?.second as? LocalVideoTrack
-                                localTrack2?.switchCamera()
+                                val localPub = liveKitRoom?.localParticipant?.videoTracks?.firstOrNull()
+                                val localTrack = localPub?.track as? LocalVideoTrack
+                                localTrack?.switchCamera()
                                 isFrontFacing = !isFrontFacing
-                                previewView?.setMirror(isFrontFacing)
+                                previewView?.mirror = isFrontFacing
                             } catch (_: Exception) { }
+                        }
+                        // Camera on/off toggle
+                        btnToggleCamera.visibility = View.VISIBLE
+                        var isVideoEnabled = true
+                        btnToggleCamera.setOnClickListener {
+                            isVideoEnabled = !isVideoEnabled
+                            lifecycleScope.launch {
+                                liveKitRoom?.localParticipant?.setCameraEnabled(isVideoEnabled)
+                            }
+                            btnToggleCamera.setImageResource(
+                                if (isVideoEnabled) android.R.drawable.ic_menu_view
+                                else android.R.drawable.ic_menu_close_clear_cancel
+                            )
                         }
                     } else {
                         // CameraX-based preview/flip (not used when LiveKit manages camera)
                         btnSwitchCamera.visibility = View.VISIBLE
+                        btnToggleCamera.visibility = View.GONE
                         btnSwitchCamera.setOnClickListener {
                             currentLensFacing = if (currentLensFacing == CameraSelector.LENS_FACING_FRONT)
                                 CameraSelector.LENS_FACING_BACK else CameraSelector.LENS_FACING_FRONT

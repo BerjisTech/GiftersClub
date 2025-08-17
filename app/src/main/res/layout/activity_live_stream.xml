@@ -99,6 +99,18 @@
             app:layout_constraintEnd_toStartOf="@+id/btnToggleMic" />
 
         <ImageButton
+            android:id="@+id/btnToggleCamera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/turn_off_camera"
+            android:src="@android:drawable/ic_menu_view"
+            app:layout_constraintBottom_toBottomOf="@id/streamerDetails"
+            app:layout_constraintTop_toTopOf="@id/streamerDetails"
+            app:layout_constraintEnd_toStartOf="@id/btnToggleMic" />
+
+        <ImageButton
             android:id="@+id/btnToggleMic"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
