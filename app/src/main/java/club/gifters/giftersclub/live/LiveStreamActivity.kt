@@ -93,6 +93,8 @@ class LiveStreamActivity : BaseActivity() {
     private lateinit var ivStreamerImage: ShapeableImageView
     private lateinit var tvStreamerName: TextView
     private lateinit var btnCloseLive: ImageButton
+    private lateinit var btnSwitchCamera: ImageButton
+    private lateinit var btnToggleMic: ImageButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -120,6 +122,8 @@ class LiveStreamActivity : BaseActivity() {
         // follower count & follow button
         tvFollowerCount = findViewById(R.id.tvFollowerCount)
         btnFollowStreamer = findViewById(R.id.btnFollowStreamer)
+        btnSwitchCamera = findViewById(R.id.btnSwitchCamera)
+        btnToggleMic = findViewById(R.id.btnToggleMic)
 
         // Request camera and audio permissions
         if (!allPermissionsGranted()) {
@@ -346,7 +350,7 @@ class LiveStreamActivity : BaseActivity() {
                             val header = RetrofitClient.followsApi.isFollowingUser(
                                 followedIdFilter = "eq.$hostId", followerIdFilter = "eq.$currentId"
                             ).headers()["Content-Range"]
-                            val isFollowing = (header?.substringAfterLast("/")?.toIntOrNull() ?: 0) > 0
+                            var isFollowing = (header?.substringAfterLast("/")?.toIntOrNull() ?: 0) > 0
                             btnFollowStreamer.apply {
                                 visibility = View.VISIBLE
                                 text = if (isFollowing) getString(R.string.unfollow) else getString(R.string.follow)
@@ -409,7 +413,9 @@ class LiveStreamActivity : BaseActivity() {
                     }
                     btnToggleMic.setOnClickListener {
                         isMicEnabled = !isMicEnabled
-                        liveKitRoom?.localParticipant?.setMicrophoneEnabled(isMicEnabled)
+                        lifecycleScope.launch {
+                            liveKitRoom?.localParticipant?.setMicrophoneEnabled(isMicEnabled)
+                        }
                         btnToggleMic.setImageResource(
                             if (isMicEnabled) android.R.drawable.ic_lock_silent_mode_off
                             else android.R.drawable.ic_lock_silent_mode
