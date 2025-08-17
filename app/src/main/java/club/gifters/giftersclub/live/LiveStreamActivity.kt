@@ -80,6 +80,7 @@ class LiveStreamActivity : BaseActivity() {
     private lateinit var commentsAdapter: CommentsAdapter
     private lateinit var btnFollowStreamer: MaterialButton
     private lateinit var tvFollowerCount: TextView
+    private lateinit var tvViewerCount: TextView
 
     private var currentStream: LiveStream? = null
     // LiveKit room instance for host controls and realtime
@@ -128,6 +129,7 @@ class LiveStreamActivity : BaseActivity() {
         val btnEndLive = findViewById<MaterialButton>(R.id.btnEndLive)
         // follower count & follow button
         tvFollowerCount = findViewById(R.id.tvFollowerCount)
+        tvViewerCount = findViewById(R.id.tvViewerCount)
         btnFollowStreamer = findViewById(R.id.btnFollowStreamer)
         btnSwitchCamera = findViewById(R.id.btnSwitchCamera)
         btnToggleMic = findViewById(R.id.btnToggleMic)
@@ -520,6 +522,18 @@ class LiveStreamActivity : BaseActivity() {
                             val localPubPair = room.localParticipant.videoTrackPublications.firstOrNull()
                             val localTrack = localPubPair?.second as? LocalVideoTrack
                             localTrack?.addRenderer(preview)
+
+                            // Poll DB viewer_count periodically and update UI
+                            lifecycleScope.launch {
+                                while (isActive) {
+                                    delay(3000)
+                                    try {
+                                        val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,viewer_count", "eq.${currentStream?.id}")
+                                        val vc = rows.firstOrNull()?.viewerCount ?: 0
+                                        tvViewerCount.text = vc.toString()
+                                    } catch (_: Exception) { }
+                                }
+                            }
                         }
                         } catch (e: Exception) {
                             Log.e(TAG, "LiveKit v2 connect failed", e)
