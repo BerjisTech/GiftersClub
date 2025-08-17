@@ -160,7 +160,7 @@ class LiveStreamActivity : BaseActivity() {
             .setPositiveButton(R.string.yes) { _, _ -> endLiveSession() }
             .setNegativeButton(R.string.no, null)
         btnEndLive.setOnClickListener { endDialog.show() }
-        btnCloseLive.setOnClickListener { finish() }
+        btnCloseLive.setOnClickListener { endDialog.show() }
 
         // Enter key sends comment
         val etLiveComment = findViewById<EditText>(R.id.etLiveComment)
