@@ -74,6 +74,7 @@ interface ChatApi {
     suspend fun markMessagesAsRead(
         @Query("sender_id", encoded = true) senderFilter: String,
         @Query("receiver_id", encoded = true) receiverFilter: String,
+        @Query("read_at", encoded = true) readFilter: String = "is.null",
         @Body updates: Map<String, @JvmSuppressWildcards Any>
     ): Response<List<Message>>
 

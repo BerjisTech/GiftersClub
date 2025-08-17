@@ -86,6 +86,30 @@
             app:layout_constraintEnd_toStartOf="@id/btnCloseLive"
             app:layout_constraintTop_toTopOf="@id/streamerDetails" />
 
+        <ImageButton
+            android:id="@+id/btnSwitchCamera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/switch_camera"
+            android:src="@android:drawable/ic_menu_camera"
+            app:layout_constraintBottom_toBottomOf="@id/streamerDetails"
+            app:layout_constraintTop_toTopOf="@id/streamerDetails"
+            app:layout_constraintEnd_toStartOf="@+id/btnToggleMic" />
+
+        <ImageButton
+            android:id="@+id/btnToggleMic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/mute_microphone"
+            android:src="@android:drawable/ic_lock_silent_mode_off"
+            app:layout_constraintBottom_toBottomOf="@id/streamerDetails"
+            app:layout_constraintTop_toTopOf="@id/streamerDetails"
+            app:layout_constraintEnd_toStartOf="@id/btnEndLive" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEndLive"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
@@ -116,10 +140,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp"
         android:background="@android:color/transparent"
         android:overScrollMode="never"
-        app:layout_anchorGravity="bottom" />
+        app:layout_anchor="@id/liveBottomBar"
+        app:layout_anchorGravity="top" />
 
     <LinearLayout
         android:id="@+id/liveBottomBar"

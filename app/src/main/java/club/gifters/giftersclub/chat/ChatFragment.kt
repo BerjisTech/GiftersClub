@@ -398,10 +398,11 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 val resp = chatApi.markMessagesAsRead(
                     senderFilter = "sender_id.eq.$partnerId",
                     receiverFilter = "receiver_id.eq.$userId",
+                    readFilter = "is.null",
                     updates = mapOf("read_at" to Instant.now().toString())
                 )
-                if (!resp.isSuccessful) {
-                    // Log.w("ChatFragment", "Error marking messages as read: ${resp.code()}")
+                if (resp.isSuccessful) {
+                    loadChatList()
                 }
             } catch (e: Exception) {
                 // Log.w("ChatFragment", "Error marking messages as read", e)

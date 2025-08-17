@@ -109,6 +109,7 @@
     <string name="gift_icon">Gift Icon</string>
     <string name="wishlist_icon">Wishlist Icon</string>
     <string name="switch_camera">Switch camera</string>
+    <string name="mute_microphone">Mute microphone</string>
     <string name="toggle_flash">Toggle flash</string>
     <string name="set_recording_timer">Set recording timer</string>
     <string name="show_filters">Show filters</string>

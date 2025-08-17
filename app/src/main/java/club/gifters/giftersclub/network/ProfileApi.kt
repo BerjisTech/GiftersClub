@@ -23,9 +23,7 @@ import club.gifters.giftersclub.model.ReportedUserItem
 interface ProfileApi {
     @GET("profiles")
     suspend fun getProfileByUsername(
-        @Query("select", encoded = true) select: String =
-            "*,followers_count:follows!follows_followed_id(count)," +
-            "following_count:follows!follows_follower_id(count)",
+        @Query("select", encoded = true) select: String = "*",
         @Query("username", encoded = true) usernameFilter: String
     ): List<Profile>
 
@@ -34,9 +32,7 @@ interface ProfileApi {
      */
     @GET("profiles")
     suspend fun getProfileByUserId(
-        @Query("select", encoded = true) select: String =
-            "*,followers_count:follows!follows_followed_id(count)," +
-            "following_count:follows!follows_follower_id(count)",
+        @Query("select", encoded = true) select: String = "*",
         @Query("user_id", encoded = true) userIdFilter: String
     ): List<Profile>
 
