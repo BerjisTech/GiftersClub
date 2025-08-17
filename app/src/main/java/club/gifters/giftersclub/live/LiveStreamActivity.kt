@@ -101,6 +101,7 @@ class LiveStreamActivity : BaseActivity() {
     private lateinit var btnCloseLive: ImageButton
     private lateinit var btnSwitchCamera: ImageButton
     private lateinit var btnToggleMic: ImageButton
+    private lateinit var btnToggleCamera: ImageButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -130,6 +131,7 @@ class LiveStreamActivity : BaseActivity() {
         btnFollowStreamer = findViewById(R.id.btnFollowStreamer)
         btnSwitchCamera = findViewById(R.id.btnSwitchCamera)
         btnToggleMic = findViewById(R.id.btnToggleMic)
+        btnToggleCamera = findViewById<ImageButton>(R.id.btnToggleCamera)
 
         // Request camera and audio permissions
         if (!allPermissionsGranted()) {
@@ -430,11 +432,11 @@ class LiveStreamActivity : BaseActivity() {
                         btnSwitchCamera.visibility = View.VISIBLE
                         btnSwitchCamera.setOnClickListener {
                             try {
-                                val localPub = liveKitRoom?.localParticipant?.videoTracks?.firstOrNull()
-                                val localTrack = localPub?.track as? LocalVideoTrack
-                                localTrack?.switchCamera()
+                                val localPubPair = liveKitRoom?.localParticipant?.videoTrackPublications?.firstOrNull()
+                                val localTrack2 = localPubPair?.second as? LocalVideoTrack
+                                localTrack2?.switchCamera()
                                 isFrontFacing = !isFrontFacing
-                                previewView?.mirror = isFrontFacing
+                                previewView?.setMirror(isFrontFacing)
                             } catch (_: Exception) { }
                         }
                         // Camera on/off toggle

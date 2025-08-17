@@ -223,4 +223,5 @@
     <string name="post_video">Post video</string>
     <string name="post_image">Post image</string>
     <string name="unfollow">Unfollow</string>
+    <string name="turn_off_camera">Toggle camera on off</string>
 </resources>
