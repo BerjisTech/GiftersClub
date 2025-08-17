@@ -419,12 +419,17 @@ class LiveStreamActivity : BaseActivity() {
                         startCamera()
                     }
                     // Show host controls: switch camera and mute/unmute microphone
-                    btnSwitchCamera.visibility = View.VISIBLE
                     btnToggleMic.visibility = View.VISIBLE
-                    btnSwitchCamera.setOnClickListener {
-                        currentLensFacing = if (currentLensFacing == CameraSelector.LENS_FACING_FRONT)
-                            CameraSelector.LENS_FACING_BACK else CameraSelector.LENS_FACING_FRONT
-                        startCamera(currentLensFacing)
+                    if (USE_LIVEKIT_CAMERA_PREVIEW) {
+                        // Hide CameraX-based switch to avoid conflicts; LiveKit can manage camera internally if needed
+                        btnSwitchCamera.visibility = View.GONE
+                    } else {
+                        btnSwitchCamera.visibility = View.VISIBLE
+                        btnSwitchCamera.setOnClickListener {
+                            currentLensFacing = if (currentLensFacing == CameraSelector.LENS_FACING_FRONT)
+                                CameraSelector.LENS_FACING_BACK else CameraSelector.LENS_FACING_FRONT
+                            startCamera(currentLensFacing)
+                        }
                     }
                     btnToggleMic.setOnClickListener {
                         isMicEnabled = !isMicEnabled
