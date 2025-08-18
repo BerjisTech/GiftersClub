@@ -456,10 +456,12 @@ class LiveStreamActivity : BaseActivity() {
                             (pubPair.second as? RemoteVideoTrack)?.addRenderer(preview)
                         }
                     }
-                    // Subscribe to TrackSubscribed events via callback
-                    room.events.collect { event ->
-                        if (event is RoomEvent.TrackSubscribed && event.track is RemoteVideoTrack) {
-                            (event.track as RemoteVideoTrack).addRenderer(preview)
+                    // Subscribe to TrackSubscribed events in a background coroutine
+                    launch {
+                        room.events.collect { event ->
+                            if (event is RoomEvent.TrackSubscribed && event.track is RemoteVideoTrack) {
+                                (event.track as RemoteVideoTrack).addRenderer(preview)
+                            }
                         }
                     }
                     // Start status polling to exit when stream ends
