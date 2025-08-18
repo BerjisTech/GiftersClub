@@ -10,6 +10,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import club.gifters.giftersclub.LiveStreamSetupBottomSheetFragment
 import club.gifters.giftersclub.BaseActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -307,27 +308,11 @@ class LiveStreamActivity : BaseActivity() {
         }
 
     private fun showCreateStreamDialog() {
-        val view = layoutInflater.inflate(R.layout.dialog_create_stream, null)
-        val etTitle = view.findViewById<EditText>(R.id.etStreamTitle)
-        val etDesc = view.findViewById<EditText>(R.id.etStreamDescription)
-        AlertDialog.Builder(this)
-            .setTitle(R.string.start_live_stream)
-            .setView(view)
-            .setPositiveButton(R.string.start) { _, _ ->
-                val title = etTitle.text.toString().trim()
-                val desc = etDesc.text.toString().trim()
-                if (title.isEmpty()) {
-                    Toast.makeText(this, R.string.stream_title_required, Toast.LENGTH_SHORT).show()
-                } else {
-                    startLiveSession(title, desc)
-                }
-            }
-            .setNegativeButton(android.R.string.cancel) { _, _ -> finish() }
-            .setCancelable(false)
-            .show()
+        LiveStreamSetupBottomSheetFragment()
+            .show(supportFragmentManager, LiveStreamSetupBottomSheetFragment.TAG)
     }
 
-    private fun startLiveSession(title: String, description: String) {
+    fun startLiveSession(title: String, description: String) {
         val userId = AuthUtils.getCurrentUserId(this) ?: return
         lifecycleScope.launch {
             try {
