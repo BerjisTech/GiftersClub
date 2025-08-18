@@ -99,6 +99,8 @@ class LiveStreamActivity : BaseActivity() {
     private var isFrontFacing = true
     // Job for polling comments
     private var commentsJob: Job? = null
+    private var statusJob: Job? = null
+    private var isEnded: Boolean = false
 
     // UI references for dynamic live stream controls
     private lateinit var liveTopBar: ConstraintLayout
@@ -195,7 +197,7 @@ class LiveStreamActivity : BaseActivity() {
             if (actionId == EditorInfo.IME_ACTION_SEND ||
                 (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
             ) {
-                sendLiveComment()
+                if (!isEnded) sendLiveComment()
                 true
             } else {
                 false
@@ -457,6 +459,32 @@ class LiveStreamActivity : BaseActivity() {
                     room.events.collect { event ->
                         if (event is RoomEvent.TrackSubscribed && event.track is RemoteVideoTrack) {
                             (event.track as RemoteVideoTrack).addRenderer(preview)
+                        }
+                    }
+                    // Start status polling to exit when stream ends
+                    val sid = currentStream?.id
+                    if (sid != null) {
+                        statusJob?.cancel()
+                        statusJob = launch {
+                            while (isActive && !isEnded) {
+                                delay(3000)
+                                try {
+                                    val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,status,viewer_count", "eq.$sid")
+                                    val row = rows.firstOrNull()
+                                    if (row != null) {
+                                        tvViewerCount.text = (row.viewerCount).toString()
+                                        if (row.status != "live") {
+                                            isEnded = true
+                                            try { liveKitRoom?.disconnect() } catch (_: Exception) {}
+                                            commentsJob?.cancel(); commentsJob = null
+                                            withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                Toast.makeText(this@LiveStreamActivity, R.string.stream_not_found, Toast.LENGTH_SHORT).show()
+                                                finish()
+                                            }
+                                        }
+                                    }
+                                } catch (_: Exception) { }
+                            }
                         }
                     }
                 } catch (e: Exception) {
