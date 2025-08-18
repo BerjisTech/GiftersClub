@@ -472,11 +472,18 @@ class LiveStreamActivity : BaseActivity() {
     private fun handleDeepLinkStream(streamId: String) {
         lifecycleScope.launch {
             try {
-                val streams = RetrofitClient.liveStreamApi.getLiveStreamById(
-                    select = "*",
-                    idFilter = "eq.$streamId"
-                )
-                val ls = streams.firstOrNull()
+                // Fetch via Edge Function to include a LiveKit token for viewer
+                val resp = RetrofitClient.functionsApi.getLiveSession(streamId)
+                if (!resp.isSuccessful) {
+                    Toast.makeText(
+                        this@LiveStreamActivity,
+                        R.string.stream_not_found,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    finish()
+                    return@launch
+                }
+                val ls = resp.body()
                 if (ls == null) {
                     Toast.makeText(
                         this@LiveStreamActivity,
