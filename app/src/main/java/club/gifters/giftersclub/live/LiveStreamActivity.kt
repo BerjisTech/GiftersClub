@@ -33,6 +33,7 @@ import android.view.inputmethod.EditorInfo
 import club.gifters.giftersclub.model.LiveStreamCommentRequest
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.ImageButton
 import androidx.camera.core.CameraSelector
@@ -42,6 +43,7 @@ import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.widget.LinearLayout
+import androidx.cardview.widget.CardView
 import io.livekit.android.renderer.SurfaceViewRenderer
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -101,9 +103,10 @@ class LiveStreamActivity : BaseActivity() {
     private lateinit var ivStreamerImage: ShapeableImageView
     private lateinit var tvStreamerName: TextView
     private lateinit var btnCloseLive: ImageButton
-    private lateinit var btnSwitchCamera: ImageButton
+    private lateinit var btnSwitchCamera: ImageView
     private lateinit var btnToggleMic: ImageButton
     private lateinit var btnToggleCamera: ImageButton
+    private lateinit var shareLive: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -127,7 +130,7 @@ class LiveStreamActivity : BaseActivity() {
         ivStreamerImage = findViewById(R.id.ivStreamerImage)
         tvStreamerName = findViewById(R.id.tvStreamerName)
         btnCloseLive = findViewById(R.id.btnCloseLive)
-        val btnEndLive = findViewById<MaterialButton>(R.id.btnEndLive)
+        val btnEndLive = findViewById<CardView>(R.id.btnEndLive)
         // follower count & follow button
         tvFollowerCount = findViewById(R.id.tvFollowerCount)
         tvViewerCount = findViewById(R.id.tvViewerCount)
@@ -135,6 +138,7 @@ class LiveStreamActivity : BaseActivity() {
         btnSwitchCamera = findViewById(R.id.btnSwitchCamera)
         btnToggleMic = findViewById(R.id.btnToggleMic)
         btnToggleCamera = findViewById<ImageButton>(R.id.btnToggleCamera)
+        shareLive = findViewById(R.id.shareLive)
 
         // Request camera and audio permissions
         if (!allPermissionsGranted()) {
@@ -263,6 +267,17 @@ class LiveStreamActivity : BaseActivity() {
         }
         rechargeContainer.setOnClickListener {
             showBuyTokensDialog(userId)
+        }
+        shareLive.setOnClickListener {
+            // Share live stream link via intent
+            val streamId = currentStream?.id ?: return@setOnClickListener
+            val shareText = "Watch my live stream: https://gifters.club/live/$streamId"
+            val shareIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_TEXT, shareText)
+                type = "text/plain"
+            }
+            startActivity(Intent.createChooser(shareIntent, getString(R.string.share_live_stream)))
         }
     }
 
