@@ -32,7 +32,6 @@ class CreateOrGoLiveActivity : AppCompatActivity() {
             // hide the menu options and show the CreatePostFragment in this container
             goLive.visibility = View.GONE
             createPost.visibility = View.GONE
-            findViewById<View>(R.id.midWay).visibility = View.GONE
             supportFragmentManager.beginTransaction()
                 .replace(R.id.main, CreatePostFragment())
                 .addToBackStack(null)
@@ -48,13 +47,11 @@ class CreateOrGoLiveActivity : AppCompatActivity() {
         // Show/hide menu cards when fragment back stack changes
         supportFragmentManager.addOnBackStackChangedListener {
             val isInCreatePost = supportFragmentManager.findFragmentById(R.id.main) is CreatePostFragment
-            val midWay = findViewById<View>(R.id.midWay)
             if (isInCreatePost) {
                 // keep menu hidden under fragment
             } else {
                 goLive.visibility = View.VISIBLE
                 createPost.visibility = View.VISIBLE
-                midWay.visibility = View.VISIBLE
             }
         }
     }

@@ -278,7 +278,7 @@ class MainActivity : BaseActivity() {
                     true
                 }
                 R.id.nav_create -> {
-                    startActivity(Intent(this, CreateOrGoLiveActivity::class.java))
+                    CreateOrGoLiveBottomSheetFragment().show(supportFragmentManager, CreateOrGoLiveBottomSheetFragment.TAG)
                     true
                 }
                 R.id.nav_inbox -> {
