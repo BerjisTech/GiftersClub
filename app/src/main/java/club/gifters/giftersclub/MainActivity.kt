@@ -22,6 +22,7 @@ import club.gifters.giftersclub.chat.ChatFragment
 import club.gifters.giftersclub.chat.NotificationListFragment
 import android.content.Intent
 import club.gifters.giftersclub.live.LiveStreamActivity
+import club.gifters.giftersclub.CreateOrGoLiveBottomSheetFragment
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -51,6 +52,8 @@ import android.animation.Animator
 class MainActivity : BaseActivity() {
     companion object {
         private const val NOTIF_PERMISSION_REQUEST_CODE = 1001
+        /** Intent extra to reopen the Create/Go-Live bottom sheet when returning here */
+        const val EXTRA_SHOW_CREATE_SHEET = "EXTRA_SHOW_CREATE_SHEET"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,6 +75,11 @@ class MainActivity : BaseActivity() {
             return
         }
         setContentView(R.layout.activity_main)
+        // If returning here after canceling live-stream setup, re-open create/go-live sheet
+        if (intent.getBooleanExtra(EXTRA_SHOW_CREATE_SHEET, false)) {
+            CreateOrGoLiveBottomSheetFragment()
+                .show(supportFragmentManager, CreateOrGoLiveBottomSheetFragment.TAG)
+        }
         RetrofitClient.init(this)
 
 

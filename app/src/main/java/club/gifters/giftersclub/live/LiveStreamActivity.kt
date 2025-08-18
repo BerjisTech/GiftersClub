@@ -15,11 +15,13 @@ import club.gifters.giftersclub.BaseActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Gift
+import club.gifters.giftersclub.model.LiveStreamViewerRequest
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -111,6 +113,11 @@ class LiveStreamActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live_stream)
+        // Deep-link support: if URL is https://gifters.club/live/{streamId}
+        intent.data?.lastPathSegment?.takeIf { it.isNotEmpty() }?.let { deepId ->
+            handleDeepLinkStream(deepId)
+            return
+        }
         // comments list overlay (bottom-up) – max half-screen height, bring above video
         rvLiveComments = findViewById<RecyclerView>(R.id.rvLiveComments).also { rv ->
             commentsAdapter = CommentsAdapter()
@@ -325,6 +332,47 @@ class LiveStreamActivity : BaseActivity() {
     private fun showCreateStreamDialog() {
         LiveStreamSetupBottomSheetFragment()
             .show(supportFragmentManager, LiveStreamSetupBottomSheetFragment.TAG)
+    }
+
+    /**
+     * Deep-link handler: load an existing live stream by ID and join as viewer.
+     */
+    private fun handleDeepLinkStream(streamId: String) {
+        lifecycleScope.launch {
+            try {
+                val streams = RetrofitClient.liveStreamApi.getLiveStreamById(
+                    select = "*",
+                    idFilter = "eq.$streamId"
+                )
+                val ls = streams.firstOrNull()
+                if (ls == null) {
+                    Toast.makeText(
+                        this@LiveStreamActivity,
+                        R.string.stream_not_found,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    finish()
+                    return@launch
+                }
+                currentStream = ls
+                // register viewer for this stream
+                AuthUtils.getCurrentUserId(this@LiveStreamActivity)?.let { uid ->
+                    RetrofitClient.liveStreamApi.joinLiveStream(
+                        select = "*",
+                        viewer = LiveStreamViewerRequest(ls.id, uid)
+                    )
+                }
+                // proceed with stream setup UI (host flow not needed for viewers)
+                showCreateStreamDialog()
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@LiveStreamActivity,
+                    R.string.error_loading_stream,
+                    Toast.LENGTH_SHORT
+                ).show()
+                finish()
+            }
+        }
     }
 
     fun startLiveSession(title: String, description: String) {

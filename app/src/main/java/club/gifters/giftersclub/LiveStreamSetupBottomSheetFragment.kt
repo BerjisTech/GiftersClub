@@ -2,11 +2,13 @@ package club.gifters.giftersclub
 
 import android.app.Dialog
 import android.os.Bundle
+import android.content.Intent
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import club.gifters.giftersclub.R
+import club.gifters.giftersclub.MainActivity
 import club.gifters.giftersclub.live.LiveStreamActivity
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -19,12 +21,18 @@ class LiveStreamSetupBottomSheetFragment : BottomSheetDialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
+        // Prevent outside touch, back-press or swipe dismissal; only Cancel/Start handle dismissal
+        dialog.setCancelable(false)
+        dialog.setCanceledOnTouchOutside(false)
         // Expand fully and clear default background for rounded corners
         dialog.setOnShowListener { dlg ->
             val bottomSheet = (dlg as BottomSheetDialog)
                 .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
             bottomSheet?.let {
-                BottomSheetBehavior.from(it).state = BottomSheetBehavior.STATE_EXPANDED
+                val behavior = BottomSheetBehavior.from(it)
+                behavior.state = BottomSheetBehavior.STATE_EXPANDED
+                behavior.isHideable = false
+                behavior.isDraggable = false
                 it.setBackgroundResource(android.R.color.transparent)
             }
         }
@@ -38,20 +46,23 @@ class LiveStreamSetupBottomSheetFragment : BottomSheetDialogFragment() {
         val btnStart = content.findViewById<Button>(R.id.btnStartLive)
 
         btnCancel.setOnClickListener {
+            // Canceling should finish this activity and go back
             requireActivity().finish()
             dismiss()
         }
+        var hasStarted = false
         btnStart.setOnClickListener {
             val title = etTitle.text.toString().trim()
             if (title.isEmpty()) {
                 etTitle.error = getString(R.string.stream_title_required)
             } else {
+                hasStarted = true
                 val desc = etDesc.text.toString().trim()
-                (requireActivity() as? LiveStreamActivity)?.
-                startLiveSession(title, desc)
+                (requireActivity() as? LiveStreamActivity)?.startLiveSession(title, desc)
                 dismiss()
             }
         }
+        
         return dialog
     }
 

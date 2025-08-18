@@ -149,6 +149,9 @@
     <string name="failed_start_stream">Unable to start stream</string>
     <string name="stream_title">Stream Title</string>
     <string name="stream_description_optional">Description (optional)</string>
+    <!-- Error messages for deep-link loading -->
+    <string name="stream_not_found">Live stream not found.</string>
+    <string name="error_loading_stream">Failed to load the live stream.</string>
 
     <!-- Live stream controls -->
     <string name="end_live_stream">End Live Stream?</string>
