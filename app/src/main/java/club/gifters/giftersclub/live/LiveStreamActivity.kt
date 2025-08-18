@@ -1,70 +1,70 @@
 package club.gifters.giftersclub.live
 
+import android.Manifest
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.text.InputType
 import android.util.Base64
+import android.util.Log
+import android.view.KeyEvent
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import club.gifters.giftersclub.LiveStreamSetupBottomSheetFragment
-import club.gifters.giftersclub.BaseActivity
-import androidx.appcompat.app.AppCompatActivity
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import club.gifters.giftersclub.R
-import club.gifters.giftersclub.model.Gift
-import club.gifters.giftersclub.model.LiveStreamViewerRequest
-import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.payments.PaymentWebViewActivity
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import kotlinx.coroutines.launch
-import android.util.Log
-import org.json.JSONObject
-import java.text.NumberFormat
-import android.text.InputType
-import android.view.KeyEvent
-import android.view.inputmethod.EditorInfo
-import club.gifters.giftersclub.model.LiveStreamCommentRequest
-
-import android.Manifest
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.widget.ImageButton
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.cardview.widget.CardView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import android.widget.LinearLayout
-import androidx.cardview.widget.CardView
-import io.livekit.android.renderer.SurfaceViewRenderer
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import com.google.android.material.imageview.ShapeableImageView
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.BaseActivity
 import club.gifters.giftersclub.LiveKitConfig
+import club.gifters.giftersclub.LiveStreamSetupBottomSheetFragment
+import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.CreateLiveStreamRequest
+import club.gifters.giftersclub.model.Gift
 import club.gifters.giftersclub.model.LiveStream
+import club.gifters.giftersclub.model.LiveStreamCommentRequest
+import club.gifters.giftersclub.model.LiveStreamViewerRequest
+import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.payments.PaymentWebViewActivity
 import coil.load
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.button.MaterialButton
-import io.livekit.android.LiveKit
+import com.google.android.material.imageview.ShapeableImageView
 import io.livekit.android.ConnectOptions
+import io.livekit.android.LiveKit
 import io.livekit.android.LiveKitOverrides
 import io.livekit.android.RoomOptions
+import io.livekit.android.events.RoomEvent
+import io.livekit.android.events.collect
+import io.livekit.android.renderer.SurfaceViewRenderer
+import io.livekit.android.room.Room
 import io.livekit.android.room.track.LocalAudioTrackOptions
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.LocalVideoTrackOptions
-import io.livekit.android.room.Room
+import io.livekit.android.room.track.RemoteVideoTrack
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import java.text.NumberFormat
 
 /**
  * Activity displaying and managing a live streaming session (camera preview, comments, and gifts).
@@ -338,6 +338,127 @@ class LiveStreamActivity : BaseActivity() {
     }
 
     /**
+     * Initialize viewer mode: show host info, comments, and subscribe to live video.
+     */
+    private fun initViewer() {
+        // Show host top bar
+        liveTopBar.visibility = View.VISIBLE
+        lifecycleScope.launch {
+            // Fetch and display host profile
+            val hostId = currentStream?.hostId ?: AuthUtils.getCurrentUserId(this@LiveStreamActivity)!!
+            val profiles = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$hostId")
+            if (profiles.isNotEmpty()) {
+                val p = profiles[0]
+                tvStreamerName.text = p.name ?: p.username
+                ivStreamerImage.load(p.image)
+            }
+            tvFollowerCount.text = profiles.getOrNull(0)?.followersCount?.let { formatCount(it) }
+                ?: formatCount(0)
+            // Follow/unfollow for viewer
+            val currentId = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
+            if (currentId != null && currentId != hostId) {
+                val header = RetrofitClient.followsApi.isFollowingUser(
+                    followedIdFilter = "eq.$hostId", followerIdFilter = "eq.$currentId"
+                ).headers()["Content-Range"]
+                var isFollowing = (header?.substringAfterLast("/")?.toIntOrNull() ?: 0) > 0
+                btnFollowStreamer.apply {
+                    visibility = View.VISIBLE
+                    text = if (isFollowing) getString(R.string.unfollow) else getString(R.string.follow)
+                    setOnClickListener {
+                        lifecycleScope.launch {
+                            if (isFollowing) {
+                                RetrofitClient.followsApi.unfollowUser(
+                                    followedIdFilter = "eq.$hostId", followerIdFilter = "eq.$currentId"
+                                )
+                            } else {
+                                RetrofitClient.followsApi.followUser(
+                                    mapOf("followed_id" to hostId, "follower_id" to currentId)
+                                )
+                            }
+                            // Reload to update follower count and follow state
+                            val updated = RetrofitClient.profileApi.getProfileByUserId(
+                                select = "*", userIdFilter = "eq.$hostId"
+                            ).firstOrNull()
+                            if (updated != null) {
+                                tvFollowerCount.text = formatCount(updated.followersCount ?: 0)
+                                isFollowing = updated.isFollowing ?: false
+                                text = if (isFollowing) getString(R.string.unfollow) else getString(R.string.follow)
+                            }
+                        }
+                    }
+                }
+            } else {
+                btnFollowStreamer.visibility = View.GONE
+            }
+            // Load and show comments
+            currentStream?.id?.let { sid ->
+                val initial = RetrofitClient.liveStreamApi.getLiveStreamComments(
+                    select = "*,profile:profiles(*)",
+                    streamFilter = "eq.$sid"
+                )
+                commentsAdapter.submitList(initial)
+                if (initial.isNotEmpty()) rvLiveComments.scrollToPosition(initial.size - 1)
+                commentsJob = lifecycleScope.launch {
+                    while (isActive) {
+                        delay(3000)
+                        val updated = RetrofitClient.liveStreamApi.getLiveStreamComments(
+                            select = "*,profile:profiles(*)",
+                            streamFilter = "eq.$sid"
+                        )
+                        commentsAdapter.submitList(updated)
+                        if (updated.isNotEmpty()) rvLiveComments.scrollToPosition(updated.size - 1)
+                    }
+                }
+            }
+        }
+
+        // Prepare video renderer
+        val container = findViewById<FrameLayout>(R.id.flLiveStream)
+        container.removeAllViews()
+        val preview = SurfaceViewRenderer(this@LiveStreamActivity)
+        preview.layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
+        container.addView(preview)
+        previewView = preview
+
+        // Connect to LiveKit as viewer (subscribe only)
+        val lkToken = currentStream?.token ?: currentStream?.id
+        if (!lkToken.isNullOrBlank()) {
+            val roomOptions = RoomOptions(
+                /*publishAudio=*/false,
+                /*publishVideo=*/false,
+                null,
+                LocalAudioTrackOptions(),
+                LocalVideoTrackOptions(),
+                null,
+                null
+            )
+            val room = LiveKit.create(
+                this@LiveStreamActivity,
+                roomOptions,
+                LiveKitOverrides()
+            )
+            lifecycleScope.launch {
+                try {
+                    room.connect(LiveKitConfig.WS_URL, lkToken, ConnectOptions())
+                    liveKitRoom = room
+                    room.initVideoRenderer(preview)
+                    // Subscribe to TrackSubscribed events via callback
+                    room.events.collect { event ->
+                        if (event is RoomEvent.TrackSubscribed && event.track is RemoteVideoTrack) {
+                            (event.track as RemoteVideoTrack).addRenderer(preview)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "LiveKit connect failed for viewer", e)
+                }
+            }
+        }
+    }
+
+    /**
      * Deep-link handler: load an existing live stream by ID and join as viewer.
      */
     private fun handleDeepLinkStream(streamId: String) {
@@ -365,6 +486,7 @@ class LiveStreamActivity : BaseActivity() {
                         viewer = LiveStreamViewerRequest(ls.id, uid)
                     )
                 }
+                initViewer()
             } catch (e: Exception) {
                 Toast.makeText(
                     this@LiveStreamActivity,
