@@ -127,9 +127,10 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                         userIdFilter = "eq.$userId",
                         typeFilter = "eq.like"
                     )
-                    adapter.currentList.indexOf(post).takeIf { it >= 0 }?.let { idx ->
-                        adapter.notifyItemChanged(idx)
-                    }
+                    adapter.currentList
+                        .indexOfFirst { it is FeedItem.PostItem && it.post.id == post.id }
+                        .takeIf { it >= 0 }
+                        ?.let { idx -> adapter.notifyItemChanged(idx) }
                 }
             },
             onComment = { post ->
@@ -162,7 +163,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         arguments?.getString(ARG_LIST)?.let { json ->
             val type = object : TypeToken<List<Post>>() {}.type
             val list: List<Post> = Gson().fromJson(json, type)
-            adapter.submitList(list)
+            adapter.submitList(list.map { FeedItem.PostItem(it) })
             val pos = arguments?.getInt(ARG_START_POSITION) ?: 0
             pager.setCurrentItem(pos, false)
             swipeRefresh.isEnabled = false
@@ -201,7 +202,9 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                     }
                 }
                 // start timing new post view
-                lastViewedPostId = adapter.currentList.getOrNull(position)?.id
+                lastViewedPostId = (adapter.currentList.getOrNull(position) as? FeedItem.PostItem)
+                    ?.post
+                    ?.id
                 lastViewStart = now
                 // load more if at end
                 if (!isLoading && !isLastPage && position >= adapter.itemCount - 1) {
@@ -412,7 +415,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 // Use PostgREST eq filter so getPostById returns a List<Post>
                 val list = api.getPostById("eq.$postId")
                 val post = list.firstOrNull() ?: return@launch
-                adapter.submitList(listOf(post))
+                adapter.submitList(listOf(FeedItem.PostItem(post)))
                 // Now load the rest of the posts
                 page = 0
                 isLastPage = false
