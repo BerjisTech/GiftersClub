@@ -114,10 +114,8 @@ class LiveStreamActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live_stream)
         // Deep-link support: if URL is https://gifters.club/live/{streamId}
-        intent.data?.lastPathSegment?.takeIf { it.isNotEmpty() }?.let { deepId ->
-            handleDeepLinkStream(deepId)
-            return
-        }
+        val deepId = intent.data?.lastPathSegment?.takeIf { it.isNotEmpty() }
+        deepId?.let { handleDeepLinkStream(it) }
         // comments list overlay (bottom-up) – max half-screen height, bring above video
         rvLiveComments = findViewById<RecyclerView>(R.id.rvLiveComments).also { rv ->
             commentsAdapter = CommentsAdapter()
@@ -147,15 +145,20 @@ class LiveStreamActivity : BaseActivity() {
         btnToggleCamera = findViewById<ImageButton>(R.id.btnToggleCamera)
         shareLive = findViewById(R.id.shareLive)
 
-        // Request camera and audio permissions
-        if (!allPermissionsGranted()) {
-            ActivityCompat.requestPermissions(
-                this,
-                REQUIRED_PERMISSIONS,
-                REQUEST_CODE_PERMISSIONS
-            )
-        } else {
-            showCreateStreamDialog()
+        if (deepId != null) {
+            btnEndLive.visibility = View.GONE
+            btnCloseLive.visibility = View.GONE
+        }
+        if (deepId == null) {
+            if (!allPermissionsGranted()) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    REQUIRED_PERMISSIONS,
+                    REQUEST_CODE_PERMISSIONS
+                )
+            } else {
+                showCreateStreamDialog()
+            }
         }
 
         // Bottom sheet for gifts, hidden initially until user clicks gift icon
@@ -362,8 +365,6 @@ class LiveStreamActivity : BaseActivity() {
                         viewer = LiveStreamViewerRequest(ls.id, uid)
                     )
                 }
-                // proceed with stream setup UI (host flow not needed for viewers)
-                showCreateStreamDialog()
             } catch (e: Exception) {
                 Toast.makeText(
                     this@LiveStreamActivity,
