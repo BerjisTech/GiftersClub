@@ -341,6 +341,9 @@ class LiveStreamActivity : BaseActivity() {
      * Initialize viewer mode: show host info, comments, and subscribe to live video.
      */
     private fun initViewer() {
+        btnSwitchCamera.visibility = View.GONE
+        btnToggleCamera.visibility = View.GONE
+        btnToggleMic.visibility = View.GONE
         // Show host top bar
         liveTopBar.visibility = View.VISIBLE
         lifecycleScope.launch {
@@ -445,6 +448,11 @@ class LiveStreamActivity : BaseActivity() {
                     room.connect(LiveKitConfig.WS_URL, lkToken, ConnectOptions())
                     liveKitRoom = room
                     room.initVideoRenderer(preview)
+                    room.remoteParticipants.values.forEach { participant ->
+                        participant.videoTrackPublications.forEach { pubPair ->
+                            (pubPair.second as? RemoteVideoTrack)?.addRenderer(preview)
+                        }
+                    }
                     // Subscribe to TrackSubscribed events via callback
                     room.events.collect { event ->
                         if (event is RoomEvent.TrackSubscribed && event.track is RemoteVideoTrack) {
