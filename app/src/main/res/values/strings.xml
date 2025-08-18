@@ -228,4 +228,6 @@
     <string name="unfollow">Unfollow</string>
     <string name="turn_off_camera">Toggle camera on off</string>
     <string name="share_live_stream">Share this live stream</string>
+    <string name="live">LIVE</string>
+    <string name="_0_watching">0 watching</string>
 </resources>
