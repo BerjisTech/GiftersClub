@@ -246,7 +246,23 @@ class ExploreTopAdapter(
     }
     private class LiveVH(view: View) : RecyclerView.ViewHolder(view) {
         private val tv = view.findViewById<TextView>(R.id.tvTitle)
-        fun bind(item: Any) { tv.text = (item as LiveStream).title }
+        private val vc = view.findViewById<TextView>(R.id.tvViewerCount)
+        init {
+            view.setOnClickListener {
+                val ls = (it.tag as? LiveStream) ?: return@setOnClickListener
+                val ctx = it.context
+                val uri = android.net.Uri.parse("https://gifters.club/live/${ls.id}")
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                intent.setClassName(ctx, "club.gifters.giftersclub.live.LiveStreamActivity")
+                ctx.startActivity(intent)
+            }
+        }
+        fun bind(item: Any) {
+            val s = item as LiveStream
+            itemView.tag = s
+            tv.text = s.title
+            vc.text = "${s.viewerCount} watching"
+        }
     }
     private fun formatRelativeTime(iso: String?): String {
         if (iso.isNullOrBlank()) return ""

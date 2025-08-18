@@ -100,4 +100,13 @@ interface LiveStreamApi {
         @Query("status") statusFilter: String = "eq.live",
         @Query("order", encoded = true) order: String = "live_stream_viewer_count.desc,live_stream_comment_count_so_far.desc"
     ): List<LiveStream>
+
+    /**
+     * RPC: ranked live streams for the feed for a given viewer.
+     */
+    @Headers("Prefer: params=multiple-objects")
+    @POST("rpc/feed_live_streams")
+    suspend fun getFeedLiveStreams(
+        @Body params: Map<String, @JvmSuppressWildcards Any?>
+    ): List<LiveStream>
 }

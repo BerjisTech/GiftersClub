@@ -1,5 +1,7 @@
 package club.gifters.giftersclub.explore
 
+import android.content.Intent
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -33,10 +35,21 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
 
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {
         private val tvTitle: TextView = view.findViewById(R.id.tvTitle)
-        private val tvDescription: TextView = view.findViewById(R.id.tvDescription)
+        private val tvViewerCount: TextView = view.findViewById(R.id.tvViewerCount)
+        init {
+            view.setOnClickListener {
+                (getItem(bindingAdapterPosition))?.let { ls ->
+                    val ctx = itemView.context
+                    val uri = Uri.parse("https://gifters.club/live/${ls.id}")
+                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                    intent.setClassName(ctx, "club.gifters.giftersclub.live.LiveStreamActivity")
+                    ctx.startActivity(intent)
+                }
+            }
+        }
         fun bind(item: LiveStream) {
             tvTitle.text = item.title
-            tvDescription.text = item.description
+            tvViewerCount.text = "${item.viewerCount} watching"
         }
     }
 }

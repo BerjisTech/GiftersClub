@@ -89,7 +89,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
 
     private val api = RetrofitClient.postApi
     private lateinit var swipeRefresh: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-    private lateinit var adapter: PostAdapter
+    private lateinit var adapter: FeedAdapter
     private var page = 0
     private val limit = 10
     private val perAuthorLimit = 3
@@ -106,7 +106,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         }
         swipeRefresh = view.findViewById(R.id.swipeRefresh)
         pager = view.findViewById(R.id.viewPagerPosts)
-        adapter = PostAdapter(
+        adapter = FeedAdapter(
             lifecycleScope,
             onLike = { post ->
                 lifecycleScope.launch {
@@ -335,8 +335,12 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                         )
                     }
                 }
-                if (clear) adapter.submitList(items)
-                else adapter.submitList(adapter.currentList + items)
+                if (clear) {
+                    adapter.submitList(interleaveWithLives(items))
+                } else {
+                    val merged = (adapter.currentList.mapNotNull { (it as? FeedItem.PostItem)?.post } + items)
+                    adapter.submitList(interleaveWithLives(merged))
+                }
                 if (items.size < limit) isLastPage = true else page++
             } catch (e: retrofit2.HttpException) {
                 if (e.code() == 401 && !hasRetry401) {
@@ -360,6 +364,45 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 swipeRefresh.isRefreshing = false
             }
         }
+    }
+
+    private suspend fun fetchRankedLives(max: Int): List<club.gifters.giftersclub.model.LiveStream> {
+        return try {
+            val currentUser = AuthUtils.getCurrentUserId(requireContext())
+            val params = mapOf(
+                "in_viewer_id" to currentUser,
+                "in_limit" to max,
+                "in_query" to null
+            )
+            club.gifters.giftersclub.network.RetrofitClient.liveStreamApi.getFeedLiveStreams(params)
+        } catch (_: Exception) { emptyList() }
+    }
+
+    private suspend fun interleaveWithLives(posts: List<Post>): List<FeedItem> {
+        val items = mutableListOf<FeedItem>()
+        val lives = fetchRankedLives(max = (posts.size / 3).coerceAtLeast(1))
+        var li = 0
+        var since = 0
+        var inserted = 0
+        val maxLives = 3
+        var lastHost: String? = null
+        var gap = (3..5).random()
+        posts.forEach { p ->
+            items += FeedItem.PostItem(p)
+            since++
+            if (since >= gap && li < lives.size && inserted < maxLives) {
+                val s = lives[li]
+                if (s.hostId != lastHost) {
+                    items += FeedItem.LiveItem(s)
+                    lastHost = s.hostId
+                    li++
+                    since = 0
+                    inserted++
+                    gap = (3..5).random()
+                }
+            }
+        }
+        return items
     }
 
     private fun loadPostById(postId: String) {
