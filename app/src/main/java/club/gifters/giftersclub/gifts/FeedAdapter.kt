@@ -21,7 +21,22 @@ import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.social.SubscriptionApiHolder
 import coil.load
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import club.gifters.giftersclub.LiveKitConfig
+import club.gifters.giftersclub.network.RetrofitClient
+import io.livekit.android.LiveKit
+import io.livekit.android.LiveKitOverrides
+import io.livekit.android.RoomOptions
+import io.livekit.android.events.RoomEvent
+import io.livekit.android.events.collect
+import io.livekit.android.renderer.SurfaceViewRenderer
+import io.livekit.android.room.Room
+import io.livekit.android.room.track.LocalAudioTrackOptions
+import io.livekit.android.room.track.LocalVideoTrackOptions
+import io.livekit.android.room.track.RemoteVideoTrack
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -71,10 +86,26 @@ class FeedAdapter(
         }
     }
 
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        if (holder is LiveVH) {
+            // cleanup preview resources
+            holder.apply {
+                try { room?.disconnect() } catch (_: Exception) {}
+                room = null
+                preview?.release(); preview = null
+            }
+        }
+    }
+
     inner class LiveVH(view: View): RecyclerView.ViewHolder(view) {
         private val title: TextView = view.findViewById(R.id.tvLiveTitle)
         private val viewers: TextView = view.findViewById(R.id.tvViewerCount)
         private val started: TextView = view.findViewById(R.id.tvStarted)
+        private val previewContainer: FrameLayout = view.findViewById(R.id.previewContainer)
+        private var preview: SurfaceViewRenderer? = null
+        private var room: Room? = null
+        private var bindJob: Job? = null
         init {
             view.setOnClickListener {
                 val item = (getItem(bindingAdapterPosition) as? FeedItem.LiveItem)?.live ?: return@setOnClickListener
@@ -89,6 +120,63 @@ class FeedAdapter(
             title.text = live.title
             viewers.text = "${live.viewerCount} watching"
             started.text = live.startedAt?.let { formatRelativeTime(it) } ?: ""
+            startPreview(live)
+        }
+
+        private fun startPreview(live: LiveStream) {
+            stopPreview()
+            val pv = SurfaceViewRenderer(itemView.context)
+            pv.layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            preview = pv
+            previewContainer.removeAllViews()
+            previewContainer.addView(pv)
+
+            bindJob = scope.launch(Dispatchers.Main) {
+                try {
+                    val resp = withContext(Dispatchers.IO) { RetrofitClient.functionsApi.getLiveSession(live.id) }
+                    if (!resp.isSuccessful) return@launch
+                    val lkToken = resp.body()?.let { it.token ?: it.id }
+                    if (lkToken.isNullOrBlank()) return@launch
+                    val roomOptions = RoomOptions(
+                        false,
+                        false,
+                        null,
+                        LocalAudioTrackOptions(),
+                        LocalVideoTrackOptions(),
+                        null,
+                        null
+                    )
+                    val r = LiveKit.create(itemView.context, roomOptions, LiveKitOverrides())
+                    r.initVideoRenderer(pv)
+                    room = r
+                    withContext(Dispatchers.IO) {
+                        r.connect(LiveKitConfig.WS_URL, lkToken, io.livekit.android.ConnectOptions())
+                    }
+                    r.remoteParticipants.values.forEach { p ->
+                        p.videoTrackPublications.forEach { pubPair ->
+                            (pubPair.second as? RemoteVideoTrack)?.addRenderer(pv)
+                        }
+                    }
+                    scope.launch(Dispatchers.Main) {
+                        r.events.collect { evt ->
+                            if (evt is RoomEvent.TrackSubscribed && evt.track is RemoteVideoTrack) {
+                                (evt.track as RemoteVideoTrack).addRenderer(pv)
+                            }
+                        }
+                    }
+                } catch (_: Exception) { }
+            }
+        }
+
+        private fun stopPreview() {
+            bindJob?.cancel(); bindJob = null
+            try { room?.disconnect() } catch (_: Exception) {}
+            room = null
+            previewContainer.removeAllViews()
+            preview?.release(); preview = null
         }
     }
 
@@ -202,4 +290,3 @@ class FeedAdapter(
         }
     }
 }
-
