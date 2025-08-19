@@ -19,7 +19,7 @@
 
         <androidx.cardview.widget.CardView
             android:id="@+id/streamerDetails"
-            android:layout_width="200dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:cardCornerRadius="10dp"
             android:background="@android:color/transparent"
@@ -27,7 +27,7 @@
             app:layout_constraintTop_toTopOf="parent">
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="160dp"
                 android:layout_height="wrap_content"
                 android:gravity="start"
                 android:background="@drawable/bg_neutral_slate_gradient"
@@ -44,7 +44,7 @@
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
 
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="start"
                     android:layout_marginStart="8dp"
@@ -113,7 +113,6 @@
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
             app:cardCornerRadius="10dp"
-            app:layout_constraintBottom_toBottomOf="@id/streamerDetails"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/streamerDetails">
 
@@ -121,7 +120,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_red_orange_gradient"
-                android:padding="10dp"
+                android:padding="15dp"
+                android:layout_gravity="center"
                 android:text="@string/end_live"
                 android:textColor="@color/white" />
         </androidx.cardview.widget.CardView>

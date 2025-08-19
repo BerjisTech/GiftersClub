@@ -355,7 +355,7 @@ class LiveStreamActivity : BaseActivity() {
             val profiles = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$hostId")
             if (profiles.isNotEmpty()) {
                 val p = profiles[0]
-                tvStreamerName.text = p.name ?: p.username
+                tvStreamerName.text = (p.name ?: p.username).take(14)
                 ivStreamerImage.load(p.image)
             }
             val tempFollowerCount = profiles.getOrNull(0)?.followersCount?.let { formatCount(it) }
@@ -577,7 +577,7 @@ class LiveStreamActivity : BaseActivity() {
                         val profiles = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$hostId")
                         if (profiles.isNotEmpty()) {
                             val p = profiles[0]
-                            tvStreamerName.text = p.name ?: p.username
+                            tvStreamerName.text = (p.name ?: p.username).take(14)
                             ivStreamerImage.load(p.image)
                         }
                         // Display follower count (from profile metadata)
