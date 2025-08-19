@@ -231,4 +231,5 @@
     <string name="live">LIVE</string>
     <string name="_0_watching">0 watching</string>
     <string name="_0_followers">0 followers</string>
+    <string name="follower_count">%1$s followers</string>
 </resources>

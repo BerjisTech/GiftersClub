@@ -358,8 +358,9 @@ class LiveStreamActivity : BaseActivity() {
                 tvStreamerName.text = p.name ?: p.username
                 ivStreamerImage.load(p.image)
             }
-            tvFollowerCount.text = profiles.getOrNull(0)?.followersCount?.let { formatCount(it) }
+            val tempFollowerCount = profiles.getOrNull(0)?.followersCount?.let { formatCount(it) }
                 ?: formatCount(0)
+            tvFollowerCount.text = getString(R.string.follower_count, tempFollowerCount)
             // Follow/unfollow for viewer
             val currentId = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
             if (currentId != null && currentId != hostId) {
@@ -386,7 +387,7 @@ class LiveStreamActivity : BaseActivity() {
                                 select = "*", userIdFilter = "eq.$hostId"
                             ).firstOrNull()
                             if (updated != null) {
-                                tvFollowerCount.text = formatCount(updated.followersCount ?: 0)
+                                tvFollowerCount.text = getString(R.string.follower_count, formatCount(updated.followersCount ?: 0))
                                 isFollowing = updated.isFollowing ?: false
                                 text = if (isFollowing) getString(R.string.unfollow) else getString(R.string.follow)
                             }
@@ -580,9 +581,9 @@ class LiveStreamActivity : BaseActivity() {
                             ivStreamerImage.load(p.image)
                         }
                         // Display follower count (from profile metadata)
-                        tvFollowerCount.text = profiles.getOrNull(0)?.followersCount?.let {
+                        tvFollowerCount.text = getString(R.string.follower_count, profiles.getOrNull(0)?.followersCount?.let {
                             formatCount(it)
-                        } ?: formatCount(0)
+                        } ?: formatCount(0))
                         // Show follow/unfollow only for viewers (host cannot follow self)
                         val currentId = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
                         if (currentId != null && currentId != hostId) {
@@ -609,7 +610,7 @@ class LiveStreamActivity : BaseActivity() {
                                             select = "*", userIdFilter = "eq.$hostId"
                                         ).firstOrNull()
                                         if (updated != null) {
-                                            tvFollowerCount.text = formatCount(updated.followersCount ?: 0)
+                                            tvFollowerCount.text = getString(R.string.follower_count, formatCount(updated.followersCount ?: 0))
                                             isFollowing = updated.isFollowing ?: false
                                             text = if (isFollowing) getString(R.string.unfollow) else getString(R.string.follow)
                                         }
