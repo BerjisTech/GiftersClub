@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.InputType
 import android.util.Base64
-import android.util.Log
 import kotlinx.coroutines.withContext
 import android.view.KeyEvent
 import android.view.View
@@ -492,7 +491,6 @@ class LiveStreamActivity : BaseActivity() {
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "LiveKit connect failed for viewer", e)
                 }
             }
         }
@@ -553,7 +551,7 @@ class LiveStreamActivity : BaseActivity() {
                     CreateLiveStreamRequest(userId, title, description)
                 )
                 val errorBody = resp.errorBody()?.string().orEmpty()
-                Log.e(TAG, "createLiveSession() HTTP ${resp.code()}: $errorBody")
+                
                 if (resp.isSuccessful) {
                     currentStream = resp.body()
                     // Ensure stream is marked live (in case backend defaulted to 'scheduled')
@@ -754,7 +752,6 @@ class LiveStreamActivity : BaseActivity() {
                             }
                         }
                         } catch (e: Exception) {
-                            Log.e(TAG, "LiveKit v2 connect failed", e)
                         }
                     }
                 } else {

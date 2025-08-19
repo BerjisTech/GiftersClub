@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 import android.util.Base64
 import org.json.JSONObject
 import retrofit2.HttpException
-import android.util.Log
 
 /**
  * Fragment for explore search with suggestions and tabbed results.
@@ -167,7 +166,6 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                 RetrofitClient.searchQueriesApi.insertSearchQuery(body)
                 loadRecentQueries()
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to record search query", e)
             }
         }
         // Log.d("ExploreFragment", "Using BASE_URL=${RetrofitClient.BASE_URL}")
@@ -270,11 +268,11 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         val uid = getCurrentUserId() ?: return
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                Log.d(TAG, "loadRecentQueries: userId=$uid")
+                
                 val results = RetrofitClient.searchQueriesApi.getUserSearchQueries(
                     userIdFilter = "eq.$uid"
                 )
-                Log.d(TAG, "loadRecentQueries: fetched ${results.size} recents")
+                
                 // filter results to only include non-empty queries, only diplay an item once, calculate frequencies and sort by frequencies
                 recentFullList = results
                     .map { it.query }
@@ -289,9 +287,9 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                 val url = e.response()?.raw()?.request?.url
                 val code = e.code()
                 val errorBody = e.response()?.errorBody()?.string()
-                Log.w(TAG, "Recent fetch failed HTTP $code for $url: $errorBody")
+                
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to load recent queries", e)
+                
             }
         }
     }
@@ -302,10 +300,7 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         } else {
             recentFullList
         }
-        Log.d(
-            TAG,
-            "updateRecentDisplay: displayCount=${display.size}, fullList=${recentFullList.size}, expanded=$isRecentExpanded"
-        )
+        
         recentAdapter.submitList(display)
         rvRecentQueries.visibility = if (display.isNotEmpty()) View.VISIBLE else View.GONE
         tvRecentSeeMore.visibility =
@@ -352,7 +347,7 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val uid = getCurrentUserId()
-                Log.d(TAG, "loadRecommendedQueries: excludeUid=$uid")
+                
                 // Fetch raw queries and group locally to compute frequencies
                 val raw = RetrofitClient.searchQueriesApi.searchRecommendedQueries(
                     userId = "not.eq.$uid",
@@ -362,10 +357,7 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                     .sortedByDescending { it.value }
                     .map { it.key }
                     .take(10)
-                Log.d(
-                    TAG,
-                    "loadRecommendedQueries: computed ${trending.size} trending from ${raw.size} raw"
-                )
+                
                 recommendedAdapter.submitList(trending)
                 rvRecommendedQueries.visibility =
                     if (trending.isNotEmpty()) View.VISIBLE else View.GONE
@@ -373,9 +365,9 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                 val url = e.response()?.raw()?.request?.url
                 val code = e.code()
                 val errorBody = e.response()?.errorBody()?.string()
-                Log.w(TAG, "Recommended fetch failed HTTP $code for $url: $errorBody")
+                
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to load recommended queries", e)
+                
             }
         }
     }
