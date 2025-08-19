@@ -119,15 +119,13 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
         }
     }
 
-    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+    override fun onViewRecycled(holder: VH) {
         super.onViewRecycled(holder)
-        if (holder is VH) {
-            holder.apply {
-                try { room?.disconnect() } catch (_: Exception) {}
-                room = null
-                renderer?.release(); renderer = null
-                preview.removeAllViews()
-            }
+        holder.apply {
+            try { room?.disconnect() } catch (_: Exception) {}
+            room = null
+            renderer?.release(); renderer = null
+            preview.removeAllViews()
         }
     }
 }
