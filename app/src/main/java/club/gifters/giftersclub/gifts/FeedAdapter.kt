@@ -89,12 +89,7 @@ class FeedAdapter(
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
         if (holder is LiveVH) {
-            // cleanup preview resources
-            holder.apply {
-                try { room?.disconnect() } catch (_: Exception) {}
-                room = null
-                preview?.release(); preview = null
-            }
+            holder.stopPreview()
         }
     }
 
@@ -171,7 +166,7 @@ class FeedAdapter(
             }
         }
 
-        private fun stopPreview() {
+        fun stopPreview() {
             bindJob?.cancel(); bindJob = null
             try { room?.disconnect() } catch (_: Exception) {}
             room = null

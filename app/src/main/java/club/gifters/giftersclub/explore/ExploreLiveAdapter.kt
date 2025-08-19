@@ -110,7 +110,7 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
             }
         }
 
-        private fun stopPreview() {
+        fun stopPreview() {
             job?.cancel(); job = null
             try { room?.disconnect() } catch (_: Exception) {}
             room = null
@@ -121,11 +121,6 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
 
     override fun onViewRecycled(holder: VH) {
         super.onViewRecycled(holder)
-        holder.apply {
-            try { room?.disconnect() } catch (_: Exception) {}
-            room = null
-            renderer?.release(); renderer = null
-            preview.removeAllViews()
-        }
+        holder.stopPreview()
     }
 }
