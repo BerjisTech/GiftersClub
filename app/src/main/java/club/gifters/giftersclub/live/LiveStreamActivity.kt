@@ -122,7 +122,7 @@ class LiveStreamActivity : BaseActivity() {
         // comments list overlay (bottom-up) – max half-screen height, bring above video
         rvLiveComments = findViewById<RecyclerView>(R.id.rvLiveComments).also { rv ->
             commentsAdapter = CommentsAdapter()
-            rv.layoutManager = LinearLayoutManager(this).apply { reverseLayout = true }
+            rv.layoutManager = LinearLayoutManager(this).apply { reverseLayout = false }
             rv.adapter = commentsAdapter
             // limit height to half screen
             val half = resources.displayMetrics.heightPixels / 2

@@ -230,4 +230,5 @@
     <string name="share_live_stream">Share this live stream</string>
     <string name="live">LIVE</string>
     <string name="_0_watching">0 watching</string>
+    <string name="_0_followers">0 followers</string>
 </resources>

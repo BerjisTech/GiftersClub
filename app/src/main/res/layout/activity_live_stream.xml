@@ -40,6 +40,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
+                android:layout_gravity="start"
                 android:orientation="vertical">
 
                 <TextView
@@ -49,37 +50,37 @@
                     android:text="@string/streamer_name"
                     android:textColor="@android:color/white" />
 
-                <TextView
-                    android:id="@+id/tvFollowerCount"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="0 followers"
-                    android:textColor="@android:color/white"
-                    android:textSize="12sp" />
+                    android:layout_gravity="end"
+                    android:gravity="bottom">
+                    <TextView
+                        android:id="@+id/tvFollowerCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/_0_followers"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp" />
+
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:layout_marginEnd="2dp"
+                        android:layout_marginStart="5dp"
+                        android:layout_marginBottom="3dp"
+                        android:src="@drawable/user_group" />
+
+                    <TextView
+                        android:id="@+id/tvViewerCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/_0"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp" />
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:layout_marginStart="8dp">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/user_group"
-                    android:layout_marginEnd="8dp"/>
-
-                <TextView
-                    android:id="@+id/tvViewerCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_gravity="start"
-                    android:text="@string/_0"
-                    android:textSize="22sp"
-                    android:textColor="@android:color/white" />
-            </LinearLayout>
         </LinearLayout>
 
 
@@ -94,8 +95,6 @@
             app:layout_constraintBottom_toBottomOf="@id/streamerDetails"
             app:layout_constraintStart_toEndOf="@id/streamerDetails"
             app:layout_constraintTop_toTopOf="@id/streamerDetails" />
-
-
 
 
         <androidx.cardview.widget.CardView
@@ -130,49 +129,45 @@
             app:layout_constraintTop_toTopOf="@id/btnEndLive" />
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="35dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
+            android:gravity="end"
             android:orientation="vertical"
-            android:gravity="center"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/btnEndLive">
 
             <ImageView
                 android:id="@+id/btnSwitchCamera"
-                android:layout_width="35dp"
+                android:layout_width="match_parent"
                 android:layout_height="30dp"
-                android:layout_marginEnd="8dp"
                 android:contentDescription="@string/switch_camera"
                 android:src="@drawable/switch_camera" />
 
             <ImageButton
                 android:id="@+id/btnToggleCamera"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                app:tint="@color/orange_500"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/turn_off_camera"
-                android:src="@android:drawable/ic_menu_view" />
+                android:src="@android:drawable/ic_menu_view"
+                app:tint="@color/orange_500" />
 
             <ImageButton
                 android:id="@+id/btnToggleMic"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                app:tint="@color/orange_500"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/mute_microphone"
-                android:src="@android:drawable/ic_lock_silent_mode_off" />
+                android:src="@android:drawable/ic_lock_silent_mode_off"
+                app:tint="@color/orange_500" />
 
             <ImageView
                 android:id="@+id/shareLive"
-                android:layout_width="30dp"
+                android:layout_width="match_parent"
                 android:layout_height="30dp"
-                android:layout_marginEnd="8dp"
-                android:contentDescription="@string/mute_microphone"
-                android:background="@drawable/share" />
+                android:background="@drawable/share"
+                android:contentDescription="@string/mute_microphone" />
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
@@ -182,6 +177,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="60dp"
+        android:layout_marginHorizontal="8dp"
         android:background="@android:color/transparent"
         android:overScrollMode="never"
         app:layout_anchor="@id/liveBottomBar"
@@ -223,20 +219,20 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:layout_marginStart="8dp"
-            android:visibility="gone"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/send"
-            android:src="@drawable/rose" />
+            android:src="@drawable/rose"
+            android:visibility="gone" />
 
         <ImageView
             android:id="@+id/btnOpenGifts"
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:visibility="gone"
             android:layout_marginStart="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/open"
-            android:src="@drawable/gift" />
+            android:src="@drawable/gift"
+            android:visibility="gone" />
 
     </LinearLayout>
 
