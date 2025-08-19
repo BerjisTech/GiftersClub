@@ -83,7 +83,7 @@ class LiveStreamActivity : BaseActivity() {
 
     private lateinit var rvLiveComments: RecyclerView
     private lateinit var commentsAdapter: CommentsAdapter
-    private lateinit var btnFollowStreamer: MaterialButton
+    private lateinit var btnFollowStreamer: ImageView
     private lateinit var tvFollowerCount: TextView
     private lateinit var tvViewerCount: TextView
 
@@ -369,7 +369,7 @@ class LiveStreamActivity : BaseActivity() {
                 var isFollowing = (header?.substringAfterLast("/")?.toIntOrNull() ?: 0) > 0
                 btnFollowStreamer.apply {
                     visibility = View.VISIBLE
-                    text = if (isFollowing) getString(R.string.unfollow) else getString(R.string.follow)
+                    setImageResource(if (isFollowing) R.drawable.unfollow else R.drawable.follow)
                     setOnClickListener {
                         lifecycleScope.launch {
                             if (isFollowing) {
@@ -388,7 +388,7 @@ class LiveStreamActivity : BaseActivity() {
                             if (updated != null) {
                                 tvFollowerCount.text = getString(R.string.follower_count, formatCount(updated.followersCount ?: 0))
                                 isFollowing = updated.isFollowing ?: false
-                                text = if (isFollowing) getString(R.string.unfollow) else getString(R.string.follow)
+                                setImageResource(if (isFollowing) R.drawable.unfollow else R.drawable.follow)
                             }
                         }
                     }
@@ -591,7 +591,7 @@ class LiveStreamActivity : BaseActivity() {
                             var isFollowing = (header?.substringAfterLast("/")?.toIntOrNull() ?: 0) > 0
                             btnFollowStreamer.apply {
                                 visibility = View.VISIBLE
-                                text = if (isFollowing) getString(R.string.unfollow) else getString(R.string.follow)
+                                setImageResource(if (isFollowing) R.drawable.unfollow else R.drawable.follow)
                                 setOnClickListener {
                                     lifecycleScope.launch {
                                         if (isFollowing) {
@@ -610,7 +610,7 @@ class LiveStreamActivity : BaseActivity() {
                                         if (updated != null) {
                                             tvFollowerCount.text = getString(R.string.follower_count, formatCount(updated.followersCount ?: 0))
                                             isFollowing = updated.isFollowing ?: false
-                                            text = if (isFollowing) getString(R.string.unfollow) else getString(R.string.follow)
+                                            setImageResource(if (isFollowing) R.drawable.unfollow else R.drawable.follow)
                                         }
                                     }
                                 }

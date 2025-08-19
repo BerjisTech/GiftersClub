@@ -21,16 +21,16 @@
             android:id="@+id/streamerDetails"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="10dp"
             android:background="@android:color/transparent"
+            app:cardCornerRadius="10dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
             <LinearLayout
-                android:layout_width="160dp"
+                android:layout_width="165dp"
                 android:layout_height="wrap_content"
-                android:gravity="start"
                 android:background="@drawable/bg_neutral_slate_gradient"
+                android:gravity="start"
                 android:orientation="horizontal"
                 android:padding="4dp">
 
@@ -72,11 +72,18 @@
                             android:textSize="12sp" />
 
                         <ImageView
+                            android:id="@+id/btnFollowStreamer"
+                            android:layout_width="15dp"
+                            android:layout_height="15dp"
+                            android:layout_marginStart="5dp"
+                            android:contentDescription="@string/follow"
+                            android:src="@drawable/follow" />
+
+                        <ImageView
                             android:layout_width="12dp"
                             android:layout_height="12dp"
                             android:layout_marginStart="5dp"
                             android:layout_marginEnd="2dp"
-                            android:layout_marginBottom="3dp"
                             android:src="@drawable/user_group" />
 
                         <TextView
@@ -94,19 +101,6 @@
         </androidx.cardview.widget.CardView>
 
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnFollowStreamer"
-            style="@style/Widget.MaterialComponents.Button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/follow"
-            android:textAllCaps="false"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="@id/streamerDetails"
-            app:layout_constraintStart_toEndOf="@id/streamerDetails"
-            app:layout_constraintTop_toTopOf="@id/streamerDetails" />
-
-
         <androidx.cardview.widget.CardView
             android:id="@+id/btnEndLive"
             android:layout_width="wrap_content"
@@ -119,9 +113,9 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:background="@drawable/bg_red_orange_gradient"
                 android:padding="15dp"
-                android:layout_gravity="center"
                 android:text="@string/end_live"
                 android:textColor="@color/white" />
         </androidx.cardview.widget.CardView>
