@@ -547,6 +547,20 @@ class LiveStreamActivity : BaseActivity() {
         val userId = AuthUtils.getCurrentUserId(this) ?: return
         lifecycleScope.launch {
             try {
+                // Ensure only one live stream per host: end any hanging lives first
+                try {
+                    val hanging = RetrofitClient.liveStreamApi.getLiveStreamsByHosts(
+                        select = "id,status",
+                        hostFilter = "eq.$userId",
+                        statusFilter = "eq.live",
+                        order = "updated_at.desc"
+                    )
+                    val nowIso = java.time.Instant.now().toString()
+                    hanging.forEach { h ->
+                        try { RetrofitClient.functionsApi.updateLiveSession(id = h.id, updates = mapOf("status" to "ended", "ended_at" to nowIso)) } catch (_: Exception) {}
+                    }
+                } catch (_: Exception) { }
+
                 val resp = RetrofitClient.functionsApi.createLiveSession(
                     CreateLiveStreamRequest(userId, title, description)
                 )

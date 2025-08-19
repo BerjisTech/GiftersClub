@@ -81,6 +81,17 @@ class MainActivity : BaseActivity() {
                 .show(supportFragmentManager, CreateOrGoLiveBottomSheetFragment.TAG)
         }
         RetrofitClient.init(this)
+        // Resume-live banner action
+        findViewById<Button>(R.id.btnResumeLive)?.setOnClickListener {
+            val banner = findViewById<CardView>(R.id.resumeLiveBanner)
+            val sid = banner?.tag as? String
+            if (!sid.isNullOrEmpty()) {
+                val uri = Uri.parse("https://gifters.club/live/$sid")
+                val intent = Intent(Intent.ACTION_VIEW, uri)
+                intent.setClassName(this, "club.gifters.giftersclub.live.LiveStreamActivity")
+                startActivity(intent)
+            }
+        }
 
 
 
@@ -344,6 +355,8 @@ class MainActivity : BaseActivity() {
 
         supportFragmentManager.addOnBackStackChangedListener { updateBars() }
         updateBars()
+        // Initial check for active host livestream (show resume banner)
+        lifecycleScope.launch(Dispatchers.IO) { checkActiveHostLive() }
     }
 
     override fun onResume() {
@@ -358,6 +371,8 @@ class MainActivity : BaseActivity() {
             startActivity(Intent(this, AuthActivity::class.java))
             finish()
         }
+        // Refresh resume-live banner on returning to app
+        lifecycleScope.launch(Dispatchers.IO) { checkActiveHostLive() }
     }
 
     /**
@@ -384,5 +399,30 @@ class MainActivity : BaseActivity() {
             }
             override fun onAnimationRepeat(animation: Animator) {}
         })
+    }
+
+    private suspend fun checkActiveHostLive() {
+        try {
+            val uid = AuthUtils.getCurrentUserId(this) ?: return
+            val lives = RetrofitClient.liveStreamApi.getLiveStreamsByHosts(
+                select = "id,title,status",
+                hostFilter = "eq.$uid",
+                statusFilter = "eq.live",
+                order = "live_stream_viewer_count.desc"
+            )
+            withContext(Dispatchers.Main) {
+                val banner = findViewById<CardView>(R.id.resumeLiveBanner)
+                val text = findViewById<TextView>(R.id.tvResumeLiveText)
+                val live = lives.firstOrNull()
+                if (live != null) {
+                    banner?.visibility = View.VISIBLE
+                    banner?.tag = live.id
+                    text?.text = "Resume live stream"
+                } else {
+                    banner?.visibility = View.GONE
+                    banner?.tag = null
+                }
+            }
+        } catch (_: Exception) { }
     }
 }
