@@ -43,6 +43,7 @@ class CommentsAdapter : ListAdapter<LiveStreamComment, CommentsAdapter.CommentVi
         val idx = (id.hashCode().let { if (it == Int.MIN_VALUE) 0 else kotlin.math.abs(it) }) % palette.size
         return palette[idx]
     }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CommentViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_live_comment, parent, false)
@@ -54,7 +55,7 @@ class CommentsAdapter : ListAdapter<LiveStreamComment, CommentsAdapter.CommentVi
         holder.bind(comment)
     }
 
-    class CommentViewHolder(private val container: ViewGroup) : RecyclerView.ViewHolder(container) {
+    inner class CommentViewHolder(private val container: ViewGroup) : RecyclerView.ViewHolder(container) {
         private val ivProfile: ShapeableImageView = container.findViewById(R.id.ivLiveCommentAvatar)
         private val tvName: TextView = container.findViewById(R.id.tvLiveCommentAuthor)
         private val tvBadge: TextView = container.findViewById(R.id.tvLiveGifterBadge)
