@@ -17,71 +17,81 @@
         android:padding="8dp"
         app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
+        <androidx.cardview.widget.CardView
             android:id="@+id/streamerDetails"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="start"
-            android:orientation="horizontal"
-            android:padding="4dp"
+            app:cardCornerRadius="10dp"
+            android:background="@android:color/transparent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
-
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/ivStreamerImage"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:contentDescription="@null"
-                android:scaleType="centerCrop"
-                android:src="@drawable/dragon"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_gravity="start"
-                android:orientation="vertical">
+                android:gravity="start"
+                android:background="@drawable/bg_neutral_slate_gradient"
+                android:orientation="horizontal"
+                android:padding="4dp">
 
-                <TextView
-                    android:id="@+id/tvStreamerName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/streamer_name"
-                    android:textColor="@android:color/white" />
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/ivStreamerImage"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:contentDescription="@null"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/dragon"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
 
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="end"
-                    android:gravity="bottom">
-                    <TextView
-                        android:id="@+id/tvFollowerCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/_0_followers"
-                        android:textColor="@android:color/white"
-                        android:textSize="12sp" />
-
-                    <ImageView
-                        android:layout_width="12dp"
-                        android:layout_height="12dp"
-                        android:layout_marginEnd="2dp"
-                        android:layout_marginStart="5dp"
-                        android:layout_marginBottom="3dp"
-                        android:src="@drawable/user_group" />
+                    android:layout_gravity="start"
+                    android:layout_marginStart="8dp"
+                    android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/tvViewerCount"
+                        android:id="@+id/tvStreamerName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/_0"
-                        android:textColor="@android:color/white"
-                        android:textSize="12sp" />
+                        android:text="@string/streamer_name"
+                        android:textColor="@android:color/white" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:gravity="bottom">
+
+                        <TextView
+                            android:id="@+id/tvFollowerCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/_0_followers"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp" />
+
+                        <ImageView
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:layout_marginStart="5dp"
+                            android:layout_marginEnd="2dp"
+                            android:layout_marginBottom="3dp"
+                            android:src="@drawable/user_group" />
+
+                        <TextView
+                            android:id="@+id/tvViewerCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/_0"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp" />
+                    </LinearLayout>
                 </LinearLayout>
+
             </LinearLayout>
 
-        </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
 
         <com.google.android.material.button.MaterialButton
@@ -176,8 +186,8 @@
         android:id="@+id/rvLiveComments"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="60dp"
         android:layout_marginHorizontal="8dp"
+        android:layout_marginBottom="60dp"
         android:background="@android:color/transparent"
         android:overScrollMode="never"
         app:layout_anchor="@id/liveBottomBar"

@@ -51,7 +51,8 @@
             android:id="@+id/tvLiveCommentContent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/gray_600"
+            android:textColor="@color/white"
+            android:outlineAmbientShadowColor="@color/slate_500"
             android:textSize="13sp" />
     </LinearLayout>
 
