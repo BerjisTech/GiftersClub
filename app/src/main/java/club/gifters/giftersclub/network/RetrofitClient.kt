@@ -98,21 +98,7 @@ object RetrofitClient {
         .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .addInterceptor { chain ->
-            try {
-                chain.proceed(chain.request())
-            } catch (ioe: IOException) {
-                val req = chain.request()
-                // Swallow network errors: return empty JSON array so Retrofit calls yield empty lists instead of HttpException
-                Response.Builder()
-                    .request(req)
-                    .protocol(Protocol.HTTP_1_1)
-                    .code(200)
-                    .message("OK")
-                    .body("[]".toResponseBody("application/json; charset=utf-8".toMediaTypeOrNull()))
-                    .build()
-            }
-        }
+        // Do not swallow IOExceptions; allow callers to handle offline state properly
         // Log all REST requests and responses for debugging
         .addInterceptor { chain ->
             val request = chain.request()
@@ -202,21 +188,7 @@ object RetrofitClient {
         .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .addInterceptor { chain ->
-            try {
-                chain.proceed(chain.request())
-            } catch (ioe: IOException) {
-                val req = chain.request()
-                // Swallow network errors: empty JSON array as a successful response
-                Response.Builder()
-                    .request(req)
-                    .protocol(Protocol.HTTP_1_1)
-                    .code(200)
-                    .message("OK")
-                    .body("[]".toResponseBody("application/json; charset=utf-8".toMediaTypeOrNull()))
-                    .build()
-            }
-        }
+        // Do not swallow IOExceptions here either
         .addInterceptor { chain ->
             val original = chain.request()
             // Host for our presign-Lambda endpoint (API Gateway)

@@ -82,6 +82,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/bottom_nav_menu" />
 
+    <!-- Update banner overlay (included layout); anchored near top app bar -->
+    <include
+        android:id="@+id/include_update_banner"
+        layout="@layout/include_update_banner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topAppBar"
+        android:layout_margin="8dp" />
+
     <!-- Overlay container for like/unlike Lottie animations -->
     <FrameLayout
         android:id="@+id/animationOverlayContainer"

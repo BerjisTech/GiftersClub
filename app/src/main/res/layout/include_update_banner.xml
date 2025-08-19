@@ -37,5 +37,13 @@
                 android:textColor="@color/white" />
         </androidx.cardview.widget.CardView>
 
+        <TextView
+            android:id="@+id/updateBannerDismiss"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="Dismiss"
+            android:textColor="@color/gray_500" />
+
     </LinearLayout>
 </androidx.cardview.widget.CardView>

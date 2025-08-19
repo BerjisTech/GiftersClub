@@ -14,13 +14,25 @@ object NetworkUtils {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = cm.activeNetwork ?: return false
             val caps = cm.getNetworkCapabilities(network) ?: return false
-            // Require validated internet capability to ensure actual data connectivity
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            if (caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) return true
+            // Fall back to a quick socket probe when VALIDATED is unavailable but interface is up
+            if (caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return probeInternet()
+            false
         } else {
             @Suppress("DEPRECATION")
             val ni = cm.activeNetworkInfo
-            ni != null && ni.isConnected
+            (ni != null && ni.isConnected) && probeInternet()
+        }
+    }
+
+    private fun probeInternet(): Boolean {
+        return try {
+            java.net.Socket().use { socket ->
+                socket.connect(java.net.InetSocketAddress("1.1.1.1", 53), 1000)
+                true
+            }
+        } catch (_: Exception) {
+            false
         }
     }
 }

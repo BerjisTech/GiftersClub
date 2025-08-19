@@ -97,12 +97,10 @@ class MainActivity : BaseActivity() {
                 }
                 val platform = "android"
                 val pkgInfo = packageManager.getPackageInfo(packageName, 0)
-                val currentVersion = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    pkgInfo.longVersionCode.toInt()
-                } else {
-                    @Suppress("DEPRECATION")
-                    pkgInfo.versionCode
-                }
+                // Prefer a numeric versionName if used (e.g., "19", "20"); otherwise fall back to versionCode
+                val nameNumber = pkgInfo.versionName?.toIntOrNull()
+                val codeNumber = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) pkgInfo.longVersionCode.toInt() else @Suppress("DEPRECATION") pkgInfo.versionCode
+                val currentVersion = nameNumber ?: codeNumber
 
                 // Get the user's last recorded app entry
                 val last = RetrofitClient.userAppsApi.queryUserApps(
@@ -137,13 +135,16 @@ class MainActivity : BaseActivity() {
                     limit = 1
                 ).firstOrNull()?.versionNumber ?: currentVersion
 
-                if (currentVersion < latestVersion) {
+                val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+                val dismissedFor = prefs.getInt("dismiss_update_version", -1)
+                if (currentVersion < latestVersion && dismissedFor != latestVersion) {
                     withContext(Dispatchers.Main) {
                         val banner = findViewById<CardView>(R.id.updateBanner)
                         val text = findViewById<TextView>(R.id.updateBannerText)
                         val btn = findViewById<Button>(R.id.updateBannerButton)
+                        val dismiss = findViewById<TextView>(R.id.updateBannerDismiss)
                         val diff = latestVersion - currentVersion
-                        banner.visibility = View.VISIBLE
+                        banner?.visibility = View.VISIBLE
                         text.text =
                             "You are $diff version${if (diff > 1) "s" else ""} behind. " +
                             "Update GiftersClub for the best experience."
@@ -154,6 +155,10 @@ class MainActivity : BaseActivity() {
                                     Uri.parse("market://details?id=$packageName")
                                 )
                             )
+                        }
+                        dismiss.setOnClickListener {
+                            banner?.visibility = View.GONE
+                            prefs.edit().putInt("dismiss_update_version", latestVersion).apply()
                         }
                     }
                 }
