@@ -107,6 +107,7 @@ class LiveStreamActivity : BaseActivity() {
     private lateinit var ivStreamerImage: ShapeableImageView
     private lateinit var tvStreamerName: TextView
     private lateinit var btnCloseLive: ImageButton
+    private lateinit var btnEndLive: CardView
     private lateinit var btnSwitchCamera: ImageView
     private lateinit var btnToggleMic: ImageButton
     private lateinit var btnToggleCamera: ImageButton
@@ -137,7 +138,7 @@ class LiveStreamActivity : BaseActivity() {
         ivStreamerImage = findViewById(R.id.ivStreamerImage)
         tvStreamerName = findViewById(R.id.tvStreamerName)
         btnCloseLive = findViewById(R.id.btnCloseLive)
-        val btnEndLive = findViewById<CardView>(R.id.btnEndLive)
+        btnEndLive = findViewById(R.id.btnEndLive)
         // follower count & follow button
         tvFollowerCount = findViewById(R.id.tvFollowerCount)
         tvViewerCount = findViewById(R.id.tvViewerCount)
@@ -147,10 +148,6 @@ class LiveStreamActivity : BaseActivity() {
         btnToggleCamera = findViewById<ImageButton>(R.id.btnToggleCamera)
         shareLive = findViewById(R.id.shareLive)
 
-        if (deepId != null) {
-            btnEndLive.visibility = View.GONE
-            btnCloseLive.visibility = View.GONE
-        }
         if (deepId == null) {
             if (!allPermissionsGranted()) {
                 ActivityCompat.requestPermissions(
@@ -346,6 +343,8 @@ class LiveStreamActivity : BaseActivity() {
         btnSwitchCamera.visibility = View.GONE
         btnToggleCamera.visibility = View.GONE
         btnToggleMic.visibility = View.GONE
+        btnEndLive.visibility = View.GONE
+        btnCloseLive.visibility = View.GONE
         // Show host top bar
         liveTopBar.visibility = View.VISIBLE
         lifecycleScope.launch {
@@ -524,11 +523,14 @@ class LiveStreamActivity : BaseActivity() {
                     return@launch
                 }
                 currentStream = ls
-                // register viewer for this stream
-                AuthUtils.getCurrentUserId(this@LiveStreamActivity)?.let { uid ->
+                AuthUtils.getCurrentUserId(this@LiveStreamActivity)?.let { currentId ->
+                    if (currentId == ls.hostId) {
+                        startLiveSession(ls.title, ls.description ?: "")
+                        return@launch
+                    }
                     RetrofitClient.liveStreamApi.joinLiveStream(
                         select = "*",
-                        viewer = LiveStreamViewerRequest(ls.id, uid)
+                        viewer = LiveStreamViewerRequest(ls.id, currentId)
                     )
                 }
                 initViewer()

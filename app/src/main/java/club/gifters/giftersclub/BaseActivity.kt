@@ -13,8 +13,14 @@ import club.gifters.giftersclub.R
 import club.gifters.giftersclub.util.NetworkUtils
 import club.gifters.giftersclub.NoNetworkActivity
 import android.content.Intent
-import club.gifters.giftersclub.MainActivity
+import club.gifters.giftersclub.live.LiveStreamActivity
 import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.card.MaterialCardView
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import club.gifters.giftersclub.AuthUtils
+import club.gifters.giftersclub.network.RetrofitClient
+import android.net.Uri
 
 /**
  * BaseActivity that adds a global offline overlay on top of all content.
@@ -38,6 +44,39 @@ abstract class BaseActivity : AppCompatActivity() {
         offlineOverlay = LayoutInflater.from(this)
             .inflate(R.layout.no_network_overlay, parent, false)
         parent.addView(offlineOverlay)
+        // global live-banner only on non-live screens
+        if (this !is LiveStreamActivity) {
+            val hostBanner = LayoutInflater.from(this)
+                .inflate(R.layout.live_host_banner, parent, false) as MaterialCardView
+            parent.addView(hostBanner)
+            hostBanner.visibility = View.GONE
+
+            lifecycleScope.launch {
+                val uid = AuthUtils.getCurrentUserId(this@BaseActivity) ?: return@launch
+                try {
+                    val active = RetrofitClient.liveStreamApi.getLiveStreamsByHosts(
+                        select = "id",
+                        hostFilter = "eq.$uid",
+                        statusFilter = "eq.live",
+                        order = "updated_at.desc"
+                    )
+                    if (active.isNotEmpty()) {
+                        val sid = active[0].id
+                        hostBanner.visibility = View.VISIBLE
+                        hostBanner.setOnClickListener {
+                            val uri = Uri.parse("https://gifters.club/live/$sid")
+                            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                                setClassName(
+                                    this@BaseActivity,
+                                    "club.gifters.giftersclub.live.LiveStreamActivity"
+                                )
+                            }
+                            startActivity(intent)
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        }
 
         // Setup network callback after overlay is available
         cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
