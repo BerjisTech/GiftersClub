@@ -59,6 +59,7 @@ import io.livekit.android.room.track.LocalAudioTrackOptions
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.LocalVideoTrackOptions
 import io.livekit.android.room.track.RemoteVideoTrack
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -499,9 +500,11 @@ class LiveStreamActivity : BaseActivity() {
      * Deep-link handler: load an existing live stream by ID and join as viewer.
      */
     private fun handleDeepLinkStream(streamId: String) {
+        // track fetched session for error-handling
+        var fetchedLive: LiveStream? = null
         lifecycleScope.launch {
             try {
-                // Fetch via Edge Function to include a LiveKit token for viewer
+                // Fetch via Edge Function to include a LiveKit token for viewer or host
                 val resp = RetrofitClient.functionsApi.getLiveSession(streamId)
                 if (!resp.isSuccessful) {
                     Toast.makeText(
@@ -512,8 +515,7 @@ class LiveStreamActivity : BaseActivity() {
                     finish()
                     return@launch
                 }
-                val ls = resp.body()
-                if (ls == null) {
+                val ls = resp.body() ?: run {
                     Toast.makeText(
                         this@LiveStreamActivity,
                         R.string.stream_not_found,
@@ -522,12 +524,15 @@ class LiveStreamActivity : BaseActivity() {
                     finish()
                     return@launch
                 }
-                currentStream = ls
+                // save for potential cleanup in catch
+                fetchedLive = ls
+                // If host resumes their own live, go into host UI; else join as viewer
                 AuthUtils.getCurrentUserId(this@LiveStreamActivity)?.let { currentId ->
                     if (currentId == ls.hostId) {
-                        startLiveSession(ls.title, ls.description ?: "")
+                        resumeHostSession(ls)
                         return@launch
                     }
+                    // viewer flow: register as viewer then init viewer UI
                     RetrofitClient.liveStreamApi.joinLiveStream(
                         select = "*",
                         viewer = LiveStreamViewerRequest(ls.id, currentId)
@@ -535,12 +540,133 @@ class LiveStreamActivity : BaseActivity() {
                 }
                 initViewer()
             } catch (e: Exception) {
+                // if host session now fails to load, mark it ended so banner disappears
+                fetchedLive?.let { live ->
+                    try {
+                        val nowIso = java.time.Instant.now().toString()
+                        RetrofitClient.functionsApi.updateLiveSession(
+                            id = live.id,
+                            updates = mapOf("status" to "ended", "ended_at" to nowIso)
+                        )
+                    } catch (_: Exception) { }
+                }
                 Toast.makeText(
                     this@LiveStreamActivity,
                     R.string.error_loading_stream,
                     Toast.LENGTH_SHORT
                 ).show()
                 finish()
+            }
+        }
+    }
+
+    /**
+     * Resume an existing live stream for host without creating a new session.
+     */
+    private fun resumeHostSession(live: LiveStream) {
+        // require camera & audio permissions
+        if (!allPermissionsGranted()) {
+            ActivityCompat.requestPermissions(
+                this@LiveStreamActivity,
+                REQUIRED_PERMISSIONS,
+                REQUEST_CODE_PERMISSIONS
+            )
+            return
+        }
+        currentStream = live
+        liveTopBar.visibility = View.VISIBLE
+        liveTopBar.bringToFront()
+        // load host profile and comments
+        lifecycleScope.launch {
+            val hostId = live.hostId
+            val profiles = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$hostId")
+            if (profiles.isNotEmpty()) {
+                val p = profiles[0]
+                tvStreamerName.text = (p.name ?: p.username).take(14)
+                ivStreamerImage.load(p.image)
+            }
+            tvFollowerCount.text = getString(
+                R.string.follower_count,
+                profiles.getOrNull(0)?.followersCount?.let { formatCount(it) } ?: formatCount(0)
+            )
+            // load comments and poll
+            live.id.let { sid ->
+                val initial = RetrofitClient.liveStreamApi.getLiveStreamComments(
+                    select = "*,profile:profiles(*)",
+                    streamFilter = "eq.$sid"
+                )
+                commentsAdapter.submitList(initial)
+                if (initial.isNotEmpty()) rvLiveComments.scrollToPosition(initial.size - 1)
+                commentsJob = launch {
+                    while (isActive) {
+                        delay(3000)
+                        val updated = RetrofitClient.liveStreamApi.getLiveStreamComments(
+                            select = "*,profile:profiles(*)",
+                            streamFilter = "eq.$sid"
+                        )
+                        commentsAdapter.submitList(updated)
+                        if (updated.isNotEmpty()) rvLiveComments.scrollToPosition(updated.size - 1)
+                    }
+                }
+            }
+        }
+        // host camera preview & controls
+        if (!USE_LIVEKIT_CAMERA_PREVIEW) startCamera()
+        btnToggleMic.visibility = View.VISIBLE
+        if (USE_LIVEKIT_CAMERA_PREVIEW) {
+            btnSwitchCamera.visibility = View.VISIBLE
+            btnToggleCamera.visibility = View.VISIBLE
+        } else {
+            btnSwitchCamera.visibility = View.VISIBLE
+            btnToggleCamera.visibility = View.GONE
+        }
+        // connect to LiveKit as host
+        live.token?.takeIf { it.isNotBlank() }?.let { lkToken ->
+            val roomOptions = RoomOptions(true, true, null,
+                LocalAudioTrackOptions(), LocalVideoTrackOptions(), null, null)
+            val room = LiveKit.create(this@LiveStreamActivity, roomOptions, LiveKitOverrides())
+            room.initVideoRenderer(previewView!!)
+            liveKitRoom = room
+            lifecycleScope.launch(Dispatchers.IO) {
+                room.connect(LiveKitConfig.WS_URL, lkToken, ConnectOptions())
+            }
+            room.remoteParticipants.values.forEach { participant ->
+                participant.videoTrackPublications.forEach { (_, track) ->
+                    (track as? RemoteVideoTrack)?.addRenderer(previewView!!)
+                }
+            }
+            // subscribe to new participants
+            lifecycleScope.launch {
+                room.events.collect { evt ->
+                    if (evt is RoomEvent.TrackSubscribed && evt.track is RemoteVideoTrack) {
+                        (evt.track as RemoteVideoTrack).addRenderer(previewView!!)
+                    }
+                }
+            }
+            // status polling to end when stream ends
+            statusJob?.cancel()
+            statusJob = lifecycleScope.launch(Dispatchers.IO) {
+                while (isActive) {
+                    delay(3000)
+                    val rows = RetrofitClient.liveStreamApi.getLiveStreamById(
+                        "id,status,viewer_count", "eq.${live.id}"
+                    )
+                    val row = rows.firstOrNull() ?: break
+                    withContext(Dispatchers.Main) {
+                        tvViewerCount.text = row.viewerCount.toString()
+                        if (row.status != "live") {
+                            isEnded = true
+                            try { liveKitRoom?.disconnect() } catch (_: Exception) {}
+                            commentsJob?.cancel(); commentsJob = null
+                            Toast.makeText(
+                                this@LiveStreamActivity,
+                                R.string.stream_not_found,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            finish()
+                        }
+                    }
+                }
             }
         }
     }
