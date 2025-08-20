@@ -12,8 +12,8 @@ android {
         applicationId = "club.gifters.giftersclub"
         minSdk = 24
         targetSdk = 35
-        versionCode = 21
-        versionName = "1.0.21"
+        versionCode = 22
+        versionName = "1.0.22"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

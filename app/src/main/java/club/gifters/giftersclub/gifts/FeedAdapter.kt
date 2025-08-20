@@ -98,7 +98,6 @@ class FeedAdapter(
     inner class LiveVH(view: View): RecyclerView.ViewHolder(view) {
         private val title: TextView = view.findViewById(R.id.tvLiveTitle)
         private val viewers: TextView = view.findViewById(R.id.tvViewerCount)
-        private val started: TextView = view.findViewById(R.id.tvStarted)
         private val previewContainer: FrameLayout = view.findViewById(R.id.previewContainer)
         private var preview: SurfaceViewRenderer? = null
         private var room: Room? = null
@@ -116,7 +115,6 @@ class FeedAdapter(
         fun bind(live: LiveStream) {
             title.text = live.title
             viewers.text = "${live.viewerCount} watching"
-            started.text = live.startedAt?.let { formatRelativeTime(it) } ?: ""
             startPreview(live)
         }
 
