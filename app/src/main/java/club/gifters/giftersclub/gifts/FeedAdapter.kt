@@ -6,6 +6,8 @@ import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -188,8 +190,31 @@ class FeedAdapter(
         private val btnShare: TextView = itemView.findViewById(R.id.btnShare)
         private val tvShareCount: TextView = itemView.findViewById(R.id.tvShareCount)
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
+        private var current: Post? = null
+
+        init {
+            val doubleTap = GestureDetector(itemView.context,
+                object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onDoubleTap(e: MotionEvent): Boolean {
+                        current?.let(onLike)
+                        return true
+                    }
+                }
+            )
+            itemView.setOnTouchListener { _, ev ->
+                doubleTap.onTouchEvent(ev)
+                false
+            }
+            mediaPager.post {
+                (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { _, ev ->
+                    doubleTap.onTouchEvent(ev)
+                    false
+                }
+            }
+        }
 
         fun bind(post: Post) {
+            current = post
             post.profile?.let { p ->
                 username.text = p.username
                 avatar.setOnClickListener { onProfileClick(p.username) }
@@ -265,7 +290,21 @@ class FeedAdapter(
             btnLike.setOnClickListener { onLike(post) }
             btnComment.setOnClickListener { onComment(post) }
             btnShare.setOnClickListener { onShare(post) }
-            // counts are loaded elsewhere in fragment; leave defaults
+            tvLikeCount.text = "0"
+            tvShareCount.text = "0"
+            tvCommentCount.text = "0"
+            scope.launch {
+                val likes = CommentApiHolder.getPostReactionCountValue(post.id, "like")
+                tvLikeCount.text = likes.toString()
+            }
+            scope.launch {
+                val shares = CommentApiHolder.getPostReactionCountValue(post.id, "share")
+                tvShareCount.text = shares.toString()
+            }
+            scope.launch {
+                val comments = CommentApiHolder.getPostCommentCountValue(post.id)
+                tvCommentCount.text = comments.toString()
+            }
         }
     }
 
