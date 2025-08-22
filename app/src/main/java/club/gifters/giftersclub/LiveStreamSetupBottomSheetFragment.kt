@@ -9,6 +9,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.AutoCompleteTextView
 import android.widget.ArrayAdapter
+import androidx.lifecycle.lifecycleScope
 import club.gifters.giftersclub.model.SystemCategory
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.R
