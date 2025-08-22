@@ -23,19 +23,14 @@ class CreateOrGoLiveActivity : AppCompatActivity() {
         setContentView(R.layout.activity_create_or_go_live)
         goLive = findViewById(R.id.goLive)
         createPost = findViewById(R.id.createPost)
-        val container = findViewById<androidx.constraintlayout.widget.ConstraintLayout>(R.id.main)
+        val container = findViewById<View>(R.id.main)
 
         goLive.setOnClickListener {
             startActivity(Intent(this, LiveStreamActivity::class.java))
         }
         createPost.setOnClickListener {
-            // hide the menu options and show the CreatePostFragment in this container
-            goLive.visibility = View.GONE
-            createPost.visibility = View.GONE
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.main, CreatePostFragment())
-                .addToBackStack(null)
-                .commit()
+            // Open full-screen CreatePostActivity instead of embedding fragment
+            startActivity(Intent(this, club.gifters.giftersclub.gifts.CreatePostActivity::class.java))
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(container) { v, insets ->

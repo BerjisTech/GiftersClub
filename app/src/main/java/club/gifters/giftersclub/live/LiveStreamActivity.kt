@@ -819,7 +819,15 @@ class LiveStreamActivity : BaseActivity() {
         }
     }
 
-    fun startLiveSession(title: String, description: String, categoryId: Int, tags: List<String>) {
+    fun startLiveSession(
+        title: String,
+        description: String,
+        categoryId: Int,
+        tags: List<String>,
+        accessType: String? = null,
+        priceTokens: Int? = null,
+        requiredPlanId: String? = null
+    ) {
         val userId = AuthUtils.getCurrentUserId(this) ?: return
         lifecycleScope.launch {
             try {
@@ -849,9 +857,16 @@ class LiveStreamActivity : BaseActivity() {
                         if (ls.status.lowercase() != "live") {
                             try {
                                 val nowIso = java.time.Instant.now().toString()
+                                val updates = mutableMapOf<String, Any>(
+                                    "status" to "live",
+                                    "started_at" to nowIso
+                                )
+                                accessType?.let { updates["access_type"] = it }
+                                priceTokens?.let { updates["price"] = it }
+                                requiredPlanId?.let { updates["required_plan_id"] = it }
                                 RetrofitClient.functionsApi.updateLiveSession(
                                     id = ls.id,
-                                    updates = mapOf("status" to "live", "started_at" to nowIso)
+                                    updates = updates
                                 )
                             } catch (_: Exception) { }
                         }

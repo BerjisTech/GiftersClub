@@ -30,6 +30,10 @@
         <activity
             android:name=".CreateOrGoLiveActivity"
             android:exported="false" />
+        <activity
+            android:name=".gifts.CreatePostActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GiftersClub" />
         <!-- Screen displayed when there is no network connectivity -->
         <activity
             android:name=".NoNetworkActivity"

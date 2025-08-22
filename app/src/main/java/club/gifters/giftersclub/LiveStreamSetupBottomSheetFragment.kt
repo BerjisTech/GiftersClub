@@ -49,18 +49,51 @@ class LiveStreamSetupBottomSheetFragment : BottomSheetDialogFragment() {
         val etDesc = content.findViewById<EditText>(R.id.etStreamDescription)
         val actvCategory = content.findViewById<AutoCompleteTextView>(R.id.actvCategory)
         val etTags = content.findViewById<EditText>(R.id.etStreamTags)
+        val rgAccess = content.findViewById<android.widget.RadioGroup>(R.id.rgLiveAccessType)
+        val etPrice = content.findViewById<EditText>(R.id.etLivePrice)
+        val layoutPlanPicker = content.findViewById<android.widget.LinearLayout>(R.id.layoutPlanPicker)
+        val actvPlan = content.findViewById<AutoCompleteTextView>(R.id.actvPlan)
         val btnCancel = content.findViewById<Button>(R.id.btnCancelLive)
         val btnStart = content.findViewById<Button>(R.id.btnStartLive)
 
         // Load categories and setup search suggestions
         val ctx = requireContext()
         var categories: List<SystemCategory> = emptyList()
+        // subscription plans for this creator (optional)
+        var planIdByName: Map<String, String> = emptyMap()
         (requireActivity() as? LiveStreamActivity)?.lifecycleScope?.launchWhenStarted {
             try {
                 categories = RetrofitClient.systemCategoryApi.getCategories()
                 val names = categories.map { it.name }
                 actvCategory.setAdapter(ArrayAdapter(ctx, android.R.layout.simple_dropdown_item_1line, names))
             } catch (_: Exception) {}
+            try {
+                val uid = club.gifters.giftersclub.AuthUtils.getCurrentUserId(ctx) ?: ""
+                if (uid.isNotEmpty()) {
+                    val plans = RetrofitClient.subscriptionPlanApi.getSubscriptionPlans("eq.$uid")
+                    val planNames = plans.map { it.name }
+                    planIdByName = plans.associate { it.name to it.id }
+                    actvPlan.setAdapter(ArrayAdapter(ctx, android.R.layout.simple_dropdown_item_1line, planNames))
+                }
+            } catch (_: Exception) {}
+        }
+
+        // Toggle price or plan picker based on access selection
+        rgAccess.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                R.id.rbLivePaid -> {
+                    etPrice.visibility = View.VISIBLE
+                    layoutPlanPicker.visibility = View.GONE
+                }
+                R.id.rbLiveSubscriberOnly -> {
+                    etPrice.visibility = View.GONE
+                    layoutPlanPicker.visibility = View.VISIBLE
+                }
+                else -> {
+                    etPrice.visibility = View.GONE
+                    layoutPlanPicker.visibility = View.GONE
+                }
+            }
         }
 
         btnCancel.setOnClickListener {
@@ -87,7 +120,29 @@ class LiveStreamSetupBottomSheetFragment : BottomSheetDialogFragment() {
                     .split(',')
                     .map { it.trim() }
                     .filter { it.isNotEmpty() }
-                (requireActivity() as? LiveStreamActivity)?.startLiveSession(title, desc, matched.id, tags)
+                val accessType = when (rgAccess.checkedRadioButtonId) {
+                    R.id.rbLivePaid -> "paid"
+                    R.id.rbLiveSubscriberOnly -> "subscription"
+                    else -> "free"
+                }
+                val priceTokens = if (accessType == "paid") etPrice.text.toString().toIntOrNull() else null
+                val selectedPlanName = actvPlan.text.toString()
+                val requiredPlanId = if (accessType == "subscription") planIdByName[selectedPlanName] else null
+                if (accessType == "subscription" && requiredPlanId.isNullOrEmpty()) {
+                    actvPlan.error = "Required"
+                    hasStarted = false
+                    return@setOnClickListener
+                }
+
+                (requireActivity() as? LiveStreamActivity)?.startLiveSession(
+                    title,
+                    desc,
+                    matched.id,
+                    tags,
+                    accessType,
+                    priceTokens,
+                    requiredPlanId
+                )
                 dismiss()
             }
         }

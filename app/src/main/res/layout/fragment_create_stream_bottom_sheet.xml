@@ -81,6 +81,80 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         app:cardCornerRadius="10dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp"
+            android:background="@drawable/bg_half_transparent_white">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Live access"
+                android:textStyle="bold"
+                android:textColor="@android:color/black" />
+            <RadioGroup
+                android:id="@+id/rgLiveAccessType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="6dp">
+                <RadioButton
+                    android:id="@+id/rbLiveFree"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/free" />
+                <RadioButton
+                    android:id="@+id/rbLiveSubscriberOnly"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/subscriber_only" />
+                <RadioButton
+                    android:id="@+id/rbLivePaid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/paid" />
+            </RadioGroup>
+
+            <EditText
+                android:id="@+id/etLivePrice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/price_tokens"
+                android:inputType="number"
+                android:visibility="gone"
+                android:paddingVertical="8dp" />
+
+            <LinearLayout
+                android:id="@+id/layoutPlanPicker"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Select required plan"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/black" />
+                <AutoCompleteTextView
+                    android:id="@+id/actvPlan"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Choose a plan"
+                    android:paddingVertical="8dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="10dp">
 
         <EditText
             android:id="@+id/etStreamDescription"
