@@ -41,10 +41,8 @@ class CreateOrGoLiveBottomSheetFragment : BottomSheetDialogFragment() {
             dismiss()
         }
         createPost.setOnClickListener {
-            childFragmentManager.beginTransaction()
-                .replace(R.id.main, CreatePostFragment())
-                .addToBackStack(null)
-                .commit()
+            startActivity(Intent(requireContext(), club.gifters.giftersclub.gifts.CreatePostActivity::class.java))
+            dismiss()
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(container) { v, insets ->
