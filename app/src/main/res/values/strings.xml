@@ -1,4 +1,4 @@
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Gifters Club</string>
     <string name="leaderboard">Gifters</string>
     <string name="create_post">Create a Post</string>
@@ -58,7 +58,7 @@
     <!-- Chat header previews -->
     <string name="new_followers_preview">You have new followers</string>
     <string name="activity_preview">You have new gifts &amp; post interactions</string>
-    <string name="system_notifications_preview">Your token purchase ...</string>
+    <string name="system_notifications_preview" tools:ignore="TypographyEllipsis">Your token purchase ...</string>
     <string name="empty_chat_message">Your chats will appear here</string>
     <string name="header_followers_count">You have %1$d new followers today</string>
     <string name="header_followers_none">You have no new followers today</string>
@@ -68,7 +68,7 @@
     <string name="wishlist">Wishlist</string>
     <string name="send">Send</string>
     <string name="chat_with_user">Chat</string>
-    <string name="type_a_message">Type a message...</string>
+    <string name="type_a_message" tools:ignore="TypographyEllipsis">Type a message...</string>
     <string name="attach">Attach</string>
     <string name="notification_message">Notification message</string>
     <string name="_2h_ago">2h ago</string>
@@ -138,7 +138,7 @@
     <string name="_5s">5s</string>
     <string name="_10m">10m</string>
     <string name="zoom_not_supported">Zoom %1$.1fx not supported</string>
-    <string name="write_a_comment">Write a comment...</string>
+    <string name="write_a_comment" tools:ignore="TypographyEllipsis">Write a comment...</string>
     <string name="recharge">Recharge</string>
     <string name="streamer_name">Streamer Name</string>
     <!-- Live streaming -->
@@ -201,8 +201,8 @@
     <string name="your_recent_withdrawal_requests">Your recent withdrawal requests</string>
     <string name="withdraw_your_earnings_to_your_preferred_payment_method">Withdraw your earnings to your preferred payment method</string>
     <string name="_0_kes_usd_0_00_via_method">0 KES (~ USD 0.00) via Method</string>
-    <string name="_2025_01_01">2025-01-01</string>
-    <string name="reason">Reason: ...</string>
+    <string name="_2025_01_01" tools:ignore="TypographyDashes">2025-01-01</string>
+    <string name="reason" tools:ignore="TypographyEllipsis">Reason: ...</string>
     <string name="enter_details">Enter details</string>
     <string name="search_user_to_gift">Search user to gift</string>
     <string name="_lock">🔒</string>
@@ -233,4 +233,10 @@
     <string name="_0_watching">0 watching</string>
     <string name="_0_followers">0 followers</string>
     <string name="follower_count">%1$s followers</string>
+    <string name="access_required">Locked Content</string>
+    <string name="subscribe_upgrade">Upgrade subscription</string>
+    <string name="purchase_live_access_for_tokens">Purchase Tokens</string>
+    <string name="no_plans_available"><![CDATA[You haven\'t created any subscriptions plans. Head over to profile -> settings -> subscriptions to add subscription plans]]></string>
+    <string name="live_requires_plan_and_above">This live stream is for a higher subscription plan</string>
+    <string name="please_retry_after_topup">Top up your tokens and try again</string>
 </resources>
