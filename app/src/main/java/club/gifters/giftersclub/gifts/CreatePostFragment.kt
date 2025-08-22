@@ -89,6 +89,9 @@ import java.util.regex.Pattern
 class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var rgAccessType: android.widget.RadioGroup
     private lateinit var etPrice: EditText
+    private lateinit var layoutPostPlanPicker: LinearLayout
+    private lateinit var actvPostPlan: android.widget.AutoCompleteTextView
+    private var postPlanIdByName: Map<String, String> = emptyMap()
     private val postApi = RetrofitClient.postApi
 
     // Media selection preview and next step removed; using camera UI by default
@@ -243,11 +246,44 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             submitPost()
         }
     // Access type (free/subscription/paid) and pricing
-    rgAccessType = view.findViewById(R.id.rgAccessType)
-    etPrice = view.findViewById(R.id.etPrice)
-    rgAccessType.setOnCheckedChangeListener { _, checkedId ->
-        etPrice.visibility = if (checkedId == R.id.rbPaid) View.VISIBLE else View.GONE
-    }
+        rgAccessType = view.findViewById(R.id.rgAccessType)
+        etPrice = view.findViewById(R.id.etPrice)
+        layoutPostPlanPicker = view.findViewById(R.id.layoutPostPlanPicker)
+        actvPostPlan = view.findViewById(R.id.actvPostPlan)
+        rgAccessType.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                R.id.rbPaid -> {
+                    etPrice.visibility = View.VISIBLE
+                    layoutPostPlanPicker.visibility = View.GONE
+                }
+                R.id.rbSubscriberOnly -> {
+                    etPrice.visibility = View.GONE
+                    layoutPostPlanPicker.visibility = View.VISIBLE
+                }
+                else -> {
+                    etPrice.visibility = View.GONE
+                    layoutPostPlanPicker.visibility = View.GONE
+                }
+            }
+        }
+
+        // Load subscription plans for dropdown with "All" default
+        val ctx = requireContext()
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val uid = club.gifters.giftersclub.AuthUtils.getCurrentUserId(ctx) ?: ""
+                if (uid.isNotEmpty()) {
+                    val plans = club.gifters.giftersclub.network.RetrofitClient.subscriptionPlanApi.getSubscriptionPlans("eq.$uid")
+                    val names = listOf("All") + plans.map { it.name }
+                    postPlanIdByName = plans.associate { it.name to it.id }
+                    actvPostPlan.setAdapter(android.widget.ArrayAdapter(ctx, android.R.layout.simple_dropdown_item_1line, names))
+                    actvPostPlan.threshold = 0
+                    actvPostPlan.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvPostPlan.showDropDown() }
+                    actvPostPlan.setOnClickListener { actvPostPlan.showDropDown() }
+                    actvPostPlan.setText("All", false)
+                }
+            } catch (_: Exception) {}
+        }
 
         // CameraX UI setup and start camera preview
         previewView = view.findViewById(R.id.previewView)
@@ -982,12 +1018,17 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 val priceValue = if (selectedAccessType == "paid") {
                     etPrice.text.toString().toIntOrNull() ?: 0
                 } else null
+                val requiredPlanId = if (selectedAccessType == "subscription") {
+                    val chosen = actvPostPlan.text?.toString()?.trim().orEmpty()
+                    if (chosen.equals("All", true) || chosen.isEmpty()) null else postPlanIdByName[chosen]
+                } else null
                 val postResp = postApi.createPost(
                     createPost = CreatePostRequest(
                         userId = userId,
                         content = content,
                         accessType = selectedAccessType,
-                        price = priceValue
+                        price = priceValue,
+                        requiredPlanId = requiredPlanId
                     )
                 )
                 if (!postResp.isSuccessful) {

@@ -674,6 +674,29 @@
                     android:textColor="@color/white"
                     android:visibility="gone" />
 
+                <LinearLayout
+                    android:id="@+id/layoutPostPlanPicker"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:paddingTop="8dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Select required plan"
+                        android:textColor="@color/white"
+                        android:textStyle="bold" />
+                    <AutoCompleteTextView
+                        android:id="@+id/actvPostPlan"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Choose a plan"
+                        android:inputType="text"
+                        android:textColor="@color/white"
+                        android:paddingVertical="8dp" />
+                </LinearLayout>
+
             </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>

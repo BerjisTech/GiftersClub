@@ -71,9 +71,13 @@ class LiveStreamSetupBottomSheetFragment : BottomSheetDialogFragment() {
                 val uid = club.gifters.giftersclub.AuthUtils.getCurrentUserId(ctx) ?: ""
                 if (uid.isNotEmpty()) {
                     val plans = RetrofitClient.subscriptionPlanApi.getSubscriptionPlans("eq.$uid")
-                    val planNames = plans.map { it.name }
+                    val planNames = listOf("All") + plans.map { it.name }
                     planIdByName = plans.associate { it.name to it.id }
                     actvPlan.setAdapter(ArrayAdapter(ctx, android.R.layout.simple_dropdown_item_1line, planNames))
+                    actvPlan.threshold = 0
+                    actvPlan.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvPlan.showDropDown() }
+                    actvPlan.setOnClickListener { actvPlan.showDropDown() }
+                    actvPlan.setText("All", false)
                 }
             } catch (_: Exception) {}
         }
