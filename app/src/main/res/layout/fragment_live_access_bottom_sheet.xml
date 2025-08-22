@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_rounded_top"
+    android:padding="16dp">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/btnClosePaywall"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="end"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+        app:cardCornerRadius="14dp">
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="6dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel" />
+    </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:id="@+id/tvAccessTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:text="Access Required"/>
+
+    <TextView
+        android:id="@+id/tvAccessMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textSize="14sp"
+        android:textColor="@android:color/white"
+        android:text="This live requires a subscription."/>
+
+    <LinearLayout
+        android:id="@+id/llBenefits"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="8dp"
+        android:dividerPadding="4dp" />
+
+    <Button
+        android:id="@+id/btnPrimaryAction"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_sky_blue_gradient"
+        android:textColor="@color/white"
+        android:text="Continue" />
+
+</LinearLayout>
+

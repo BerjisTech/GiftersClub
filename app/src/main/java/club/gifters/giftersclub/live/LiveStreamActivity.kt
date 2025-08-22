@@ -66,6 +66,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.text.NumberFormat
+import retrofit2.HttpException
 
 /**
  * Activity displaying and managing a live streaming session (camera preview, comments, and gifts).
@@ -105,6 +106,8 @@ class LiveStreamActivity : BaseActivity() {
     private var isEnded: Boolean = false
     private var lastGiftAt: String? = null
     private val giftCombos = mutableMapOf<String, Pair<Int, Int>>() // key -> (count, commentIndex)
+    private var paywallPlanId: String? = null
+    private var paywallPlanTokens: Int = 0
 
     // UI references for dynamic live stream controls
     private lateinit var liveTopBar: ConstraintLayout
@@ -562,6 +565,16 @@ class LiveStreamActivity : BaseActivity() {
                 }
                 // save for potential cleanup in catch
                 fetchedLive = ls
+                // Access gating before joining (host bypass)
+                val currentUser = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
+                val isHost = (currentUser != null && currentUser == ls.hostId)
+                if (!isHost) {
+                    val ok = ensureLiveAccess(ls)
+                    if (!ok) {
+                        // if user declined or failed, stop here
+                        return@launch
+                    }
+                }
                 // If host resumes their own live, go into host UI; else join as viewer
                 AuthUtils.getCurrentUserId(this@LiveStreamActivity)?.let { currentId ->
                     if (currentId == ls.hostId) {
@@ -594,6 +607,105 @@ class LiveStreamActivity : BaseActivity() {
                 finish()
             }
         }
+    }
+
+    /** Ensure viewer has access to the live stream; shows dialogs for purchase/subscribe/upgrade when needed. */
+    private suspend fun ensureLiveAccess(ls: LiveStream): Boolean {
+        // Free streams require no action
+        val type = (ls.accessType ?: "free").lowercase()
+        if (type == "free") return true
+        val hostId = ls.hostId
+        val userId = AuthUtils.getCurrentUserId(this) ?: return false
+        if (userId == hostId) return true
+        return when (type) {
+            "paid" -> {
+                // Attempt purchase-live-access; on failure, prompt
+                try {
+                    val ok = RetrofitClient.functionsApi.purchaseLiveAccessRpc(mapOf("liveStreamId" to ls.id)).isSuccessful
+                    if (ok) true else {
+                        LiveAccessBottomSheetFragment.newInstance(
+                            mode = "paid",
+                            message = getString(R.string.purchase_live_access_for_tokens, (ls.price ?: 0)),
+                            benefits = arrayListOf(),
+                            price = ls.price ?: 0,
+                            streamId = ls.id,
+                            creatorId = ls.hostId,
+                            planId = null,
+                            planTokens = null
+                        ).setListener(object: LiveAccessBottomSheetFragment.Listener {
+                            override fun onPurchase(streamId: String) {
+                                lifecycleScope.launch {
+                                    RetrofitClient.functionsApi.purchaseLiveAccessRpc(mapOf("liveStreamId" to streamId))
+                                    handleDeepLinkStream(streamId)
+                                }
+                            }
+                            override fun onSubscribe(creatorId: String, planId: String, planTokens: Int) { /* no-op */ }
+                        }).show(supportFragmentManager, "LiveAccessBottomSheet")
+                        false
+                    }
+                } catch (e: Exception) {
+                    false
+                }
+            }
+            "subscription" -> {
+                try {
+                    val plans = RetrofitClient.subscriptionPlanApi.getSubscriptionPlans("eq.$hostId")
+                    if (plans.isEmpty()) {
+                        Toast.makeText(this, R.string.no_plans_available, Toast.LENGTH_SHORT).show()
+                        return false
+                    }
+                    val sorted = plans.sortedBy { it.tokens }
+                    val required = ls.requiredPlanId?.let { id -> sorted.find { it.id == id } } ?: sorted.first()
+                    // Check current user's subscription tokens
+                    val nowIso = java.time.Instant.now().toString()
+                    val subs = RetrofitClient.subscriptionsApiExt.getActiveSubscriptions(
+                        creatorFilter = "eq.$hostId",
+                        subscriberFilter = "eq.$userId",
+                        orFilter = "end_date.is.null,end_date.gt.$nowIso"
+                    )
+                    val currentTokens = subs.maxOfOrNull { it.tokens } ?: 0
+                    if (currentTokens >= required.tokens) return true
+                    // Show custom subscribe/upgrade bottom sheet
+                    paywallPlanId = required.id
+                    paywallPlanTokens = required.tokens
+                    LiveAccessBottomSheetFragment.newInstance(
+                        mode = "subscription",
+                        message = getString(R.string.live_requires_plan_and_above, required.name, required.tokens),
+                        benefits = ArrayList((required.description ?: "").split('\n').filter { it.isNotBlank() }),
+                        price = null,
+                        streamId = ls.id,
+                        creatorId = hostId,
+                        planId = required.id,
+                        planTokens = required.tokens
+                    ).setListener(object: LiveAccessBottomSheetFragment.Listener {
+                        override fun onPurchase(streamId: String) { /* no-op */ }
+                        override fun onSubscribe(creatorId: String, planId: String, planTokens: Int) {
+                            lifecycleScope.launch { attemptSubscribeWithTopup(creatorId, planId, planTokens) }
+                        }
+                    }).show(supportFragmentManager, "LiveAccessBottomSheet")
+                    false
+                } catch (e: Exception) {
+                    false
+                }
+            }
+            else -> true
+        }
+    }
+
+    private suspend fun attemptSubscribeWithTopup(creatorId: String, planId: String, tokens: Int) {
+        try {
+            val ok = RetrofitClient.functionsApi.subscribeToCreatorRpc(mapOf("creatorId" to creatorId, "planId" to planId)).isSuccessful
+            if (ok) {
+                handleDeepLinkStream(currentStream?.id ?: return)
+                return
+            }
+        } catch (e: Exception) {
+            // fall through to topup
+        }
+        // Top-up flow: open buy tokens dialog and retry
+        val uid = AuthUtils.getCurrentUserId(this) ?: return
+        showBuyTokensDialog(uid)
+        Toast.makeText(this, R.string.please_retry_after_topup, Toast.LENGTH_SHORT).show()
     }
 
     /**
