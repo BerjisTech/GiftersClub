@@ -73,3 +73,16 @@ data class LiveStreamGiftGallery(
     val gift: Gift? = null,
     @SerializedName("title_gifter") val titleGifter: Profile? = null
 )
+
+/** Gift event row (joined) for live comments notification */
+data class LiveGiftEvent(
+    val id: String,
+    @SerializedName("live_stream_id") val liveStreamId: String,
+    @SerializedName("gifter") val gifterId: String,
+    @SerializedName("recipient") val recipientId: String,
+    @SerializedName("gift") val giftId: String,
+    @SerializedName("tokens_used") val tokensUsed: Int?,
+    @SerializedName("created_at") val createdAt: String,
+    val gift: Gift?,
+    val gifter: Profile?
+)

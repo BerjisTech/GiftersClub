@@ -10,6 +10,15 @@
         android:layout_height="match_parent"
         android:background="@android:color/black" />
 
+    <!-- Overlay for special gift animations (placeholder) -->
+    <FrameLayout
+        android:id="@+id/giftAnimationOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:focusable="false"
+        android:background="@android:color/transparent" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/liveTopBar"
         android:layout_width="match_parent"

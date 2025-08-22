@@ -19,6 +19,8 @@ data class Post(
     @SerializedName("access_type") val accessType: String,
     /** Price in tokens for pay-per-post; null otherwise */
     val price: Int?,
+    /** Required plan for tiered subscriber access; null means all plans */
+    @SerializedName("required_plan_id") val requiredPlanId: String?,
     /** Hashtags associated with this post */
     val tags: List<Tag>?
 )

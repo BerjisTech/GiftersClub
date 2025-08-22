@@ -161,6 +161,7 @@ object RetrofitClient {
      */
     val subscriptionPlanApi: SubscriptionPlanApi = retrofit.create(SubscriptionPlanApi::class.java)
     val liveStreamApi: LiveStreamApi = retrofit.create(LiveStreamApi::class.java)
+    val systemCategoryApi: SystemCategoryApi = retrofit.create(SystemCategoryApi::class.java)
     val withdrawalApi: WithdrawalApi = retrofit.create(WithdrawalApi::class.java)
     val tokenApi: TokenApi = retrofit.create(TokenApi::class.java)
     val followsApi: FollowsApi = retrofit.create(FollowsApi::class.java)

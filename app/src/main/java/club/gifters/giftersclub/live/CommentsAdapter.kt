@@ -88,4 +88,29 @@ class CommentsAdapter : ListAdapter<LiveStreamComment, CommentsAdapter.CommentVi
         override fun areContentsTheSame(old: LiveStreamComment, new: LiveStreamComment): Boolean =
             old == new
     }
+
+    /** Append a synthetic comment (e.g., gift notification) to the end of the list */
+    fun addSyntheticComment(userId: String, content: String) {
+        val current = currentList.toMutableList()
+        val synthetic = LiveStreamComment(
+            id = "gift-" + System.currentTimeMillis(),
+            liveStreamId = current.lastOrNull()?.liveStreamId ?: "",
+            parentCommentId = null,
+            userId = userId,
+            content = content,
+            createdAt = java.time.Instant.now().toString(),
+            profile = null
+        )
+        current.add(synthetic)
+        submitList(current)
+    }
+
+    /** Update content at index (for combo updates) */
+    fun updateContentAt(index: Int, newContent: String) {
+        if (index < 0 || index >= currentList.size) return
+        val current = currentList.toMutableList()
+        val old = current[index]
+        current[index] = old.copy(content = newContent)
+        submitList(current)
+    }
 }

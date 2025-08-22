@@ -35,6 +35,20 @@ object SubscriptionApiHolder {
         functionsApi.subscribeToCreatorRpc(body).isSuccessful
     }
 
+    /** Subscribe to a creator by plan (server derives tokens/duration). */
+    suspend fun subscribeToCreatorByPlan(
+        creatorId: String,
+        planId: String,
+        txRef: String? = null
+    ): Boolean = withContext(Dispatchers.IO) {
+        val body = mapOf(
+            "creatorId" to creatorId,
+            "planId" to planId,
+            "txRef" to (txRef ?: "sub_${creatorId}_${planId}_${System.currentTimeMillis()}")
+        )
+        functionsApi.subscribeToCreatorRpc(body).isSuccessful
+    }
+
     /**
      * Purchase pay-per-post access via Edge Function.
      */
@@ -51,6 +65,18 @@ object SubscriptionApiHolder {
             "txRef" to txRef
         )
         functionsApi.purchasePostAccessRpc(body).isSuccessful
+    }
+
+    /** Purchase one-time live access; server auto-allows subscribers. */
+    suspend fun purchaseLiveAccess(
+        liveStreamId: String,
+        txRef: String? = null
+    ): Boolean = withContext(Dispatchers.IO) {
+        val body = mapOf(
+            "liveStreamId" to liveStreamId,
+            "txRef" to (txRef ?: "live_${liveStreamId}_${System.currentTimeMillis()}")
+        )
+        functionsApi.purchaseLiveAccessRpc(body).isSuccessful
     }
 
     /**

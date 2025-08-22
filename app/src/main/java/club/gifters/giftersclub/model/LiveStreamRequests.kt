@@ -9,7 +9,9 @@ data class CreateLiveStreamRequest(
     // use camelCase so JSON property matches server expectation (hostId)
     val hostId: String,
     val title: String,
-    val description: String = ""
+    val description: String = "",
+    val categoryId: Int? = null,
+    val tags: List<String>? = null
 )
 
 /**

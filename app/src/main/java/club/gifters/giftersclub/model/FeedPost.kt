@@ -19,6 +19,8 @@ data class FeedPost(
     @SerializedName("access_type") val accessType: String,
     /** Price in tokens for pay-per-post; null otherwise */
     val price: Int?,
+    /** Required plan for tiered subscriber access; null means all plans */
+    @SerializedName("required_plan_id") val requiredPlanId: String?,
     /** Author profile (id, user_id, username, image) */
     val profile: Profile?,
     /** Media attachments (id, media_type, url, order, created_at) */

@@ -224,34 +224,28 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 return
             }
         if (post.accessType == "subscription") {
-            val sheet = BottomSheetDialog(requireContext())
-            sheet.setOnShowListener { dialogInterface: android.content.DialogInterface ->
-                (dialogInterface as BottomSheetDialog)
-                    .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-                    ?.setBackgroundResource(R.drawable.bg_rounded_top)
-            }
-            val view = layoutInflater.inflate(R.layout.dialog_subscribe_creator, null)
-            val etDur = view.findViewById<EditText>(R.id.etDurationType)
-            val etTok = view.findViewById<EditText>(R.id.etSubscriptionTokens)
-            view.findViewById<Button>(R.id.btnSubscribeConfirm).setOnClickListener {
-                val durationType = etDur.text.toString().trim()
-                val tokens = etTok.text.toString().toIntOrNull() ?: 0
-                val txRef = "sub_${userId}_${System.currentTimeMillis()}"
-                sheet.dismiss()
-                lifecycleScope.launch {
-                    val ok = SubscriptionApiHolder.subscribeToCreator(
-                        post.userId, userId, tokens, durationType, txRef
-                    )
+            // Plan-based subscription: pick required plan or cheapest
+            lifecycleScope.launch {
+                try {
+                    val plans = withContext(Dispatchers.IO) {
+                        RetrofitClient.subscriptionPlanApi.getSubscriptionPlans("eq.${post.userId}")
+                    }
+                    if (plans.isEmpty()) {
+                        Toast.makeText(requireContext(), "No subscription plans available", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+                    val cheapest = plans.minBy { it.tokens }
+                    val selected = post.requiredPlanId?.let { id -> plans.find { it.id == id } } ?: cheapest
+                    val ok = SubscriptionApiHolder.subscribeToCreatorByPlan(post.userId, selected.id)
                     Toast.makeText(
                         requireContext(),
                         if (ok) getString(R.string.subscription_successful) else getString(R.string.subscription_failed),
                         Toast.LENGTH_SHORT
                     ).show()
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), getString(R.string.subscription_failed), Toast.LENGTH_SHORT).show()
                 }
             }
-            view.findViewById<Button>(R.id.btnSubscribeCancel).setOnClickListener { sheet.dismiss() }
-            sheet.setContentView(view)
-            sheet.show()
         } else if (post.accessType == "paid") {
             val sheet = BottomSheetDialog(requireContext())
             sheet.setOnShowListener { dialogInterface: android.content.DialogInterface ->
@@ -325,6 +319,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                                 reactionCounts = null,
                                 accessType = f.accessType,
                                 price = f.price,
+                                requiredPlanId = f.requiredPlanId,
                                 tags = null
                             )
                         }

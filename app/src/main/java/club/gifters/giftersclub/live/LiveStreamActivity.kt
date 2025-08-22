@@ -98,10 +98,13 @@ class LiveStreamActivity : BaseActivity() {
     // LiveKit local preview
     private var previewView: SurfaceViewRenderer? = null
     private var isFrontFacing = true
-    // Job for polling comments
+    // Job for polling comments and gifts
     private var commentsJob: Job? = null
     private var statusJob: Job? = null
+    private var giftsJob: Job? = null
     private var isEnded: Boolean = false
+    private var lastGiftAt: String? = null
+    private val giftCombos = mutableMapOf<String, Pair<Int, Int>>() // key -> (count, commentIndex)
 
     // UI references for dynamic live stream controls
     private lateinit var liveTopBar: ConstraintLayout
@@ -489,6 +492,39 @@ class LiveStreamActivity : BaseActivity() {
                                 } catch (_: Exception) { }
                             }
                         }
+                        // Gifts polling: convert gift events into comment lines with combo aggregation
+                        giftsJob?.cancel(); giftsJob = launch {
+                            while (isActive && !isEnded) {
+                                delay(2000)
+                                try {
+                                    val since = lastGiftAt?.let { "gt.$it" }
+                                    val events = RetrofitClient.liveStreamApi.getGiftEvents(
+                                        streamFilter = "eq.$sid",
+                                        createdAfterFilter = since
+                                    )
+                                    if (events.isNotEmpty()) {
+                                        lastGiftAt = events.last().createdAt
+                                        events.forEach { e ->
+                                            val username = e.gifter?.username ?: e.gifterId.take(6)
+                                            val giftName = e.gift?.name ?: "gift"
+                                            val key = e.gifterId + "_" + e.giftId
+                                            val combo = giftCombos[key]
+                                            if (combo != null) {
+                                                val newCount = combo.first + 1
+                                                val idx = combo.second
+                                                commentsAdapter.updateContentAt(idx, "$username sent a ${newCount}x $giftName combo")
+                                                giftCombos[key] = Pair(newCount, idx)
+                                            } else {
+                                                commentsAdapter.addSyntheticComment(e.gifterId, "$username sent a $giftName")
+                                                val idx = commentsAdapter.itemCount - 1
+                                                giftCombos[key] = Pair(1, idx)
+                                            }
+                                        }
+                                        rvLiveComments.scrollToPosition(commentsAdapter.itemCount - 1)
+                                    }
+                                } catch (_: Exception) {}
+                            }
+                        }
                     }
                 } catch (e: Exception) {
                 }
@@ -671,7 +707,7 @@ class LiveStreamActivity : BaseActivity() {
         }
     }
 
-    fun startLiveSession(title: String, description: String) {
+    fun startLiveSession(title: String, description: String, categoryId: Int, tags: List<String>) {
         val userId = AuthUtils.getCurrentUserId(this) ?: return
         lifecycleScope.launch {
             try {
@@ -690,7 +726,7 @@ class LiveStreamActivity : BaseActivity() {
                 } catch (_: Exception) { }
 
                 val resp = RetrofitClient.functionsApi.createLiveSession(
-                    CreateLiveStreamRequest(userId, title, description)
+                    CreateLiveStreamRequest(userId, title, description, categoryId, tags)
                 )
                 val errorBody = resp.errorBody()?.string().orEmpty()
                 

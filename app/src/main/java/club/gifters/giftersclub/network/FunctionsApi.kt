@@ -51,6 +51,14 @@ interface FunctionsApi {
     ): Response<Unit>
 
     /**
+     * Purchase one-time live access via Edge Function.
+     */
+    @POST("purchase-live-access")
+    suspend fun purchaseLiveAccessRpc(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /**
      * Trigger notification email via Supabase Edge Function.
      */
     @POST("send-notification-email")

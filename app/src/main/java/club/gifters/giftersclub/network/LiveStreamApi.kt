@@ -8,6 +8,7 @@ import club.gifters.giftersclub.model.LiveStreamViewer
 import club.gifters.giftersclub.model.LiveStreamViewerRequest
 import club.gifters.giftersclub.model.GiftGalleryTemplate
 import club.gifters.giftersclub.model.LiveStreamGiftGallery
+import club.gifters.giftersclub.model.LiveGiftEvent
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -109,4 +110,15 @@ interface LiveStreamApi {
     suspend fun getFeedLiveStreams(
         @Body params: Map<String, @JvmSuppressWildcards Any?>
     ): List<LiveStream>
+
+    /**
+     * Fetch gift events for a stream (joined with gift and gifter) since a timestamp.
+     */
+    @GET("gift_sent")
+    suspend fun getGiftEvents(
+        @Query("select", encoded = true) select: String = "id,live_stream_id,gifter,recipient,gift,tokens_used,created_at,gift:gifts(*),gifter:profiles(*)",
+        @Query("live_stream_id", encoded = true) streamFilter: String,
+        @Query("created_at", encoded = true) createdAfterFilter: String? = null,
+        @Query("order", encoded = true) order: String = "created_at.asc"
+    ): List<LiveGiftEvent>
 }

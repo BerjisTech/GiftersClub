@@ -33,6 +33,48 @@
             android:padding="10dp" />
     </androidx.cardview.widget.CardView>
 
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="10dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp"
+            android:background="@drawable/bg_half_transparent_white">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Category (required)"
+                android:textStyle="bold"
+                android:textColor="@android:color/black" />
+            <AutoCompleteTextView
+                android:id="@+id/actvCategory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Search categories…"
+                android:inputType="text"
+                android:paddingVertical="8dp" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="10dp">
+        <EditText
+            android:id="@+id/etStreamTags"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_half_transparent_white"
+            android:hint="Tags (optional, comma-separated)"
+            android:inputType="text"
+            android:padding="10dp" />
+    </androidx.cardview.widget.CardView>
+
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
