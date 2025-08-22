@@ -54,6 +54,8 @@ class MainActivity : BaseActivity() {
         private const val NOTIF_PERMISSION_REQUEST_CODE = 1001
         /** Intent extra to reopen the Create/Go-Live bottom sheet when returning here */
         const val EXTRA_SHOW_CREATE_SHEET = "EXTRA_SHOW_CREATE_SHEET"
+        /** Intent extra to open Settings at a particular tab index */
+        const val EXTRA_OPEN_SETTINGS_TAB = "EXTRA_OPEN_SETTINGS_TAB"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,6 +81,14 @@ class MainActivity : BaseActivity() {
         if (intent.getBooleanExtra(EXTRA_SHOW_CREATE_SHEET, false)) {
             CreateOrGoLiveBottomSheetFragment()
                 .show(supportFragmentManager, CreateOrGoLiveBottomSheetFragment.TAG)
+        }
+        // If requested, open settings to a specific tab (e.g., Subscriptions)
+        if (intent.hasExtra(EXTRA_OPEN_SETTINGS_TAB)) {
+            val tabIndex = intent.getIntExtra(EXTRA_OPEN_SETTINGS_TAB, 0)
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, club.gifters.giftersclub.settings.SettingsFragment.newInstance(tabIndex))
+                .addToBackStack(null)
+                .commit()
         }
         RetrofitClient.init(this)
         // Resume-live banner action

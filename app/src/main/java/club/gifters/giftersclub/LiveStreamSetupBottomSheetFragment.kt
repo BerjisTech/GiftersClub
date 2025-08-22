@@ -53,6 +53,8 @@ class LiveStreamSetupBottomSheetFragment : BottomSheetDialogFragment() {
         val etPrice = content.findViewById<EditText>(R.id.etLivePrice)
         val layoutPlanPicker = content.findViewById<android.widget.LinearLayout>(R.id.layoutPlanPicker)
         val actvPlan = content.findViewById<AutoCompleteTextView>(R.id.actvPlan)
+        val layoutNoPlans = content.findViewById<android.widget.LinearLayout>(R.id.layoutNoPlans)
+        val btnOpenSettings = content.findViewById<Button>(R.id.btnOpenSubscriptionSettingsFromLive)
         val btnCancel = content.findViewById<Button>(R.id.btnCancelLive)
         val btnStart = content.findViewById<Button>(R.id.btnStartLive)
 
@@ -71,13 +73,23 @@ class LiveStreamSetupBottomSheetFragment : BottomSheetDialogFragment() {
                 val uid = club.gifters.giftersclub.AuthUtils.getCurrentUserId(ctx) ?: ""
                 if (uid.isNotEmpty()) {
                     val plans = RetrofitClient.subscriptionPlanApi.getSubscriptionPlans("eq.$uid")
-                    val planNames = listOf("All") + plans.map { it.name }
-                    planIdByName = plans.associate { it.name to it.id }
-                    actvPlan.setAdapter(ArrayAdapter(ctx, android.R.layout.simple_dropdown_item_1line, planNames))
-                    actvPlan.threshold = 0
-                    actvPlan.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvPlan.showDropDown() }
-                    actvPlan.setOnClickListener { actvPlan.showDropDown() }
-                    actvPlan.setText("All", false)
+                    if (plans.isNotEmpty()) {
+                        val planNames = listOf("All") + plans.map { it.name }
+                        planIdByName = plans.associate { it.name to it.id }
+                        actvPlan.setAdapter(ArrayAdapter(ctx, android.R.layout.simple_dropdown_item_1line, planNames))
+                        actvPlan.threshold = 0
+                        actvPlan.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvPlan.showDropDown() }
+                        actvPlan.setOnClickListener { actvPlan.showDropDown() }
+                        actvPlan.setText("All", false)
+                    } else {
+                        // Show no-plans helper
+                        layoutNoPlans.visibility = View.VISIBLE
+                        btnOpenSettings.setOnClickListener {
+                            val intent = Intent(requireContext(), MainActivity::class.java)
+                            intent.putExtra(MainActivity.EXTRA_OPEN_SETTINGS_TAB, 4)
+                            startActivity(intent)
+                        }
+                    }
                 }
             } catch (_: Exception) {}
         }
@@ -88,14 +100,23 @@ class LiveStreamSetupBottomSheetFragment : BottomSheetDialogFragment() {
                 R.id.rbLivePaid -> {
                     etPrice.visibility = View.VISIBLE
                     layoutPlanPicker.visibility = View.GONE
+                    layoutNoPlans.visibility = View.GONE
                 }
                 R.id.rbLiveSubscriberOnly -> {
                     etPrice.visibility = View.GONE
-                    layoutPlanPicker.visibility = View.VISIBLE
+                    // Show dropdown only if plans exist
+                    if (planIdByName.isNotEmpty()) {
+                        layoutPlanPicker.visibility = View.VISIBLE
+                        layoutNoPlans.visibility = View.GONE
+                    } else {
+                        layoutPlanPicker.visibility = View.GONE
+                        layoutNoPlans.visibility = View.VISIBLE
+                    }
                 }
                 else -> {
                     etPrice.visibility = View.GONE
                     layoutPlanPicker.visibility = View.GONE
+                    layoutNoPlans.visibility = View.GONE
                 }
             }
         }

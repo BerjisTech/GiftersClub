@@ -255,14 +255,23 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 R.id.rbPaid -> {
                     etPrice.visibility = View.VISIBLE
                     layoutPostPlanPicker.visibility = View.GONE
+                    view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.GONE
                 }
                 R.id.rbSubscriberOnly -> {
                     etPrice.visibility = View.GONE
-                    layoutPostPlanPicker.visibility = View.VISIBLE
+                    // Show either plans dropdown (if loaded) or no-plans message
+                    if (postPlanIdByName.isNotEmpty()) {
+                        layoutPostPlanPicker.visibility = View.VISIBLE
+                        view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.GONE
+                    } else {
+                        layoutPostPlanPicker.visibility = View.GONE
+                        view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.VISIBLE
+                    }
                 }
                 else -> {
                     etPrice.visibility = View.GONE
                     layoutPostPlanPicker.visibility = View.GONE
+                    view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.GONE
                 }
             }
         }
@@ -274,13 +283,27 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 val uid = club.gifters.giftersclub.AuthUtils.getCurrentUserId(ctx) ?: ""
                 if (uid.isNotEmpty()) {
                     val plans = club.gifters.giftersclub.network.RetrofitClient.subscriptionPlanApi.getSubscriptionPlans("eq.$uid")
-                    val names = listOf("All") + plans.map { it.name }
-                    postPlanIdByName = plans.associate { it.name to it.id }
-                    actvPostPlan.setAdapter(android.widget.ArrayAdapter(ctx, android.R.layout.simple_dropdown_item_1line, names))
-                    actvPostPlan.threshold = 0
-                    actvPostPlan.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvPostPlan.showDropDown() }
-                    actvPostPlan.setOnClickListener { actvPostPlan.showDropDown() }
-                    actvPostPlan.setText("All", false)
+                    if (plans.isNotEmpty()) {
+                        val names = listOf("All") + plans.map { it.name }
+                        postPlanIdByName = plans.associate { it.name to it.id }
+                        actvPostPlan.setAdapter(android.widget.ArrayAdapter(ctx, android.R.layout.simple_dropdown_item_1line, names))
+                        actvPostPlan.threshold = 0
+                        actvPostPlan.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvPostPlan.showDropDown() }
+                        actvPostPlan.setOnClickListener { actvPostPlan.showDropDown() }
+                        actvPostPlan.setText("All", false)
+                        // Ensure correct visibility based on selected radio
+                        if (rgAccessType.checkedRadioButtonId == R.id.rbSubscriberOnly) {
+                            layoutPostPlanPicker.visibility = View.VISIBLE
+                        }
+                    } else {
+                        // No plans: show message and settings link when Subscriber Only is chosen
+                        view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.VISIBLE
+                        view.findViewById<Button>(R.id.btnOpenSubscriptionSettingsFromPost).setOnClickListener {
+                            val intent = android.content.Intent(requireContext(), club.gifters.giftersclub.MainActivity::class.java)
+                            intent.putExtra(club.gifters.giftersclub.MainActivity.EXTRA_OPEN_SETTINGS_TAB, 4)
+                            startActivity(intent)
+                        }
+                    }
                 }
             } catch (_: Exception) {}
         }

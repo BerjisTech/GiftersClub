@@ -16,6 +16,12 @@ import club.gifters.giftersclub.settings.SubscriptionSettingsFragment
  * Settings screen with tabs for Profile, Security, Moderation, Interaction.
  */
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
+    companion object {
+        private const val ARG_INITIAL_TAB = "initial_tab"
+        fun newInstance(initialTab: Int = 0): SettingsFragment = SettingsFragment().apply {
+            arguments = Bundle().apply { putInt(ARG_INITIAL_TAB, initialTab) }
+        }
+    }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val tabLayout = view.findViewById<TabLayout>(R.id.settingsTabLayout)
@@ -31,6 +37,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 else -> ""
             }
         }.attach()
+        val idx = arguments?.getInt(ARG_INITIAL_TAB, 0) ?: 0
+        view.post { viewPager.currentItem = idx.coerceIn(0, 4) }
     }
 }
 
