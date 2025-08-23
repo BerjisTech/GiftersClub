@@ -194,7 +194,8 @@
         android:background="@android:color/transparent"
         android:overScrollMode="never"
         app:layout_anchor="@id/liveBottomBar"
-        app:layout_anchorGravity="top" />
+        app:layout_anchorGravity="bottom"
+        android:layout_gravity="bottom"/>
 
     <LinearLayout
         android:id="@+id/liveBottomBar"

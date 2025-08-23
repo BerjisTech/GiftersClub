@@ -356,7 +356,7 @@ class LiveStreamActivity : BaseActivity() {
         liveTopBar.visibility = View.VISIBLE
         lifecycleScope.launch {
             // Fetch and display host profile
-            val hostId = currentStream?.hostId ?: AuthUtils.getCurrentUserId(this@LiveStreamActivity)!!
+            val hostId = currentStream?.hostId ?: return@launch
             val profiles = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$hostId")
             if (profiles.isNotEmpty()) {
                 val p = profiles[0]
@@ -565,6 +565,8 @@ class LiveStreamActivity : BaseActivity() {
                 }
                 // save for potential cleanup in catch
                 fetchedLive = ls
+                // set current stream for viewer flows
+                currentStream = ls
                 // Access gating before joining (host bypass)
                 val currentUser = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
                 val isHost = (currentUser != null && currentUser == ls.hostId)
