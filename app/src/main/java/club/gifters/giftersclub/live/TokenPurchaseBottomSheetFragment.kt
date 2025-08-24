@@ -29,7 +29,7 @@ class TokenPurchaseBottomSheetFragment : BottomSheetDialogFragment() {
         ll.removeAllViews()
         presets.forEach { amt ->
             val btn = Button(requireContext()).apply {
-                text = getString(R.string.tokens_amount, amt)
+                text = amt.toString()
                 val bg = when {
                     amt >= 1200 -> R.drawable.bg_chip_amount_high
                     amt >= 100 -> R.drawable.bg_chip_amount_mid
@@ -37,6 +37,12 @@ class TokenPurchaseBottomSheetFragment : BottomSheetDialogFragment() {
                 }
                 setBackgroundResource(bg)
                 setTextColor(resources.getColor(android.R.color.white, null))
+                val drawable = resources.getDrawable(R.drawable.token, null)
+                val size = resources.getDimensionPixelSize(R.dimen.size_16dp)
+                drawable.setBounds(0, 0, size, size)
+                setCompoundDrawables(drawable, null, null, null)
+                compoundDrawablePadding = 12
+                gravity = android.view.Gravity.CENTER_VERTICAL
                 val params = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
