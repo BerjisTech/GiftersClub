@@ -230,30 +230,41 @@
 
         <ImageView
             android:id="@+id/btnRoseGift"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:background="@drawable/bg_round_button"
             android:contentDescription="@string/send"
             android:src="@drawable/rose" />
 
         <ImageView
             android:id="@+id/btnOpenGifts"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:background="@drawable/bg_round_button"
             android:contentDescription="@string/open"
             android:src="@drawable/gift" />
 
     </LinearLayout>
 
+    <!-- Dim overlay shown when gifts bottom sheet is visible -->
+    <View
+        android:id="@+id/overlayDim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone"/>
+
     <FrameLayout
         android:id="@+id/flGiftsBottomSheet"
         android:layout_width="match_parent"
-        android:layout_height="400dp"
+        android:layout_height="match_parent"
         android:clickable="true"
         android:focusable="true"
+        android:elevation="16dp"
         app:behavior_fitToContents="false"
         app:behavior_halfExpandedRatio="0.5"
         app:behavior_peekHeight="0dp"

@@ -30,6 +30,20 @@ class TokenPurchaseBottomSheetFragment : BottomSheetDialogFragment() {
         presets.forEach { amt ->
             val btn = Button(requireContext()).apply {
                 text = getString(R.string.tokens_amount, amt)
+                val bg = when {
+                    amt >= 1200 -> R.drawable.bg_chip_amount_high
+                    amt >= 100 -> R.drawable.bg_chip_amount_mid
+                    else -> R.drawable.bg_chip_amount_low
+                }
+                setBackgroundResource(bg)
+                setTextColor(resources.getColor(android.R.color.white, null))
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                params.marginEnd = resources.getDimensionPixelSize(R.dimen.spacing_small)
+                layoutParams = params
+                setPadding(32, 12, 32, 12)
                 setOnClickListener { listener?.onPurchase(amt); dismiss() }
             }
             ll.addView(btn)
@@ -53,4 +67,3 @@ class TokenPurchaseBottomSheetFragment : BottomSheetDialogFragment() {
         }
     }
 }
-

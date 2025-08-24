@@ -170,18 +170,32 @@ class LiveStreamActivity : BaseActivity() {
         // Bottom sheet for gifts, hidden initially until user clicks gift icon
         val btnOpenGifts = findViewById<ImageView>(R.id.btnOpenGifts)
         val flGiftsBottomSheet = findViewById<FrameLayout>(R.id.flGiftsBottomSheet)
+        val overlayDim = findViewById<View>(R.id.overlayDim)
         val giftsBottomSheetBehavior = BottomSheetBehavior.from(flGiftsBottomSheet).apply {
             isHideable = true
+            isDraggable = false // keep steady; dismiss only on outside tap
             state = BottomSheetBehavior.STATE_HIDDEN
+            addBottomSheetCallback(object: BottomSheetBehavior.BottomSheetCallback() {
+                override fun onStateChanged(bottomSheet: View, newState: Int) {
+                    if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+                        overlayDim.visibility = View.GONE
+                    } else if (newState == BottomSheetBehavior.STATE_EXPANDED) {
+                        // Force max height = half screen
+                        state = BottomSheetBehavior.STATE_HALF_EXPANDED
+                    } else {
+                        overlayDim.visibility = View.VISIBLE
+                    }
+                }
+                override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                    // keep dim visible while open
+                    overlayDim.visibility = if (state == BottomSheetBehavior.STATE_HIDDEN) View.GONE else View.VISIBLE
+                }
+            })
         }
+        overlayDim.setOnClickListener { giftsBottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN }
         btnOpenGifts.setOnClickListener {
-            giftsBottomSheetBehavior.state = if (
-                giftsBottomSheetBehavior.state == BottomSheetBehavior.STATE_HALF_EXPANDED
-            ) {
-                BottomSheetBehavior.STATE_HIDDEN
-            } else {
-                BottomSheetBehavior.STATE_HALF_EXPANDED
-            }
+            giftsBottomSheetBehavior.state = if (giftsBottomSheetBehavior.state == BottomSheetBehavior.STATE_HIDDEN)
+                BottomSheetBehavior.STATE_HALF_EXPANDED else BottomSheetBehavior.STATE_HIDDEN
         }
 
         // End stream when user taps close; ask for confirmation
@@ -228,32 +242,27 @@ class LiveStreamActivity : BaseActivity() {
             } catch (_: Exception) {}
         }
 
-        // Sort toggle: default=original (popularity/random), asc, desc
-        val flSortGifts = findViewById<FrameLayout>(R.id.flSortGifts)
-        val ivSortAsc = findViewById<ImageView>(R.id.ivSortAsc)
-        val ivSortDesc = findViewById<ImageView>(R.id.ivSortDesc)
-        ivSortAsc.visibility = View.GONE
-        ivSortDesc.visibility = View.GONE
-        var sortState = 0
-        flSortGifts.setOnClickListener {
-            sortState = (sortState + 1) % 3
-            when (sortState) {
-                0 -> {
-                    giftsAdapter.submitList(originalGifts)
-                    ivSortAsc.visibility = View.GONE
-                    ivSortDesc.visibility = View.GONE
+        // Spinner filter like Angular: All, Popular, Cheapest, Most Expensive, Special
+        val spGiftSort = findViewById<android.widget.Spinner>(R.id.spGiftSort)
+        val sortAdapter = android.widget.ArrayAdapter.createFromResource(
+            this,
+            club.gifters.giftersclub.R.array.gift_sort_entries,
+            android.R.layout.simple_spinner_item
+        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        spGiftSort.adapter = sortAdapter
+        spGiftSort.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>, view: View?, position: Int, id: Long) {
+                val choice = parent.getItemAtPosition(position).toString().lowercase()
+                val list = when (choice) {
+                    "popular" -> originalGifts.sortedByDescending { it.isPopular }
+                    "cheapest" -> originalGifts.sortedBy { it.tokens }
+                    "most expensive" -> originalGifts.sortedByDescending { it.tokens }
+                    "special" -> originalGifts.filter { it.isFeatured }
+                    else -> originalGifts
                 }
-                1 -> {
-                    giftsAdapter.submitList(originalGifts.sortedBy { it.tokens })
-                    ivSortAsc.visibility = View.VISIBLE
-                    ivSortDesc.visibility = View.GONE
-                }
-                else -> {
-                    giftsAdapter.submitList(originalGifts.sortedByDescending { it.tokens })
-                    ivSortAsc.visibility = View.GONE
-                    ivSortDesc.visibility = View.VISIBLE
-                }
+                giftsAdapter.submitList(list)
             }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>) { /* no-op */ }
         }
 
         // Setup recharge button with user token balance

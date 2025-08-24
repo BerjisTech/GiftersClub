@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string-array name="gift_sort_entries">
+        <item>All</item>
+        <item>Popular</item>
+        <item>Cheapest</item>
+        <item>Most Expensive</item>
+        <item>Special</item>
+    </string-array>
     <string-array name="gift_sort_options">
         <item>Newest</item>
         <item>Oldest</item>
