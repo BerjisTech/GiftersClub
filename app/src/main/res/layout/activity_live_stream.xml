@@ -235,8 +235,7 @@
             android:layout_marginStart="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/send"
-            android:src="@drawable/rose"
-            android:visibility="gone" />
+            android:src="@drawable/rose" />
 
         <ImageView
             android:id="@+id/btnOpenGifts"
@@ -245,8 +244,7 @@
             android:layout_marginStart="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/open"
-            android:src="@drawable/gift"
-            android:visibility="gone" />
+            android:src="@drawable/gift" />
 
     </LinearLayout>
 

@@ -90,7 +90,7 @@ class CommentsAdapter : ListAdapter<LiveStreamComment, CommentsAdapter.CommentVi
     }
 
     /** Append a synthetic comment (e.g., gift notification) to the end of the list */
-    fun addSyntheticComment(userId: String, content: String) {
+    fun addSyntheticComment(userId: String, content: String, profile: club.gifters.giftersclub.model.Profile? = null) {
         val current = currentList.toMutableList()
         val synthetic = LiveStreamComment(
             id = "gift-" + System.currentTimeMillis(),
@@ -99,7 +99,7 @@ class CommentsAdapter : ListAdapter<LiveStreamComment, CommentsAdapter.CommentVi
             userId = userId,
             content = content,
             createdAt = java.time.Instant.now().toString(),
-            profile = null
+            profile = profile
         )
         current.add(synthetic)
         submitList(current)

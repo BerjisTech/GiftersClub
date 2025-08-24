@@ -141,6 +141,11 @@
     <string name="write_a_comment" tools:ignore="TypographyEllipsis">Write a comment...</string>
     <string name="recharge">Recharge</string>
     <string name="streamer_name">Streamer Name</string>
+    <string name="gift_sent_success">Gift sent successfully</string>
+    <string name="failed_to_send_gift">Failed to send gift</string>
+    <string name="choose_amount">Choose an amount</string>
+    <string name="custom_tokens">Custom tokens</string>
+    <string name="tokens_amount">%1$d tokens</string>
     <!-- Live streaming -->
     <string name="start_live_stream">Start Live Stream</string>
     <string name="start">Start</string>

@@ -212,7 +212,7 @@ class LiveStreamActivity : BaseActivity() {
         val rvLiveGifts = findViewById<RecyclerView>(R.id.rvLiveGifts)
         rvLiveGifts.layoutManager = GridLayoutManager(this, 4)
         val giftsAdapter = LiveGiftAdapter { gift: Gift ->
-            // TODO: handle gift selection
+            lifecycleScope.launch { sendGiftToLive(gift) }
         }
         rvLiveGifts.adapter = giftsAdapter
         // fetch gifts and retain original order
@@ -508,17 +508,16 @@ class LiveStreamActivity : BaseActivity() {
                                     if (events.isNotEmpty()) {
                                         lastGiftAt = events.last().createdAt
                                         events.forEach { e ->
-                                            val username = e.gifter?.username ?: e.gifterId.take(6)
                                             val giftName = e.gift?.name ?: "gift"
                                             val key = e.gifterId + "_" + e.giftId
                                             val combo = giftCombos[key]
                                             if (combo != null) {
                                                 val newCount = combo.first + 1
                                                 val idx = combo.second
-                                                commentsAdapter.updateContentAt(idx, "$username sent a ${newCount}x $giftName combo")
+                                                commentsAdapter.updateContentAt(idx, "sent ${newCount} $giftName combo")
                                                 giftCombos[key] = Pair(newCount, idx)
                                             } else {
-                                                commentsAdapter.addSyntheticComment(e.gifterId, "$username sent a $giftName")
+                                                commentsAdapter.addSyntheticComment(e.gifterId, "sent a $giftName", e.gifter)
                                                 val idx = commentsAdapter.itemCount - 1
                                                 giftCombos[key] = Pair(1, idx)
                                             }
@@ -531,6 +530,60 @@ class LiveStreamActivity : BaseActivity() {
                     }
                 } catch (e: Exception) {
                 }
+            }
+        }
+    }
+
+    /** Send selected gift to current live stream; on success inserts a comment line. */
+    private suspend fun sendGiftToLive(gift: Gift) {
+        val stream = currentStream ?: return
+        val gifterId = AuthUtils.getCurrentUserId(this) ?: return
+        val recipientId = stream.hostId
+        val tokens = gift.tokens
+        val txRef = "live_gift_${stream.id}_${gift.id}_${System.currentTimeMillis()}"
+        try {
+            val resp = RetrofitClient.functionsApi.processGiftSendRpc(
+                mapOf(
+                    "giftId" to gift.id,
+                    "gifterId" to gifterId,
+                    "recipientId" to recipientId,
+                    "tokens" to tokens,
+                    "txRef" to txRef,
+                    "liveStreamId" to stream.id
+                )
+            )
+            if (resp.isSuccessful) {
+                // Insert a comment row: user_id = gifterId; content = "sent a {giftName}"
+                try {
+                    RetrofitClient.liveStreamApi.createLiveStreamComment(
+                        select = "*,profile:profiles(*)",
+                        comment = LiveStreamCommentRequest(
+                            liveStreamId = stream.id,
+                            parentCommentId = null,
+                            userId = gifterId,
+                            content = "sent a ${gift.name}"
+                        )
+                    )
+                } catch (_: Exception) { }
+                Toast.makeText(this, getString(R.string.gift_sent_success), Toast.LENGTH_SHORT).show()
+            } else {
+                // fallthrough to error handler
+                throw retrofit2.HttpException(resp)
+            }
+        } catch (e: Exception) {
+            val isInsufficient = (e as? retrofit2.HttpException)?.response()?.errorBody()?.string()
+                ?.lowercase()?.contains("insufficient") == true
+            if (isInsufficient) {
+                val uid = gifterId
+                TokenPurchaseBottomSheetFragment.newInstance(arrayListOf(10, 50, 500, 1200, 3000))
+                    .setListener(object: TokenPurchaseBottomSheetFragment.Listener {
+                        override fun onPurchase(amount: Int) {
+                            initiateTopup(uid, amount)
+                        }
+                    })
+                    .show(supportFragmentManager, "TokenPurchaseBottomSheet")
+            } else {
+                Toast.makeText(this, getString(R.string.failed_to_send_gift), Toast.LENGTH_SHORT).show()
             }
         }
     }
