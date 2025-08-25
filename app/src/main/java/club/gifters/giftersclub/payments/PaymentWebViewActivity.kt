@@ -52,6 +52,10 @@ class PaymentWebViewActivity : BaseActivity() {
 
         val webView = WebView(this).apply {
             settings.javaScriptEnabled = true
+            // Improve modern checkout compatibility
+            // settings.domStorageEnabled = true
+            // settings.useWideViewPort = true
+            // settings.loadWithOverviewMode = true
             webChromeClient = WebChromeClient()
             addJavascriptInterface(object {
                 @JavascriptInterface

@@ -9,6 +9,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import androidx.cardview.widget.CardView
 import club.gifters.giftersclub.R
+import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class TokenPurchaseBottomSheetFragment : BottomSheetDialogFragment() {
@@ -25,7 +26,7 @@ class TokenPurchaseBottomSheetFragment : BottomSheetDialogFragment() {
         val v = inflater.inflate(R.layout.fragment_purchase_tokens_bottom_sheet, container, false)
         dialog?.window?.setBackgroundDrawableResource(android.R.color.transparent)
         val presets = arguments?.getIntegerArrayList(ARG_PRESETS) ?: arrayListOf(10, 50, 500, 1200, 3000)
-        val ll = v.findViewById<LinearLayout>(R.id.llPresetAmounts)
+        val ll = v.findViewById<FlexboxLayout>(R.id.llPresetAmounts)
         ll.removeAllViews()
         presets.forEach { amt ->
             val btn = Button(requireContext()).apply {

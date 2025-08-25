@@ -17,6 +17,7 @@
         tools:node="remove" />
 
     <application
+        android:name=".GiftersClubApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
@@ -197,6 +198,11 @@
         </service>
 
         <activity android:name=".live.LiveStreamActivity" />
+
+        <!-- Rollbar access token via manifest placeholder for Rollbar.init(this) support -->
+        <meta-data
+            android:name="com.rollbar.android.ACCESS_TOKEN"
+            android:value="${ROLLBAR_ACCESS_TOKEN}" />
     </application>
 
 </manifest>

@@ -1,9 +1,11 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
 }
-
+android.buildFeatures.buildConfig = true
 android {
     namespace = "club.gifters.giftersclub"
     compileSdk = 35
@@ -16,6 +18,28 @@ android {
         versionName = "1.0.22"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Rollbar configuration exposed to BuildConfig
+        val props = Properties().apply {
+            val f = rootProject.file("local.properties")
+            if (f.exists()) f.inputStream().use { load(it) }
+        }
+        val rollbarClientToken: String = (
+            props.getProperty("ROLLBAR_CLIENT_TOKEN")
+                ?: (project.findProperty("ROLLBAR_CLIENT_TOKEN") as String?)
+                ?: System.getenv("ROLLBAR_CLIENT_TOKEN")
+                ?: ""
+            )
+        val rollbarEnv: String = (
+            props.getProperty("ROLLBAR_ENV")
+                ?: (project.findProperty("ROLLBAR_ENV") as String?)
+                ?: System.getenv("ROLLBAR_ENV")
+                ?: "production"
+            )
+        buildConfigField("String", "ROLLBAR_CLIENT_TOKEN", "\"$rollbarClientToken\"")
+        buildConfigField("String", "ROLLBAR_ENV", "\"$rollbarEnv\"")
+        // Expose token to manifest as a placeholder so you can use docs' manifest-based init
+        manifestPlaceholders["ROLLBAR_ACCESS_TOKEN"] = rollbarClientToken
     }
 
     buildTypes {
@@ -71,6 +95,8 @@ dependencies {
     implementation("io.livekit:livekit-android:2.+")
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    // Rollbar Android SDK for crash/error reporting
+    implementation("com.rollbar:rollbar-android:1.10.3")
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -91,4 +117,7 @@ dependencies {
     implementation(libs.firebase.messaging.ktx)
     // Lottie for like/unlike animations overlay
     implementation("com.airbnb.android:lottie:5.2.0")
+
+    // Android FlexboxLayout for responsive wrapping rows (used in fragment_purchase_tokens_bottom_sheet.xml)
+    implementation("com.google.android.flexbox:flexbox:3.0.0")
 }

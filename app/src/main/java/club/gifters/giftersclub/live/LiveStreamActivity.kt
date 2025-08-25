@@ -1219,8 +1219,12 @@ class LiveStreamActivity : BaseActivity() {
     }
 
     private fun initiateTopup(userId: String, amount: Int) {
-        val email = ""
         lifecycleScope.launch {
+            // Fetch user's email for Flutterwave (customer_email is required)
+            val email: String = try {
+                val profs = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$userId")
+                profs.firstOrNull()?.email?.takeIf { it.isNotBlank() } ?: "${userId}@gifters.club"
+            } catch (_: Exception) { "${userId}@gifters.club" }
             var lastTxId: String? = null
             try {
                 val resp = RetrofitClient.tokenApi.recordTokenTransaction(
