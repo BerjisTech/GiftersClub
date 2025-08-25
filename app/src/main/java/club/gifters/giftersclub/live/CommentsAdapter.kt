@@ -9,6 +9,12 @@ import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.LiveStreamComment
 import com.google.android.material.imageview.ShapeableImageView
 import android.widget.TextView
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ImageSpan
+import androidx.core.content.ContextCompat
+import android.graphics.drawable.Drawable
+import android.util.TypedValue
 import coil.load
 
 /**
@@ -77,7 +83,7 @@ class CommentsAdapter : ListAdapter<LiveStreamComment, CommentsAdapter.CommentVi
             } else {
                 tvBadge.visibility = android.view.View.GONE
             }
-            tvContent.text = comment.content
+            tvContent.text = decorateGiftMessage(container, comment.content)
         }
     }
 
@@ -112,5 +118,84 @@ class CommentsAdapter : ListAdapter<LiveStreamComment, CommentsAdapter.CommentVi
         val old = current[index]
         current[index] = old.copy(content = newContent)
         submitList(current)
+    }
+
+    private fun dpToPx(dp: Float, view: ViewGroup): Int {
+        return TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            dp,
+            view.resources.displayMetrics
+        ).toInt()
+    }
+
+    private fun giftEmojiFor(name: String): String? {
+        val lower = name.lowercase()
+        return when {
+            "rose" in lower -> "🌹"
+            "heart" in lower -> "❤️"
+            "diamond" in lower -> "💎"
+            "star" in lower -> "⭐"
+            "rocket" in lower -> "🚀"
+            "cake" in lower -> "🎂"
+            "coffee" in lower -> "☕"
+            "crown" in lower -> "👑"
+            "kiss" in lower -> "💋"
+            "fire" in lower -> "🔥"
+            "balloon" in lower -> "🎈"
+            "flower" in lower -> "🌸"
+            "teddy" in lower -> "🧸"
+            "car" in lower -> "🚗"
+            "yacht" in lower -> "🛥️"
+            "castle" in lower -> "🏰"
+            else -> null
+        }
+    }
+
+    private fun extractGiftName(text: String?): String? {
+        if (text.isNullOrBlank()) return null
+        val t = text.trim()
+        // sent 3 Rose combo
+        Regex("sent\\s+\\d+\\s+(.+?)\\s+combo", RegexOption.IGNORE_CASE).find(t)?.let {
+            return it.groupValues.getOrNull(1)?.trim()
+        }
+        // sent a Rose / sent an Apple
+        Regex("sent\\s+a?n?\\s+(.+)", RegexOption.IGNORE_CASE).find(t)?.let {
+            return it.groupValues.getOrNull(1)?.trim()
+        }
+        return null
+    }
+
+    /**
+     * Decorate gift notification messages by appending a small image (if drawable exists)
+     * or an emoji fallback.
+     */
+    private fun decorateGiftMessage(container: ViewGroup, text: String?): CharSequence {
+        val base = text ?: return ""
+        val name = extractGiftName(base)
+        if (name.isNullOrBlank()) return base
+        // Try to find a drawable by resource name
+        val resName = name.lowercase().replace(' ', '_')
+        val ctx = container.context
+        val resId = ctx.resources.getIdentifier(resName, "drawable", ctx.packageName)
+        val sb = SpannableStringBuilder(base)
+        sb.append(" ")
+        if (resId != 0) {
+            val drawable: Drawable? = ContextCompat.getDrawable(ctx, resId)
+            if (drawable != null) {
+                val size = dpToPx(16f, container)
+                drawable.setBounds(0, 0, size, size)
+                val span = ImageSpan(drawable, ImageSpan.ALIGN_BOTTOM)
+                val start = sb.length
+                sb.append(" ")
+                sb.setSpan(span, start, start + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                return sb
+            }
+        }
+        // Fallback to emoji mapping
+        giftEmojiFor(name)?.let { emoji ->
+            sb.append(emoji)
+            return sb
+        }
+        return base
     }
 }
