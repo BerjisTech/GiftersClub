@@ -143,6 +143,8 @@
     <string name="streamer_name">Streamer Name</string>
     <string name="gift_sent_success">Gift sent successfully</string>
     <string name="failed_to_send_gift">Failed to send gift</string>
+    <string name="scheduled_success">Scheduled!</string>
+    <string name="failed_to_schedule">Failed to schedule</string>
     <string name="choose_amount">Choose an amount</string>
     <string name="custom_tokens">Custom tokens</string>
     <string name="tokens_amount">%1$d tokens</string>

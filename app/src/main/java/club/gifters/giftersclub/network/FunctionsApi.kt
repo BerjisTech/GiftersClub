@@ -123,4 +123,24 @@ interface FunctionsApi {
     suspend fun uploadMedia(
         @Body request: PresignRequest
     ): Response<PresignResponse>
+
+    /**
+     * Notify followers of a scheduled live stream.
+     */
+    @POST("notify-scheduled-live")
+    suspend fun notifyScheduledLive(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /** Live guest invites (request/list/accept/reject via action param). */
+    @POST("live-invite")
+    suspend fun liveInvite(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /** Raw version returning response body for list action parsing. */
+    @POST("live-invite")
+    suspend fun liveInviteRaw(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): retrofit2.Response<okhttp3.ResponseBody>
 }

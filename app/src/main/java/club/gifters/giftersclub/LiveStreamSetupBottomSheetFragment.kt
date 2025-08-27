@@ -56,6 +56,7 @@ class LiveStreamSetupBottomSheetFragment : BottomSheetDialogFragment() {
         val layoutNoPlans = content.findViewById<android.widget.LinearLayout>(R.id.layoutNoPlans)
         val btnOpenSettings = content.findViewById<Button>(R.id.btnOpenSubscriptionSettingsFromLive)
         val btnCancel = content.findViewById<Button>(R.id.btnCancelLive)
+        val btnSchedule = content.findViewById<Button>(R.id.btnScheduleLive)
         val btnStart = content.findViewById<Button>(R.id.btnStartLive)
 
         // Load categories and setup search suggestions
@@ -171,11 +172,56 @@ class LiveStreamSetupBottomSheetFragment : BottomSheetDialogFragment() {
                 dismiss()
             }
         }
+
+        btnSchedule.setOnClickListener {
+            val title = etTitle.text.toString().trim()
+            if (title.isEmpty()) {
+                etTitle.error = getString(R.string.stream_title_required)
+                return@setOnClickListener
+            }
+            val categoryName = actvCategory.text.toString().trim()
+            val matched = categories.firstOrNull { it.name.equals(categoryName, ignoreCase = true) }
+            if (matched == null) {
+                actvCategory.error = getString(R.string.stream_title_required).replace("title","category")
+                return@setOnClickListener
+            }
+            val desc = etDesc.text.toString().trim()
+            val tags = etTags.text.toString().split(',').map { it.trim() }.filter { it.isNotEmpty() }
+            val accessType = when (rgAccess.checkedRadioButtonId) {
+                R.id.rbLivePaid -> "paid"
+                R.id.rbLiveSubscriberOnly -> "subscription"
+                else -> "free"
+            }
+            val priceTokens = if (accessType == "paid") etPrice.text.toString().toIntOrNull() else null
+            val selectedPlanName = actvPlan.text.toString()
+            val requiredPlanId = if (accessType == "subscription") planIdByName[selectedPlanName] else null
+            // Pick date & time, then schedule
+            showDateTimePicker { iso ->
+                (requireActivity() as? LiveStreamActivity)?.scheduleLiveSession(
+                    title, desc, matched.id, tags, accessType, priceTokens, requiredPlanId, iso
+                )
+                dismiss()
+            }
+        }
         
         return dialog
     }
 
     companion object {
         const val TAG = "LiveStreamSetupBottomSheet"
+    }
+
+    private fun showDateTimePicker(onPicked: (String) -> Unit) {
+        val cal = java.util.Calendar.getInstance()
+        val dp = android.app.DatePickerDialog(requireContext(), { _, y, m, d ->
+            val tp = android.app.TimePickerDialog(requireContext(), { _, h, min ->
+                val c = java.util.Calendar.getInstance()
+                c.set(y, m, d, h, min, 0)
+                val iso = java.time.Instant.ofEpochMilli(c.timeInMillis).toString()
+                onPicked(iso)
+            }, cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE), true)
+            tp.show()
+        }, cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH), cal.get(java.util.Calendar.DAY_OF_MONTH))
+        dp.show()
     }
 }

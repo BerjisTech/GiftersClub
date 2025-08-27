@@ -28,6 +28,14 @@ interface LiveStreamApi {
         @Body createLiveStream: CreateLiveStreamRequest
     ): Response<List<LiveStream>>
 
+    /** Raw create for advanced scenarios like scheduling (status/started_at). */
+    @Headers("Prefer: return=representation")
+    @POST("live_streams")
+    suspend fun createLiveStreamRaw(
+        @Query("select", encoded = true) select: String = "*",
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
+    ): Response<List<LiveStream>>
+
     @Headers("Prefer: return=representation")
     @PATCH("live_streams")
     suspend fun endLiveStream(
@@ -121,4 +129,19 @@ interface LiveStreamApi {
         @Query("created_at", encoded = true) createdAfterFilter: String? = null,
         @Query("order", encoded = true) order: String = "created_at.asc"
     ): List<LiveGiftEvent>
+
+    // Battles
+    @GET("battle_sessions")
+    suspend fun getActiveBattleForStream(
+        @Query("select", encoded = true) select: String = "*",
+        @Query("live_stream_id", encoded = true) streamFilter: String,
+        @Query("status", encoded = true) statusFilter: String = "eq.active",
+        @Query("order", encoded = true) order: String = "started_at.desc"
+    ): List<club.gifters.giftersclub.model.BattleSession>
+
+    @GET("battle_participants")
+    suspend fun getBattleParticipants(
+        @Query("select", encoded = true) select: String = "*",
+        @Query("battle_id", encoded = true) battleFilter: String
+    ): List<club.gifters.giftersclub.model.BattleParticipant>
 }

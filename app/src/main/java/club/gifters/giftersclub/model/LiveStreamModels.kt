@@ -90,3 +90,19 @@ data class LiveGiftEvent(
     val gift: Gift?,
     val gifter: Profile?
 )
+
+data class BattleSession(
+    val id: String,
+    @SerializedName("live_stream_id") val liveStreamId: String,
+    val status: String,
+    @SerializedName("started_at") val startedAt: String?,
+    @SerializedName("ends_at") val endsAt: String?
+)
+
+data class BattleParticipant(
+    val id: String,
+    @SerializedName("battle_id") val battleId: String,
+    @SerializedName("user_id") val userId: String,
+    @SerializedName("live_stream_id") val liveStreamId: String,
+    val team: Int?
+)

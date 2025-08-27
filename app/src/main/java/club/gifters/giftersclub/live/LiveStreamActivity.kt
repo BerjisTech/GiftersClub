@@ -108,6 +108,8 @@ class LiveStreamActivity : BaseActivity() {
     private val giftCombos = mutableMapOf<String, Pair<Int, Int>>() // key -> (count, commentIndex)
     private var paywallPlanId: String? = null
     private var paywallPlanTokens: Int = 0
+    // Multi-host: map participant/track to its renderer for tiling
+    private val videoViews: MutableMap<String, SurfaceViewRenderer> = mutableMapOf()
 
     // UI references for dynamic live stream controls
     private lateinit var liveTopBar: ConstraintLayout
@@ -119,6 +121,9 @@ class LiveStreamActivity : BaseActivity() {
     private lateinit var btnToggleMic: ImageButton
     private lateinit var btnToggleCamera: ImageButton
     private lateinit var shareLive: ImageView
+    private lateinit var btnRequestToJoin: ImageView
+    private lateinit var matchOverlay: FrameLayout
+    private lateinit var btnInvite: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -154,6 +159,19 @@ class LiveStreamActivity : BaseActivity() {
         btnToggleMic = findViewById(R.id.btnToggleMic)
         btnToggleCamera = findViewById<ImageButton>(R.id.btnToggleCamera)
         shareLive = findViewById(R.id.shareLive)
+        btnRequestToJoin = findViewById(R.id.btnRequestToJoin)
+        matchOverlay = findViewById(R.id.matchOverlay)
+        btnInvite = ImageView(this).apply {
+            setImageResource(R.drawable.user_group)
+            layoutParams = ConstraintLayout.LayoutParams(48,48).apply {
+                (this as ConstraintLayout.LayoutParams).endToStart = R.id.btnEndLive
+                (this as ConstraintLayout.LayoutParams).topToTop = R.id.streamerDetails
+                setMargins(8,0,8,0)
+            }
+            visibility = View.GONE
+        }
+        findViewById<ConstraintLayout>(R.id.liveTopBar).addView(btnInvite)
+        btnInvite.setOnClickListener { showInviteDialog() }
 
         if (deepId == null) {
             if (!allPermissionsGranted()) {
@@ -164,6 +182,18 @@ class LiveStreamActivity : BaseActivity() {
                 )
             } else {
                 showCreateStreamDialog()
+            }
+        }
+
+        // Request to join (viewer only)
+        btnRequestToJoin.visibility = View.GONE
+        btnRequestToJoin.setOnClickListener {
+            currentStream?.id?.let { sid ->
+                lifecycleScope.launch {
+                    try { RetrofitClient.functionsApi.liveInvite(mapOf("action" to "request", "streamId" to sid)) } catch (_: Exception) {}
+                    Toast.makeText(this@LiveStreamActivity, "Requested to join", Toast.LENGTH_SHORT).show()
+                    btnRequestToJoin.visibility = View.GONE
+                }
             }
         }
 
@@ -375,7 +405,7 @@ class LiveStreamActivity : BaseActivity() {
             val tempFollowerCount = profiles.getOrNull(0)?.followersCount?.let { formatCount(it) }
                 ?: formatCount(0)
             tvFollowerCount.text = getString(R.string.follower_count, tempFollowerCount)
-            // Follow/unfollow for viewer
+            // Follow/unfollow & request-to-join for viewer
             val currentId = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
             if (currentId != null && currentId != hostId) {
                 val header = RetrofitClient.followsApi.isFollowingUser(
@@ -408,8 +438,48 @@ class LiveStreamActivity : BaseActivity() {
                         }
                     }
                 }
+                // Show join request icon for non-battle streams (heuristic: always show for now)
+                btnRequestToJoin.visibility = View.VISIBLE
             } else {
                 btnFollowStreamer.visibility = View.GONE
+                btnRequestToJoin.visibility = View.GONE
+            }
+            // Host: tap viewerCount to open pending requests dialog
+            if (currentId != null && currentId == hostId) {
+                tvViewerCount.setOnClickListener {
+                    lifecycleScope.launch {
+                        try {
+                            val resp = RetrofitClient.functionsApi.liveInviteRaw(mapOf("action" to "list", "streamId" to (currentStream?.id ?: return@launch)))
+                            if (!resp.isSuccessful) return@launch
+                            val body = resp.body()?.string() ?: return@launch
+                            val arr = org.json.JSONArray(body)
+                            val items = Array(arr.length()) { i ->
+                                val obj = arr.getJSONObject(i)
+                                val uname = obj.optJSONObject("profiles")?.optString("username") ?: obj.optString("invitee_id").take(6)
+                                val id = obj.optString("id")
+                                Pair(uname, id)
+                            }
+                            if (items.isEmpty()) {
+                                Toast.makeText(this@LiveStreamActivity, "No requests", Toast.LENGTH_SHORT).show()
+                                return@launch
+                            }
+                            val names = items.map { it.first }.toTypedArray()
+                            androidx.appcompat.app.AlertDialog.Builder(this@LiveStreamActivity)
+                                .setTitle("Requests to join")
+                                .setItems(names) { _, which ->
+                                    val inviteId = items[which].second
+                                    lifecycleScope.launch {
+                                        try { RetrofitClient.functionsApi.liveInvite(mapOf("action" to "accept", "inviteId" to inviteId)) } catch (_: Exception) {}
+                                        Toast.makeText(this@LiveStreamActivity, "Accepted", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .show()
+                        } catch (_: Exception) { }
+                    }
+                }
+                // Show invite icon in matches
+                btnInvite.visibility = if (isMatch) View.VISIBLE else View.GONE
             }
             // Load and show comments
             currentStream?.id?.let { sid ->
@@ -433,16 +503,11 @@ class LiveStreamActivity : BaseActivity() {
             }
         }
 
-        // Prepare video renderer
+        // Prepare video container (we create one renderer per remote video)
         val container = findViewById<FrameLayout>(R.id.flLiveStream)
         container.removeAllViews()
-        val preview = SurfaceViewRenderer(this@LiveStreamActivity)
-        preview.layoutParams = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.MATCH_PARENT
-        )
-        container.addView(preview)
-        previewView = preview
+        videoViews.values.forEach { it.release() }
+        videoViews.clear()
 
         // Connect to LiveKit as viewer (subscribe only)
         val lkToken = currentStream?.token ?: currentStream?.id
@@ -465,17 +530,48 @@ class LiveStreamActivity : BaseActivity() {
                 try {
                     room.connect(LiveKitConfig.WS_URL, lkToken, ConnectOptions())
                     liveKitRoom = room
-                    room.initVideoRenderer(preview)
-                    room.remoteParticipants.values.forEach { participant ->
-                        participant.videoTrackPublications.forEach { pubPair ->
-                            (pubPair.second as? RemoteVideoTrack)?.addRenderer(preview)
+                    // Listen for data messages for realtime tallies
+                    launch {
+                        room.events.collect { evt ->
+                            if (evt is RoomEvent.DataReceived) {
+                                try {
+                                    val txt = String(evt.data, Charsets.UTF_8)
+                                    val obj = org.json.JSONObject(txt)
+                                    if (obj.optString("type") == "gift_delta") {
+                                        val rid = obj.optString("recipient_id")
+                                        val inc = obj.optInt("tokens_used", 0)
+                                        tokenTallies[rid] = (tokenTallies[rid] ?: 0) + inc
+                                        renderMatchOverlay()
+                                    }
+                                } catch (_: Exception) { }
+                            }
                         }
                     }
-                    // Subscribe to TrackSubscribed events in a background coroutine
+                    // Attach already-subscribed remote videos
+                    room.remoteParticipants.values.forEach { participant ->
+                        participant.videoTrackPublications.forEach { pubPair ->
+                            val track = pubPair.second as? RemoteVideoTrack
+                            if (track != null) addVideoTile(container, participant.sid + "_" + (pubPair.first.sid ?: track.sid), track)
+                        }
+                    }
+                    // Listen for subscribe/unsubscribe to manage tiles
                     launch {
                         room.events.collect { event ->
-                            if (event is RoomEvent.TrackSubscribed && event.track is RemoteVideoTrack) {
-                                (event.track as RemoteVideoTrack).addRenderer(preview)
+                            when (event) {
+                                is RoomEvent.TrackSubscribed -> {
+                                    val rt = event.track as? RemoteVideoTrack
+                                    if (rt != null) addVideoTile(container, event.participant.sid + "_" + (event.publication.sid ?: rt.sid), rt)
+                                }
+                                is RoomEvent.TrackUnsubscribed -> {
+                                    val rt = event.track as? RemoteVideoTrack
+                                    if (rt != null) removeVideoTile(container, event.participant.sid + "_" + (event.publication.sid ?: rt.sid))
+                                }
+                                is RoomEvent.ParticipantDisconnected -> {
+                                    // remove all tiles for this participant
+                                    val keys = videoViews.keys.filter { it.startsWith(event.participant.sid + "_") }
+                                    keys.forEach { k -> removeVideoTile(container, k) }
+                                }
+                                else -> Unit
                             }
                         }
                     }
@@ -541,6 +637,49 @@ class LiveStreamActivity : BaseActivity() {
                 }
             }
         }
+    }
+
+    private fun addVideoTile(container: FrameLayout, key: String, track: RemoteVideoTrack) {
+        if (videoViews.containsKey(key)) return
+        val v = SurfaceViewRenderer(this)
+        val lp = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
+        v.layoutParams = lp
+        v.setZOrderMediaOverlay(true)
+        container.addView(v)
+        // naive tiling: scale children evenly based on count
+        layoutTiles(container)
+        videoViews[key] = v
+        track.addRenderer(v)
+    }
+
+    private fun removeVideoTile(container: FrameLayout, key: String) {
+        val v = videoViews.remove(key) ?: return
+        try { v.release() } catch (_: Exception) {}
+        container.removeView(v)
+        layoutTiles(container)
+    }
+
+    private fun layoutTiles(container: FrameLayout) {
+        val n = container.childCount
+        if (n == 0) return
+        val cols = kotlin.math.ceil(kotlin.math.sqrt(n.toDouble())).toInt()
+        val rows = kotlin.math.ceil(n / cols.toDouble()).toInt()
+        val w = container.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+        val h = container.height.takeIf { it > 0 } ?: resources.displayMetrics.heightPixels
+        val cellW = w / cols
+        val cellH = h / rows
+        for (i in 0 until n) {
+            val child = container.getChildAt(i)
+            val r = i / cols
+            val c = i % cols
+            val left = c * cellW
+            val top = r * cellH
+            child.layout(left, top, left + cellW, top + cellH)
+        }
+        container.requestLayout()
     }
 
     /** Send selected gift to current live stream; on success inserts a comment line. */
@@ -855,6 +994,8 @@ class LiveStreamActivity : BaseActivity() {
                     val localTrack = localPubPair?.second as? LocalVideoTrack
                     localTrack?.addRenderer(preview)
                 } catch (_: Exception) { }
+                // Load battle state after connect
+                lifecycleScope.launch { loadBattleState() }
             }
             // attach remote participants tracks if any
             room.remoteParticipants.values.forEach { participant ->
@@ -896,6 +1037,154 @@ class LiveStreamActivity : BaseActivity() {
                 }
             }
         }
+    }
+
+    private suspend fun loadBattleState() {
+        val sid = currentStream?.id ?: return
+        try {
+            val battles = RetrofitClient.liveStreamApi.getActiveBattleForStream("*", "eq.$sid")
+            val b = battles.firstOrNull() ?: return
+            isMatch = true
+            battleId = b.id
+            battleStartedAt = b.startedAt
+            matchParticipants.clear()
+            matchParticipants.addAll(RetrofitClient.liveStreamApi.getBattleParticipants("*", "eq.${b.id}"))
+            userIdToStreamId.clear()
+            matchParticipants.forEach { userIdToStreamId[it.userId] = it.liveStreamId }
+            // fetch usernames for pills
+            try {
+                val ids = matchParticipants.joinToString(",") { it.userId }
+                val profs = RetrofitClient.profileApi.getProfilesByUserIds("*", "in.($ids)")
+                val map = profs.associateBy({ it.userId }, { it.username ?: it.userId.take(6) })
+                // replace userId placeholder in pills later by using this map via tag
+                // store temporarily in tokenTallies map negative key? Instead, set in a local structure
+                // We'll update tokens during render
+                // Stash usernames into a separate map by extending userIdToStreamId key prefix
+                profs.forEach { p -> userIdToStreamId["uname:" + p.userId] = p.username ?: p.userId.take(6) }
+            } catch (_: Exception) {}
+            renderMatchOverlay()
+        } catch (_: Exception) { }
+    }
+
+    private fun renderMatchOverlay() {
+        runOnUiThread {
+            matchOverlay.removeAllViews()
+            if (!isMatch || matchParticipants.isEmpty()) return@runOnUiThread
+            // Progress bars at top
+            val barContainer = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+                    gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
+                    topMargin = 16
+                }
+            }
+            val bar1 = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+                max = 100
+                progress = percentFor(teamOrFirst())
+                progressTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#ec4899"))
+                progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0x33FFFFFF)
+                layoutParams = LinearLayout.LayoutParams(0, 16, 1f).apply { marginEnd = 8 }
+            }
+            val bar2 = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+                max = 100
+                progress = 100 - percentFor(teamOrFirst())
+                progressTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#93c5fd"))
+                progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0x33FFFFFF)
+                layoutParams = LinearLayout.LayoutParams(0, 16, 1f).apply { marginStart = 8 }
+            }
+            barContainer.addView(bar1); barContainer.addView(bar2)
+            matchOverlay.addView(barContainer)
+
+            // Clickable boxes overlay using GridLayout
+            val grid = android.widget.GridLayout(this).apply {
+                rowCount = if (matchParticipants.size >= 3) 2 else 1
+                columnCount = 2
+                layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            }
+            fun addBox(index: Int) {
+                val p = matchParticipants[index]
+                val box = FrameLayout(this)
+                val specRow = if (matchParticipants.size == 3 && index == 0) android.widget.GridLayout.spec(0, 2) else android.widget.GridLayout.spec(if (matchParticipants.size >= 3 && index > 0) (index - 1) else 0)
+                val specCol = if (matchParticipants.size == 3 && index == 0) android.widget.GridLayout.spec(0) else android.widget.GridLayout.spec(if (matchParticipants.size >= 3 && index > 0) 1 else index)
+                val lp = android.widget.GridLayout.LayoutParams(specRow, specCol).apply {
+                    width = 0; height = 0; columnSpec = specCol; rowSpec = specRow
+                    setGravity(android.view.Gravity.FILL)
+                }
+                lp.width = 0; lp.height = 0
+                lp.columnSpec = specCol; lp.rowSpec = specRow
+                lp.setMargins(8,8,8,8)
+                box.layoutParams = lp
+                val btn = View(this)
+                btn.layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+                btn.setOnClickListener { switchTo(userIdToStreamId[p.userId] ?: return@setOnClickListener) }
+                // Name pill
+                val pill = TextView(this).apply {
+                    val uname = userIdToStreamId["uname:" + p.userId] ?: p.userId.take(6)
+                    text = uname
+                    setTextColor(android.graphics.Color.WHITE)
+                    setBackgroundColor(0x80000000.toInt())
+                    textSize = 11f
+                    setPadding(12,6,12,6)
+                }
+                val pillLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+                    gravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
+                    bottomMargin = 16; rightMargin = 16
+                }
+                val tokenPill = TextView(this).apply {
+                    text = (tokenTallies[p.userId] ?: 0).toString()
+                    setTextColor(android.graphics.Color.WHITE)
+                    setBackgroundColor(0x80000000.toInt())
+                    textSize = 11f
+                    setPadding(12,6,12,6)
+                }
+                val tokenLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+                    gravity = android.view.Gravity.TOP or android.view.Gravity.START
+                    topMargin = 16; leftMargin = 16
+                }
+                box.addView(btn)
+                box.addView(tokenPill, tokenLp)
+                box.addView(pill, pillLp)
+                grid.addView(box)
+            }
+            when (matchParticipants.size) {
+                2 -> { addBox(0); addBox(1) }
+                3 -> { addBox(0); addBox(1); addBox(2) }
+                else -> { for (i in 0 until kotlin.math.min(4, matchParticipants.size)) addBox(i) }
+            }
+            matchOverlay.addView(grid)
+        }
+    }
+
+    private fun percentFor(userId: String): Int {
+        val sum = tokenTallies.values.sum()
+        if (sum <= 0) return 0
+        return kotlin.math.round(((tokenTallies[userId] ?: 0) * 100.0 / sum)).toInt()
+    }
+    private fun teamOrFirst(): String {
+        // fallback: first participant userId
+        return matchParticipants.firstOrNull()?.userId ?: ""
+    }
+
+    private fun showInviteDialog() {
+        val input = android.widget.EditText(this).apply { hint = "username" }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Invite guest by username")
+            .setView(input)
+            .setPositiveButton("Invite") { _, _ ->
+                val uname = input.text.toString().trim()
+                if (uname.isEmpty()) return@setPositiveButton
+                lifecycleScope.launch {
+                    try {
+                        // Resolve username → user_id (optional, live-invite can accept username too)
+                        RetrofitClient.functionsApi.liveInvite(mapOf("action" to "invite", "streamId" to (currentStream?.id ?: return@launch), "username" to uname))
+                        Toast.makeText(this@LiveStreamActivity, "Invited", Toast.LENGTH_SHORT).show()
+                    } catch (_: Exception) {
+                        Toast.makeText(this@LiveStreamActivity, "Invite failed", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     fun startLiveSession(
@@ -1150,6 +1439,46 @@ class LiveStreamActivity : BaseActivity() {
             } catch (e: Exception) {
                 Toast.makeText(this@LiveStreamActivity, e.message, Toast.LENGTH_SHORT).show()
                 finish()
+            }
+        }
+    }
+
+    fun scheduleLiveSession(
+        title: String,
+        description: String,
+        categoryId: Int,
+        tags: List<String>,
+        accessType: String? = null,
+        priceTokens: Int? = null,
+        requiredPlanId: String? = null,
+        scheduledAtIso: String
+    ) {
+        val userId = AuthUtils.getCurrentUserId(this) ?: return
+        lifecycleScope.launch {
+            try {
+                val body = mutableMapOf<String, Any?>(
+                    "host_id" to userId,
+                    "title" to title,
+                    "description" to description,
+                    "status" to "scheduled",
+                    "started_at" to scheduledAtIso,
+                    "category_id" to categoryId,
+                    "tags" to tags
+                )
+                when (accessType) {
+                    "paid" -> { body["access_type"] = "paid"; body["price"] = priceTokens }
+                    "subscription" -> { body["access_type"] = "subscription"; body["required_plan_id"] = requiredPlanId }
+                    else -> body["access_type"] = "free"
+                }
+                val resp = RetrofitClient.liveStreamApi.createLiveStreamRaw(body = body)
+                if (resp.isSuccessful) {
+                    Toast.makeText(this@LiveStreamActivity, R.string.scheduled_success, Toast.LENGTH_SHORT).show()
+                    try { RetrofitClient.functionsApi.notifyScheduledLive(mapOf("liveStreamId" to (resp.body()?.firstOrNull()?.id ?: ""))) } catch (_: Exception) {}
+                } else {
+                    Toast.makeText(this@LiveStreamActivity, R.string.failed_to_schedule, Toast.LENGTH_SHORT).show()
+                }
+            } catch (_: Exception) {
+                Toast.makeText(this@LiveStreamActivity, R.string.failed_to_schedule, Toast.LENGTH_SHORT).show()
             }
         }
     }

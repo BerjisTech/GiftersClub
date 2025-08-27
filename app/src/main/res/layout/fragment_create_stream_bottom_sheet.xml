@@ -220,6 +220,20 @@
             android:layout_marginStart="16dp"
             app:cardCornerRadius="10dp">
         <Button
+            android:id="@+id/btnScheduleLive"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Schedule"
+            android:background="@drawable/bg_neutral_slate_gradient"
+            android:textColor="@color/white" />
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            app:cardCornerRadius="10dp">
+        <Button
             android:id="@+id/btnStartLive"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

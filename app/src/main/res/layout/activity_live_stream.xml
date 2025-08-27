@@ -19,6 +19,15 @@
         android:focusable="false"
         android:background="@android:color/transparent" />
 
+    <!-- Match overlay for clickable boxes and progress bars -->
+    <FrameLayout
+        android:id="@+id/matchOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:focusable="false"
+        android:background="@android:color/transparent" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/liveTopBar"
         android:layout_width="match_parent"
@@ -128,6 +137,18 @@
                 android:text="@string/end_live"
                 android:textColor="@color/white" />
         </androidx.cardview.widget.CardView>
+
+        <!-- Request to join icon (viewer mode, non-match) -->
+        <ImageView
+            android:id="@+id/btnRequestToJoin"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginEnd="8dp"
+            android:src="@drawable/friends"
+            android:contentDescription="@string/subscribe_to_view"
+            android:visibility="gone"
+            app:layout_constraintEnd_toStartOf="@+id/btnEndLive"
+            app:layout_constraintTop_toTopOf="@id/streamerDetails" />
 
         <ImageButton
             android:id="@+id/btnCloseLive"
