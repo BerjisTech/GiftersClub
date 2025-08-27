@@ -653,16 +653,7 @@ class LiveStreamActivity : BaseActivity() {
                 }
                 initViewer()
             } catch (e: Exception) {
-                // if host session now fails to load, mark it ended so banner disappears
-                fetchedLive?.let { live ->
-                    try {
-                        val nowIso = java.time.Instant.now().toString()
-                        RetrofitClient.functionsApi.updateLiveSession(
-                            id = live.id,
-                            updates = mapOf("status" to "ended", "ended_at" to nowIso)
-                        )
-                    } catch (_: Exception) { }
-                }
+                // Do not end the live on client-side error; just show message and exit
                 Toast.makeText(
                     this@LiveStreamActivity,
                     R.string.error_loading_stream,
@@ -825,33 +816,57 @@ class LiveStreamActivity : BaseActivity() {
         // host camera preview & controls
         if (!USE_LIVEKIT_CAMERA_PREVIEW) startCamera()
         btnToggleMic.visibility = View.VISIBLE
-        if (USE_LIVEKIT_CAMERA_PREVIEW) {
-            btnSwitchCamera.visibility = View.VISIBLE
-            btnToggleCamera.visibility = View.VISIBLE
-        } else {
-            btnSwitchCamera.visibility = View.VISIBLE
-            btnToggleCamera.visibility = View.GONE
-        }
-        // connect to LiveKit as host
+        btnSwitchCamera.visibility = View.VISIBLE
+        btnToggleCamera.visibility = if (USE_LIVEKIT_CAMERA_PREVIEW) View.VISIBLE else View.GONE
+
+        // Prepare preview surface for local publish
+        val container = findViewById<FrameLayout>(R.id.flLiveStream)
+        container.removeAllViews()
+        val preview = SurfaceViewRenderer(this@LiveStreamActivity)
+        preview.layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
+        preview.setMirror(isFrontFacing)
+        container.addView(preview)
+        previewView = preview
+
+        // connect to LiveKit as host and (re)publish
         live.token?.takeIf { it.isNotBlank() }?.let { lkToken ->
-            val roomOptions = RoomOptions(true, true, null,
-                LocalAudioTrackOptions(), LocalVideoTrackOptions(), null, null)
+            val roomOptions = RoomOptions(
+                /*publishAudio=*/true,
+                /*publishVideo=*/true,
+                null,
+                LocalAudioTrackOptions(),
+                LocalVideoTrackOptions(),
+                null,
+                null
+            )
             val room = LiveKit.create(this@LiveStreamActivity, roomOptions, LiveKitOverrides())
-            room.initVideoRenderer(previewView!!)
             liveKitRoom = room
-            lifecycleScope.launch(Dispatchers.IO) {
-                room.connect(LiveKitConfig.WS_URL, lkToken, ConnectOptions())
+            lifecycleScope.launch {
+                try {
+                    room.connect(LiveKitConfig.WS_URL, lkToken, ConnectOptions())
+                    // enable camera/mic and attach local preview
+                    room.localParticipant.setCameraEnabled(true)
+                    room.localParticipant.setMicrophoneEnabled(true)
+                    room.initVideoRenderer(preview)
+                    val localPubPair = room.localParticipant.videoTrackPublications.firstOrNull()
+                    val localTrack = localPubPair?.second as? LocalVideoTrack
+                    localTrack?.addRenderer(preview)
+                } catch (_: Exception) { }
             }
+            // attach remote participants tracks if any
             room.remoteParticipants.values.forEach { participant ->
                 participant.videoTrackPublications.forEach { (_, track) ->
-                    (track as? RemoteVideoTrack)?.addRenderer(previewView!!)
+                    (track as? RemoteVideoTrack)?.addRenderer(preview)
                 }
             }
             // subscribe to new participants
             lifecycleScope.launch {
                 room.events.collect { evt ->
                     if (evt is RoomEvent.TrackSubscribed && evt.track is RemoteVideoTrack) {
-                        (evt.track as RemoteVideoTrack).addRenderer(previewView!!)
+                        (evt.track as RemoteVideoTrack).addRenderer(preview)
                     }
                 }
             }
@@ -895,19 +910,20 @@ class LiveStreamActivity : BaseActivity() {
         val userId = AuthUtils.getCurrentUserId(this) ?: return
         lifecycleScope.launch {
             try {
-                // Ensure only one live stream per host: end any hanging lives first
+                // If an active live already exists for this host, resume it instead of ending/creating.
                 try {
-                    val hanging = RetrofitClient.liveStreamApi.getLiveStreamsByHosts(
+                    val existing = RetrofitClient.liveStreamApi.getLiveStreamsByHosts(
                         select = "id,status",
                         hostFilter = "eq.$userId",
                         statusFilter = "eq.live",
                         order = "updated_at.desc"
                     )
-                    val nowIso = java.time.Instant.now().toString()
-                    hanging.forEach { h ->
-                        try { RetrofitClient.functionsApi.updateLiveSession(id = h.id, updates = mapOf("status" to "ended", "ended_at" to nowIso)) } catch (_: Exception) {}
+                    val active = existing.firstOrNull()
+                    if (active != null) {
+                        handleDeepLinkStream(active.id)
+                        return@launch
                     }
-                } catch (_: Exception) { }
+                } catch (_: Exception) { /* proceed to create */ }
 
                 val resp = RetrofitClient.functionsApi.createLiveSession(
                     CreateLiveStreamRequest(userId, title, description, categoryId, tags)
