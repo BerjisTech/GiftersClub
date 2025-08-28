@@ -138,18 +138,6 @@
                 android:textColor="@color/white" />
         </androidx.cardview.widget.CardView>
 
-        <!-- Request to join icon (viewer mode, non-match) -->
-        <ImageView
-            android:id="@+id/btnRequestToJoin"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_marginEnd="8dp"
-            android:src="@drawable/friends"
-            android:contentDescription="@string/subscribe_to_view"
-            android:visibility="gone"
-            app:layout_constraintEnd_toStartOf="@+id/btnEndLive"
-            app:layout_constraintTop_toTopOf="@id/streamerDetails" />
-
         <ImageButton
             android:id="@+id/btnCloseLive"
             android:layout_width="wrap_content"
@@ -248,6 +236,17 @@
                 android:textColor="@android:color/white"
                 android:textColorHint="@android:color/darker_gray" />
         </androidx.cardview.widget.CardView>
+
+        <!-- Request to join icon (viewer mode, non-match) -->
+        <ImageView
+            android:id="@+id/btnRequestToJoin"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="8dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/friends"
+            android:background="@drawable/bg_round_button"
+            android:contentDescription="@string/subscribe_to_view" />
 
         <ImageView
             android:id="@+id/btnRoseGift"
