@@ -126,6 +126,7 @@ class LiveStreamActivity : BaseActivity() {
     private lateinit var btnRequestToJoin: ImageView
     private lateinit var matchOverlay: FrameLayout
     private lateinit var btnInvite: ImageView
+    private lateinit var btnRequests: ImageView
 
     // Battle/Match state (multi-host matches)
     private var isMatch: Boolean = false
@@ -187,6 +188,17 @@ class LiveStreamActivity : BaseActivity() {
             val sheet = MatchSetupBottomSheetFragment.newInstance(sid, hostId)
             sheet.show(supportFragmentManager, "MatchSetupBottomSheet")
         }
+        // Pending requests indicator for host (tap opens requests dialog)
+        btnRequests = ImageView(this).apply {
+            setImageResource(android.R.drawable.ic_menu_info_details)
+            layoutParams = ConstraintLayout.LayoutParams(48,48).apply {
+                (this as ConstraintLayout.LayoutParams).endToStart = R.id.btnEndLive
+                (this as ConstraintLayout.LayoutParams).topToBottom = R.id.streamerDetails
+                setMargins(8,8,8,0)
+            }
+            visibility = View.GONE
+        }
+        findViewById<ConstraintLayout>(R.id.liveTopBar).addView(btnRequests)
 
         if (deepId == null) {
             if (!allPermissionsGranted()) {
@@ -494,8 +506,23 @@ class LiveStreamActivity : BaseActivity() {
                         } catch (_: Exception) { }
                     }
                 }
-            // Show invite icon for host always (start/manage match)
-            btnInvite.visibility = View.VISIBLE
+                // Poll pending requests and show indicator
+                lifecycleScope.launch {
+                    while (isActive && !isEnded) {
+                        delay(3000)
+                        try {
+                            val resp = RetrofitClient.functionsApi.liveInviteRaw(mapOf("action" to "list", "streamId" to (currentStream?.id ?: return@launch)))
+                            if (!resp.isSuccessful) continue
+                            val body = resp.body()?.string() ?: "[]"
+                            val arr = org.json.JSONArray(body)
+                            val pending = (0 until arr.length()).count { arr.getJSONObject(it).optString("status") == "requested" }
+                            btnRequests.visibility = if (pending > 0) View.VISIBLE else View.GONE
+                            btnRequests.setOnClickListener { tvViewerCount.performClick() }
+                        } catch (_: Exception) {}
+                    }
+                }
+                // Show invite icon for host always (start/manage match)
+                btnInvite.visibility = View.VISIBLE
             }
             // Load and show comments
             currentStream?.id?.let { sid ->
