@@ -101,6 +101,7 @@ class LiveStreamActivity : BaseActivity() {
     private var isFrontFacing = true
     // Job for polling comments and gifts
     private var commentsJob: Job? = null
+    private var invitePollJob: Job? = null
     private var statusJob: Job? = null
     private var giftsJob: Job? = null
     private var isEnded: Boolean = false
@@ -193,6 +194,7 @@ class LiveStreamActivity : BaseActivity() {
                     try { RetrofitClient.functionsApi.liveInvite(mapOf("action" to "request", "streamId" to sid)) } catch (_: Exception) {}
                     Toast.makeText(this@LiveStreamActivity, "Requested to join", Toast.LENGTH_SHORT).show()
                     btnRequestToJoin.visibility = View.GONE
+                    startInvitePolling(sid)
                 }
             }
         }
@@ -489,15 +491,23 @@ class LiveStreamActivity : BaseActivity() {
                 )
                 commentsAdapter.submitList(initial)
                 if (initial.isNotEmpty()) rvLiveComments.scrollToPosition(initial.size - 1)
+                // Cohost comments: if room_id exists, fetch siblings and merge
                 commentsJob = lifecycleScope.launch {
+                    val streams = try {
+                        val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,room_id", "eq.$sid")
+                        val room = rows.firstOrNull()?.roomId
+                        if (!room.isNullOrEmpty()) RetrofitClient.liveStreamApi.getLiveStreamsByRoomId("id", "eq.$room").map { it.id } else listOf(sid)
+                    } catch (_: Exception) { listOf(sid) }
                     while (isActive) {
-                        delay(3000)
-                        val updated = RetrofitClient.liveStreamApi.getLiveStreamComments(
-                            select = "*,profile:profiles(*)",
-                            streamFilter = "eq.$sid"
-                        )
-                        commentsAdapter.submitList(updated)
-                        if (updated.isNotEmpty()) rvLiveComments.scrollToPosition(updated.size - 1)
+                        delay(2000)
+                        val merged = mutableListOf<club.gifters.giftersclub.model.LiveStreamComment>()
+                        for (s in streams) {
+                            try {
+                                merged += RetrofitClient.liveStreamApi.getLiveStreamComments("*,profile:profiles(*)", "eq.$s")
+                            } catch (_: Exception) {}
+                        }
+                        commentsAdapter.submitList(merged.sortedBy { it.createdAt })
+                        if (merged.isNotEmpty()) rvLiveComments.scrollToPosition(merged.size - 1)
                     }
                 }
             }
@@ -642,14 +652,19 @@ class LiveStreamActivity : BaseActivity() {
     private fun addVideoTile(container: FrameLayout, key: String, track: RemoteVideoTrack) {
         if (videoViews.containsKey(key)) return
         val v = SurfaceViewRenderer(this)
-        val lp = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.MATCH_PARENT
-        )
-        v.layoutParams = lp
         v.setZOrderMediaOverlay(true)
-        container.addView(v)
-        // naive tiling: scale children evenly based on count
+        val tile = FrameLayout(this)
+        val tileLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+        tile.layoutParams = tileLp
+        // set border (1dp gray for non-match; colored when match)
+        val strokeColor = if (isMatch) android.graphics.Color.TRANSPARENT else 0x55FFFFFF.toInt()
+        val gd = android.graphics.drawable.GradientDrawable()
+        gd.setColor(0x00000000)
+        gd.setStroke((resources.displayMetrics.density).toInt(), strokeColor)
+        gd.cornerRadius = 8 * resources.displayMetrics.density
+        tile.background = gd
+        tile.addView(v, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        container.addView(tile)
         layoutTiles(container)
         videoViews[key] = v
         track.addRenderer(v)
@@ -1101,6 +1116,19 @@ class LiveStreamActivity : BaseActivity() {
                 columnCount = 2
                 layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             }
+            fun colorFor(index: Int): Int {
+                val p = matchParticipants[index]
+                val team = p.team ?: 0
+                return if (team == 1) android.graphics.Color.parseColor("#ec4899")
+                else if (team == 2) android.graphics.Color.parseColor("#93c5fd")
+                else when (index % 4) {
+                    0 -> android.graphics.Color.parseColor("#ef4444")
+                    1 -> android.graphics.Color.parseColor("#3b82f6")
+                    2 -> android.graphics.Color.parseColor("#10b981")
+                    else -> android.graphics.Color.parseColor("#f59e0b")
+                }
+            }
+
             fun addBox(index: Int) {
                 val p = matchParticipants[index]
                 val box = FrameLayout(this)
@@ -1117,6 +1145,12 @@ class LiveStreamActivity : BaseActivity() {
                 val btn = View(this)
                 btn.layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                 btn.setOnClickListener { switchTo(userIdToStreamId[p.userId] ?: return@setOnClickListener) }
+                // set colored border
+                val border = android.graphics.drawable.GradientDrawable()
+                border.setColor(0x00000000)
+                border.setStroke((resources.displayMetrics.density * 2).toInt(), colorFor(index))
+                border.cornerRadius = 8 * resources.displayMetrics.density
+                box.background = border
                 // Name pill
                 val pill = TextView(this).apply {
                     val uname = userIdToStreamId["uname:" + p.userId] ?: p.userId.take(6)
@@ -1520,6 +1554,47 @@ class LiveStreamActivity : BaseActivity() {
                     Toast.makeText(this@LiveStreamActivity, R.string.failed_end_stream, Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(this@LiveStreamActivity, e.message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun startInvitePolling(streamId: String) {
+        invitePollJob?.cancel()
+        val userId = AuthUtils.getCurrentUserId(this) ?: return
+        invitePollJob = lifecycleScope.launch {
+            while (isActive) {
+                try {
+                    // fetch invites filtered via REST: invitee_id=eq.userId & streamId
+                    val resp = RetrofitClient.functionsApi.liveInviteRaw(mapOf("action" to "list", "streamId" to streamId))
+                    if (resp.isSuccessful) {
+                        val body = resp.body()?.string() ?: "[]"
+                        val arr = org.json.JSONArray(body)
+                        for (i in 0 until arr.length()) {
+                            val obj = arr.getJSONObject(i)
+                            if (obj.optString("invitee_id") == userId && obj.optString("status") == "accepted") {
+                                // Get guest token and re-connect as publisher
+                                try {
+                                    val tk = RetrofitClient.functionsApi.liveSessionAction(mapOf("action" to "token", "streamId" to streamId, "type" to "guest"))
+                                    if (tk.isSuccessful) {
+                                        val token = tk.body()?.get("token") as? String
+                                        if (!token.isNullOrEmpty()) {
+                                            try { liveKitRoom?.disconnect() } catch (_: Exception) {}
+                                            val roomOptions = RoomOptions(true, true, null, LocalAudioTrackOptions(), LocalVideoTrackOptions(), null, null)
+                                            val room = LiveKit.create(this@LiveStreamActivity, roomOptions, LiveKitOverrides())
+                                            liveKitRoom = room
+                                            room.connect(LiveKitConfig.WS_URL, token, ConnectOptions())
+                                            room.localParticipant.setCameraEnabled(true)
+                                            room.localParticipant.setMicrophoneEnabled(true)
+                                            invitePollJob?.cancel()
+                                            break
+                                        }
+                                    }
+                                } catch (_: Exception) {}
+                            }
+                        }
+                    }
+                } catch (_: Exception) {}
+                delay(3000)
             }
         }
     }

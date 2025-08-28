@@ -50,6 +50,12 @@ interface LiveStreamApi {
         @Query("id", encoded = true) idFilter: String
     ): List<LiveStream>
 
+    @GET("live_streams")
+    suspend fun getLiveStreamsByRoomId(
+        @Query("select", encoded = true) select: String = "id",
+        @Query("room_id", encoded = true) roomFilter: String
+    ): List<LiveStream>
+
     @GET("live_stream_comments")
     suspend fun getLiveStreamComments(
         @Query("select", encoded = true) select: String = "*,profile:profiles(*)",

@@ -91,6 +91,12 @@ interface FunctionsApi {
         @Query("id") id: String
     ): Response<LiveStream>
 
+    /** Obtain a LiveKit token via action body (e.g., {action:'token', type:'guest'}). */
+    @POST("live-session")
+    suspend fun liveSessionAction(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Map<String, @JvmSuppressWildcards Any>>
+
     /**
      * Update a live stream session via Edge Function.
      */
