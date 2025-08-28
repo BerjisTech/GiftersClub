@@ -494,8 +494,8 @@ class LiveStreamActivity : BaseActivity() {
                         } catch (_: Exception) { }
                     }
                 }
-                // Show invite icon in matches
-                btnInvite.visibility = if (isMatch) View.VISIBLE else View.GONE
+            // Show invite icon for host always (start/manage match)
+            btnInvite.visibility = View.VISIBLE
             }
             // Load and show comments
             currentStream?.id?.let { sid ->

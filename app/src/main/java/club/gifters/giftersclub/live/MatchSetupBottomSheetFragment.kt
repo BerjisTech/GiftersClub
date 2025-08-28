@@ -24,6 +24,8 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
     data class Invitee(var username: String = "", var userId: String = "", var team: Int = 2)
     private val invitees = mutableListOf(Invitee())
     private var searchJob: Job? = null
+    private var requestsJob: Job? = null
+    private var partsJob: Job? = null
     private var battleId: String? = null
     private var isActiveBattle = false
     private var hostTeam = 1
@@ -47,6 +49,8 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
         val btnStart = v.findViewById<Button>(R.id.btnStartMatch)
         val btnEnd = v.findViewById<Button>(R.id.btnEndMatch)
         val tvManage = v.findViewById<TextView>(R.id.tvManageTitle)
+        val tvRequests = v.findViewById<TextView>(R.id.tvRequestsTitle)
+        val requestsContainer = v.findViewById<LinearLayout>(R.id.requestsContainer)
         val manageZones = v.findViewById<LinearLayout>(R.id.manageZones)
         val zoneIndividual = v.findViewById<LinearLayout>(R.id.containerIndividual)
         val zoneTeamA = v.findViewById<LinearLayout>(R.id.containerTeamA)
@@ -86,7 +90,7 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
             if (invitees.size < 3) { invitees.add(Invitee()); renderInvitees() }
         }
 
-        lifecycleScope.launch {
+        partsJob?.cancel(); partsJob = lifecycleScope.launch {
             try {
                 val list = RetrofitClient.liveStreamApi.getActiveBattleForStream("*", "eq.$streamId")
                 isActiveBattle = list.isNotEmpty()
@@ -100,6 +104,13 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
                     setZoneDragListeners(zoneTeamA, 1)
                     setZoneDragListeners(zoneTeamB, 2)
                     renderParticipants(zoneIndividual, zoneTeamA, zoneTeamB)
+                }
+                // Load pending requests
+                requestsJob?.cancel(); requestsJob = lifecycleScope.launch {
+                    while (isActive) {
+                        renderRequests(requestsContainer, tvRequests, streamId)
+                        delay(3000)
+                    }
                 }
             } catch (_: Exception) {}
         }
@@ -142,9 +153,42 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
         return dialog
     }
 
+    private fun renderRequests(container: LinearLayout, title: TextView, streamId: String) {
+        lifecycleScope.launch {
+            try {
+                val resp = RetrofitClient.functionsApi.liveInviteRaw(mapOf("action" to "list", "streamId" to streamId))
+                if (!resp.isSuccessful) { title.visibility = View.GONE; container.visibility = View.GONE; return@launch }
+                val arr = org.json.JSONArray(resp.body()?.string() ?: "[]")
+                if (arr.length() == 0) { title.visibility = View.GONE; container.visibility = View.GONE; return@launch }
+                title.visibility = View.VISIBLE
+                container.visibility = View.VISIBLE
+                container.removeAllViews()
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    val uname = obj.optJSONObject("profiles")?.optString("username") ?: obj.optString("invitee_id").take(6)
+                    val inviteId = obj.optString("id")
+                    val row = LinearLayout(requireContext()).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        val tv = TextView(context).apply { text = uname; textSize = 14f }
+                        val btn = Button(context).apply { text = "Accept" }
+                        btn.setOnClickListener {
+                            lifecycleScope.launch {
+                                try { RetrofitClient.functionsApi.liveInvite(mapOf("action" to "accept", "inviteId" to inviteId)) } catch (_: Exception) {}
+                                renderRequests(container, title, streamId)
+                            }
+                        }
+                        addView(tv, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                        addView(btn)
+                    }
+                    container.addView(row)
+                }
+            } catch (_: Exception) { title.visibility = View.GONE; container.visibility = View.GONE }
+        }
+    }
+
     private fun renderParticipants(zoneIndividual: LinearLayout, zoneTeamA: LinearLayout, zoneTeamB: LinearLayout) {
         zoneIndividual.removeAllViews(); zoneTeamA.removeAllViews(); zoneTeamB.removeAllViews()
-        lifecycleScope.launch {
+        partsJob?.cancel(); partsJob = lifecycleScope.launch {
             try {
                 val bid = battleId ?: return@launch
                 val parts = RetrofitClient.battleApi.getParticipants("*", "eq.$bid")
@@ -211,6 +255,13 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
                 else -> true
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        try { requestsJob?.cancel() } catch (_: Exception) {}
+        try { partsJob?.cancel() } catch (_: Exception) {}
+        try { searchJob?.cancel() } catch (_: Exception) {}
     }
 
     private fun searchProfiles(et: EditText, inv: Invitee) {
