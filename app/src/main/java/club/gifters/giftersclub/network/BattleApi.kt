@@ -43,7 +43,7 @@ interface BattleApi {
     suspend fun updateParticipant(
         @Query("select", encoded = true) select: String = "*",
         @Query("id", encoded = true) idFilter: String,
-        @Body updates: Map<String, @JvmSuppressWildcards Any>
+        @Body updates: Map<String, @JvmSuppressWildcards Any?>
     ): Response<List<BattleParticipant>>
 
     @retrofit2.http.DELETE("battle_participants")
