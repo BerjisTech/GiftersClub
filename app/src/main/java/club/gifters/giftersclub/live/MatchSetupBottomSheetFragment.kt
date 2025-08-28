@@ -10,6 +10,7 @@ import android.content.ClipData
 import android.view.DragEvent
 import androidx.lifecycle.lifecycleScope
 import club.gifters.giftersclub.R
+import club.gifters.giftersclub.model.BattleParticipant
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.network.RetrofitClient
 import com.google.android.material.bottomsheet.BottomSheetBehavior
