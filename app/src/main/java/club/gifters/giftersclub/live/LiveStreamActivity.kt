@@ -181,7 +181,12 @@ class LiveStreamActivity : BaseActivity() {
             visibility = View.GONE
         }
         findViewById<ConstraintLayout>(R.id.liveTopBar).addView(btnInvite)
-        btnInvite.setOnClickListener { showInviteDialog() }
+        btnInvite.setOnClickListener {
+            val sid = currentStream?.id ?: return@setOnClickListener
+            val hostId = AuthUtils.getCurrentUserId(this) ?: return@setOnClickListener
+            val sheet = MatchSetupBottomSheetFragment.newInstance(sid, hostId)
+            sheet.show(supportFragmentManager, "MatchSetupBottomSheet")
+        }
 
         if (deepId == null) {
             if (!allPermissionsGranted()) {
@@ -671,6 +676,7 @@ class LiveStreamActivity : BaseActivity() {
     private fun addVideoTile(container: FrameLayout, key: String, track: RemoteVideoTrack) {
         if (videoViews.containsKey(key)) return
         val v = SurfaceViewRenderer(this)
+        try { liveKitRoom?.initVideoRenderer(v) } catch (_: Exception) {}
         v.setZOrderMediaOverlay(true)
         val tile = FrameLayout(this)
         val tileLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
@@ -1247,6 +1253,38 @@ class LiveStreamActivity : BaseActivity() {
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
+    }
+
+    private fun showRequestsDialog() {
+        lifecycleScope.launch {
+            try {
+                val resp = RetrofitClient.functionsApi.liveInviteRaw(mapOf("action" to "list", "streamId" to (currentStream?.id ?: return@launch)))
+                if (!resp.isSuccessful) return@launch
+                val arr = org.json.JSONArray(resp.body()?.string() ?: "[]")
+                if (arr.length() == 0) {
+                    Toast.makeText(this@LiveStreamActivity, "No requests", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val items = Array(arr.length()) { i ->
+                    val obj = arr.getJSONObject(i)
+                    val uname = obj.optJSONObject("profiles")?.optString("username") ?: obj.optString("invitee_id").take(6)
+                    val id = obj.optString("id")
+                    Pair(uname, id)
+                }
+                val names = items.map { it.first }.toTypedArray()
+                AlertDialog.Builder(this@LiveStreamActivity)
+                    .setTitle("Requests to join")
+                    .setItems(names) { _, which ->
+                        val inviteId = items[which].second
+                        lifecycleScope.launch {
+                            try { RetrofitClient.functionsApi.liveInvite(mapOf("action" to "accept", "inviteId" to inviteId)) } catch (_: Exception) {}
+                            Toast.makeText(this@LiveStreamActivity, "Accepted", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            } catch (_: Exception) {}
+        }
     }
 
     fun startLiveSession(
