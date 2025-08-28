@@ -24,6 +24,8 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
     data class Invitee(var username: String = "", var userId: String = "", var team: Int = 2)
     private val invitees = mutableListOf(Invitee())
     private var searchJob: Job? = null
+    private var requestsJob: Job? = null
+    private var partsJob: Job? = null
     private var battleId: String? = null
     private var isActiveBattle = false
     private var hostTeam = 1
@@ -88,7 +90,7 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
             if (invitees.size < 3) { invitees.add(Invitee()); renderInvitees() }
         }
 
-        lifecycleScope.launch {
+        partsJob?.cancel(); partsJob = lifecycleScope.launch {
             try {
                 val list = RetrofitClient.liveStreamApi.getActiveBattleForStream("*", "eq.$streamId")
                 isActiveBattle = list.isNotEmpty()
@@ -104,7 +106,12 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
                     renderParticipants(zoneIndividual, zoneTeamA, zoneTeamB)
                 }
                 // Load pending requests
-                renderRequests(requestsContainer, tvRequests, streamId)
+                requestsJob?.cancel(); requestsJob = lifecycleScope.launch {
+                    while (isActive) {
+                        renderRequests(requestsContainer, tvRequests, streamId)
+                        delay(3000)
+                    }
+                }
             } catch (_: Exception) {}
         }
 
@@ -181,7 +188,7 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
 
     private fun renderParticipants(zoneIndividual: LinearLayout, zoneTeamA: LinearLayout, zoneTeamB: LinearLayout) {
         zoneIndividual.removeAllViews(); zoneTeamA.removeAllViews(); zoneTeamB.removeAllViews()
-        lifecycleScope.launch {
+        partsJob?.cancel(); partsJob = lifecycleScope.launch {
             try {
                 val bid = battleId ?: return@launch
                 val parts = RetrofitClient.battleApi.getParticipants("*", "eq.$bid")
@@ -248,6 +255,13 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
                 else -> true
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        try { requestsJob?.cancel() } catch (_: Exception) {}
+        try { partsJob?.cancel() } catch (_: Exception) {}
+        try { searchJob?.cancel() } catch (_: Exception) {}
     }
 
     private fun searchProfiles(et: EditText, inv: Invitee) {
