@@ -12,6 +12,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
+import android.widget.ProgressBar
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -125,6 +126,14 @@ class LiveStreamActivity : BaseActivity() {
     private lateinit var btnRequestToJoin: ImageView
     private lateinit var matchOverlay: FrameLayout
     private lateinit var btnInvite: ImageView
+
+    // Battle/Match state (multi-host matches)
+    private var isMatch: Boolean = false
+    private var battleId: String? = null
+    private var battleStartedAt: String? = null
+    private val matchParticipants: MutableList<club.gifters.giftersclub.model.BattleParticipant> = mutableListOf()
+    private val userIdToStreamId: MutableMap<String, String> = mutableMapOf() // also stores usernames under key "uname:<userId>"
+    private val tokenTallies: MutableMap<String, Int> = mutableMapOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -561,7 +570,10 @@ class LiveStreamActivity : BaseActivity() {
                     room.remoteParticipants.values.forEach { participant ->
                         participant.videoTrackPublications.forEach { pubPair ->
                             val track = pubPair.second as? RemoteVideoTrack
-                            if (track != null) addVideoTile(container, participant.sid + "_" + (pubPair.first.sid ?: track.sid), track)
+                            if (track != null) {
+                                val key = "${participant.sid}_${track.sid}"
+                                addVideoTile(container, key, track)
+                            }
                         }
                     }
                     // Listen for subscribe/unsubscribe to manage tiles
@@ -570,15 +582,22 @@ class LiveStreamActivity : BaseActivity() {
                             when (event) {
                                 is RoomEvent.TrackSubscribed -> {
                                     val rt = event.track as? RemoteVideoTrack
-                                    if (rt != null) addVideoTile(container, event.participant.sid + "_" + (event.publication.sid ?: rt.sid), rt)
+                                    // Key by participant + track sid (avoid relying on publication field)
+                                    if (rt != null) {
+                                        val key = "${event.participant.sid}_${rt.sid}"
+                                        addVideoTile(container, key, rt)
+                                    }
                                 }
                                 is RoomEvent.TrackUnsubscribed -> {
                                     val rt = event.track as? RemoteVideoTrack
-                                    if (rt != null) removeVideoTile(container, event.participant.sid + "_" + (event.publication.sid ?: rt.sid))
+                                    if (rt != null) {
+                                        val key = "${event.participant.sid}_${rt.sid}"
+                                        removeVideoTile(container, key)
+                                    }
                                 }
                                 is RoomEvent.ParticipantDisconnected -> {
                                     // remove all tiles for this participant
-                                    val keys = videoViews.keys.filter { it.startsWith(event.participant.sid + "_") }
+                                    val keys = videoViews.keys.filter { it.startsWith("${event.participant.sid}_") }
                                     keys.forEach { k -> removeVideoTile(container, k) }
                                 }
                                 else -> Unit
@@ -695,6 +714,15 @@ class LiveStreamActivity : BaseActivity() {
             child.layout(left, top, left + cellW, top + cellH)
         }
         container.requestLayout()
+    }
+
+    /**
+     * Switch primary focus to a participant's stream. For now, this is a stub
+     * until we add explicit track pinning/selection logic.
+     */
+    private fun switchTo(streamId: String) {
+        Toast.makeText(this, "Switching to stream $streamId", Toast.LENGTH_SHORT).show()
+        // TODO: Implement track pinning/layout prioritization using mapping of streamId -> participant/track.
     }
 
     /** Send selected gift to current live stream; on success inserts a comment line. */
@@ -834,7 +862,7 @@ class LiveStreamActivity : BaseActivity() {
                     if (ok) true else {
                         LiveAccessBottomSheetFragment.newInstance(
                             mode = "paid",
-                            message = getString(R.string.purchase_live_access_for_tokens, (ls.price ?: 0)),
+                            message = getString(R.string.purchase_live_access_for_tokens) + " " + (ls.price ?: 0),
                             benefits = arrayListOf(),
                             price = ls.price ?: 0,
                             streamId = ls.id,
@@ -879,7 +907,7 @@ class LiveStreamActivity : BaseActivity() {
                     paywallPlanTokens = required.tokens
                     LiveAccessBottomSheetFragment.newInstance(
                         mode = "subscription",
-                        message = getString(R.string.live_requires_plan_and_above, required.name, required.tokens),
+                        message = getString(R.string.live_requires_plan_and_above) + " " + required.name + " (" + required.tokens + ")",
                         benefits = ArrayList((required.description ?: "").split('\n').filter { it.isNotBlank() }),
                         price = null,
                         streamId = ls.id,

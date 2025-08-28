@@ -24,7 +24,11 @@ data class LiveStream(
     /**
      * LiveKit access token for connecting to SFU (via Edge Function)
      */
-    val token: String? = null
+    val token: String? = null,
+    /**
+     * Optional LiveKit room id to group multi-host sessions.
+     */
+    @SerializedName("room_id") val roomId: String? = null
 )
 
 /**
