@@ -12,6 +12,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
+import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -136,6 +137,28 @@ class LiveStreamActivity : BaseActivity() {
     private val userIdToStreamId: MutableMap<String, String> = mutableMapOf() // also stores usernames under key "uname:<userId>"
     private val tokenTallies: MutableMap<String, Int> = mutableMapOf()
 
+    private fun startCommentsPolling(sid: String) {
+        commentsJob?.cancel()
+        commentsJob = lifecycleScope.launch {
+            val streams = try {
+                val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,room_id", "eq.$sid")
+                val room = rows.firstOrNull()?.roomId
+                if (!room.isNullOrEmpty()) RetrofitClient.liveStreamApi.getLiveStreamsByRoomId("id", "eq.$room").map { it.id } else listOf(sid)
+            } catch (_: Exception) { listOf(sid) }
+            while (isActive && !isEnded) {
+                delay(2000)
+                val merged = mutableListOf<club.gifters.giftersclub.model.LiveStreamComment>()
+                for (s in streams) {
+                    try {
+                        merged += RetrofitClient.liveStreamApi.getLiveStreamComments("*,profile:profiles(*)", "eq.$s")
+                    } catch (_: Exception) {}
+                }
+                commentsAdapter.submitList(merged.sortedBy { it.createdAt })
+                if (merged.isNotEmpty()) rvLiveComments.scrollToPosition(merged.size - 1)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live_stream)
@@ -199,6 +222,20 @@ class LiveStreamActivity : BaseActivity() {
             visibility = View.GONE
         }
         findViewById<ConstraintLayout>(R.id.liveTopBar).addView(btnRequests)
+        // Requests panel overlay (hidden until tapped)
+        requestsPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(0xCC000000.toInt())
+            visibility = View.GONE
+            setPadding(16,16,16,16)
+        }
+        (findViewById<ViewGroup>(android.R.id.content)).addView(
+            requestsPanel,
+            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = android.view.Gravity.TOP
+                topMargin = (resources.displayMetrics.density * 90).toInt()
+            }
+        )
 
         if (deepId == null) {
             if (!allPermissionsGranted()) {
@@ -532,25 +569,7 @@ class LiveStreamActivity : BaseActivity() {
                 )
                 commentsAdapter.submitList(initial)
                 if (initial.isNotEmpty()) rvLiveComments.scrollToPosition(initial.size - 1)
-                // Cohost comments: if room_id exists, fetch siblings and merge
-                commentsJob = lifecycleScope.launch {
-                    val streams = try {
-                        val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,room_id", "eq.$sid")
-                        val room = rows.firstOrNull()?.roomId
-                        if (!room.isNullOrEmpty()) RetrofitClient.liveStreamApi.getLiveStreamsByRoomId("id", "eq.$room").map { it.id } else listOf(sid)
-                    } catch (_: Exception) { listOf(sid) }
-                    while (isActive) {
-                        delay(2000)
-                        val merged = mutableListOf<club.gifters.giftersclub.model.LiveStreamComment>()
-                        for (s in streams) {
-                            try {
-                                merged += RetrofitClient.liveStreamApi.getLiveStreamComments("*,profile:profiles(*)", "eq.$s")
-                            } catch (_: Exception) {}
-                        }
-                        commentsAdapter.submitList(merged.sortedBy { it.createdAt })
-                        if (merged.isNotEmpty()) rvLiveComments.scrollToPosition(merged.size - 1)
-                    }
-                }
+                startCommentsPolling(sid)
             }
         }
 
@@ -703,6 +722,7 @@ class LiveStreamActivity : BaseActivity() {
     private fun addVideoTile(container: FrameLayout, key: String, track: RemoteVideoTrack) {
         if (videoViews.containsKey(key)) return
         val v = SurfaceViewRenderer(this)
+        v.setScalingType(org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
         try { liveKitRoom?.initVideoRenderer(v) } catch (_: Exception) {}
         v.setZOrderMediaOverlay(true)
         val tile = FrameLayout(this)
@@ -756,6 +776,48 @@ class LiveStreamActivity : BaseActivity() {
     private fun switchTo(streamId: String) {
         Toast.makeText(this, "Switching to stream $streamId", Toast.LENGTH_SHORT).show()
         // TODO: Implement track pinning/layout prioritization using mapping of streamId -> participant/track.
+    }
+
+    private fun renderRequestsPanel(items: List<Pair<String,String>>) {
+        requestsPanel.removeAllViews()
+        val title = TextView(this).apply {
+            text = "Requests to join"
+            setTextColor(android.graphics.Color.WHITE)
+            textSize = 16f
+        }
+        requestsPanel.addView(title)
+        for ((uname, id) in items) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                val tv = TextView(this@LiveStreamActivity).apply {
+                    text = uname
+                    setTextColor(android.graphics.Color.WHITE)
+                    textSize = 13f
+                }
+                val btn = Button(this@LiveStreamActivity).apply {
+                    text = "Accept"
+                    setOnClickListener {
+                        lifecycleScope.launch {
+                            try {
+                                RetrofitClient.functionsApi.liveInvite(mapOf("action" to "accept", "inviteId" to id))
+                                Toast.makeText(this@LiveStreamActivity, "Accepted", Toast.LENGTH_SHORT).show()
+                                visibility = View.GONE
+                            } catch (_: Exception) {
+                                Toast.makeText(this@LiveStreamActivity, "Failed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+                addView(tv, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                addView(btn)
+            }
+            requestsPanel.addView(row)
+        }
+        val close = Button(this).apply {
+            text = "Close"
+            setOnClickListener { requestsPanel.visibility = View.GONE }
+        }
+        requestsPanel.addView(close)
     }
 
     /** Send selected gift to current live stream; on success inserts a comment line. */
@@ -1038,6 +1100,7 @@ class LiveStreamActivity : BaseActivity() {
         val container = findViewById<FrameLayout>(R.id.flLiveStream)
         container.removeAllViews()
         val preview = SurfaceViewRenderer(this@LiveStreamActivity)
+        preview.setScalingType(org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
         preview.layoutParams = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT
@@ -1527,6 +1590,7 @@ class LiveStreamActivity : BaseActivity() {
                             val container = findViewById<FrameLayout>(R.id.flLiveStream)
                             container.removeAllViews()
                             val preview = SurfaceViewRenderer(this@LiveStreamActivity)
+                            preview.setScalingType(org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
                             preview.layoutParams = FrameLayout.LayoutParams(
                                 FrameLayout.LayoutParams.MATCH_PARENT,
                                 FrameLayout.LayoutParams.MATCH_PARENT
@@ -1694,7 +1758,7 @@ class LiveStreamActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        commentsJob?.start()  // ensure polling resumes if already started
+        currentStream?.id?.let { sid -> startCommentsPolling(sid) }
     }
 
     override fun onPause() {
