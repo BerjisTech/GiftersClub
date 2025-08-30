@@ -62,28 +62,63 @@ class PaymentWebViewActivity : BaseActivity() {
                 fun onPaymentSuccess(data: String) {
                     lifecycleScope.launch {
                         try {
-                            RetrofitClient.tokenApi.updateTokenTransaction(
-                                lastTxId,
-                                mapOf("flutterwave_transaction_status" to "successful")
-                            )
-                            RetrofitClient.functionsApi.processPurchaseTokensRpc(
-                                mapOf("userId" to userId, "tokens" to amount, "txRef" to txRef)
-                            )
-                            runOnUiThread {
-                                Toast.makeText(
-                                    this@PaymentWebViewActivity,
-                                    "Tokens purchased successfully!",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                            // Parse payload and confirm Flutterwave reported success
+                            val obj = try { org.json.JSONObject(data) } catch (_: Exception) { org.json.JSONObject() }
+                            val status = obj.optString("status").lowercase()
+                            val txId = obj.optString("transaction_id")
+                            if (status != "successful" && status != "success") {
+                                // Mark as failed and do NOT credit tokens
+                                try {
+                                    RetrofitClient.tokenApi.updateTokenTransaction(
+                                        lastTxId,
+                                        mapOf(
+                                            "flutterwave_transaction_status" to (if (status.isNotBlank()) status else "failed"),
+                                            "flutterwave_transaction_id" to txId
+                                        )
+                                    )
+                                } catch (_: Exception) {}
+                                runOnUiThread {
+                                    Toast.makeText(this@PaymentWebViewActivity, "Payment failed", Toast.LENGTH_LONG).show()
+                                }
+                                return@launch
                             }
-                        } catch (e: Exception) {
-                            // Log.e(TAG, "Error processing token purchase", e)
-                            runOnUiThread {
-                                Toast.makeText(
-                                    this@PaymentWebViewActivity,
-                                    "Failed to process purchase",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                            // Ask backend to process the token credit securely
+                            val resp = RetrofitClient.functionsApi.processPurchaseTokensRpc(
+                                mapOf(
+                                    "userId" to userId,
+                                    "tokens" to amount,
+                                    "txRef" to txRef,
+                                    "flutterwave" to obj.toString()
+                                )
+                            )
+                            if (resp.isSuccessful) {
+                                // Update transaction record with success + tx id
+                                try {
+                                    RetrofitClient.tokenApi.updateTokenTransaction(
+                                        lastTxId,
+                                        mapOf(
+                                            "flutterwave_transaction_status" to "successful",
+                                            "flutterwave_transaction_id" to txId
+                                        )
+                                    )
+                                } catch (_: Exception) {}
+                                runOnUiThread {
+                                    Toast.makeText(this@PaymentWebViewActivity, "Tokens purchased successfully!", Toast.LENGTH_LONG).show()
+                                }
+                            } else {
+                                // Do not credit; record failure status
+                                try {
+                                    RetrofitClient.tokenApi.updateTokenTransaction(
+                                        lastTxId,
+                                        mapOf(
+                                            "flutterwave_transaction_status" to "failed",
+                                            "flutterwave_transaction_id" to txId
+                                        )
+                                    )
+                                } catch (_: Exception) {}
+                                runOnUiThread {
+                                    Toast.makeText(this@PaymentWebViewActivity, "Failed to process purchase", Toast.LENGTH_LONG).show()
+                                }
                             }
                         } finally {
                             finish()
@@ -93,13 +128,17 @@ class PaymentWebViewActivity : BaseActivity() {
 
                 @JavascriptInterface
                 fun onPaymentCancel() {
-                    runOnUiThread {
-                        Toast.makeText(
-                            this@PaymentWebViewActivity,
-                            "Payment cancelled",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        finish()
+                    lifecycleScope.launch {
+                        try {
+                            RetrofitClient.tokenApi.updateTokenTransaction(
+                                lastTxId,
+                                mapOf("flutterwave_transaction_status" to "cancelled")
+                            )
+                        } catch (_: Exception) {}
+                        runOnUiThread {
+                            Toast.makeText(this@PaymentWebViewActivity, "Payment cancelled", Toast.LENGTH_SHORT).show()
+                            finish()
+                        }
                     }
                 }
             }, "Android")
@@ -120,7 +159,15 @@ class PaymentWebViewActivity : BaseActivity() {
                     currency: "KES",
                     customer: { email: "$email", name: "" },
                     customizations: { title: "Token Top-Up", description: "Purchase tokens for your wallet" },
-                    callback: function(data) { Android.onPaymentSuccess(JSON.stringify(data)); },
+                    callback: function(data) {
+                        try {
+                            if (data && (data.status === 'successful' || data.status === 'success')) {
+                                Android.onPaymentSuccess(JSON.stringify(data));
+                            } else {
+                                Android.onPaymentCancel();
+                            }
+                        } catch (e) { Android.onPaymentCancel(); }
+                    },
                     onclose: function() { Android.onPaymentCancel(); }
                 });
             }

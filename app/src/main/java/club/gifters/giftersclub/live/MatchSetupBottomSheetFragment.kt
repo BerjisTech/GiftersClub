@@ -65,7 +65,8 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
             container.removeAllViews()
             invitees.forEachIndexed { idx, inv ->
                 val row = requireActivity().layoutInflater.inflate(R.layout.item_invitee_row, container, false)
-                val et = row.findViewById<EditText>(R.id.etInviteeUsername)
+                val et = row.findViewById<android.widget.AutoCompleteTextView>(R.id.actvInviteeUsername)
+                et.threshold = 1
                 et.setText(inv.username)
                 et.addTextChangedListener(object: TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -208,7 +209,7 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
     private fun buildParticipantRow(p: BattleParticipant): View {
         val row = requireActivity().layoutInflater.inflate(R.layout.item_invitee_row, null, false)
         row.tag = p
-        val et = row.findViewById<EditText>(R.id.etInviteeUsername)
+        val et = row.findViewById<android.widget.AutoCompleteTextView>(R.id.actvInviteeUsername)
         et.isEnabled = false
         lifecycleScope.launch {
             try {
@@ -265,7 +266,7 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
         try { searchJob?.cancel() } catch (_: Exception) {}
     }
 
-    private fun searchProfiles(et: EditText, inv: Invitee) {
+    private fun searchProfiles(et: android.widget.AutoCompleteTextView, inv: Invitee) {
         searchJob?.cancel()
         val q = et.text?.toString()?.trim() ?: return
         if (q.length < 2) return
@@ -273,11 +274,10 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
             delay(200)
             try {
                 val res = RetrofitClient.profileApi.searchProfiles("*", "username.ilike.%$q%,name.ilike.%$q%")
-                if (res.isNotEmpty()) {
-                    // pick first match for now
-                    val p: Profile = res[0]
-                    inv.username = p.username ?: q
-                    inv.userId = p.userId
+                val names = res.mapNotNull { it.username }
+                if (names.isNotEmpty()) {
+                    et.setAdapter(ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, names))
+                    et.showDropDown()
                 }
             } catch (_: Exception) {}
         }

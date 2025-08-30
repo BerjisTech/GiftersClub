@@ -185,6 +185,15 @@
                 app:tint="@color/orange_500" />
 
             <ImageView
+                android:id="@+id/btnRequests"
+                android:layout_width="match_parent"
+                android:layout_height="30dp"
+                android:contentDescription="Requests"
+                android:padding="4dp"
+                android:src="@android:drawable/ic_menu_info_details"
+                android:visibility="gone" />
+
+            <ImageView
                 android:id="@+id/shareLive"
                 android:layout_width="match_parent"
                 android:layout_height="30dp"

@@ -10,6 +10,7 @@ import android.util.Base64
 import kotlinx.coroutines.withContext
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.Button
@@ -128,6 +129,7 @@ class LiveStreamActivity : BaseActivity() {
     private lateinit var matchOverlay: FrameLayout
     private lateinit var btnInvite: ImageView
     private lateinit var btnRequests: ImageView
+    private lateinit var requestsPanel: LinearLayout
 
     // Battle/Match state (multi-host matches)
     private var isMatch: Boolean = false
@@ -212,16 +214,7 @@ class LiveStreamActivity : BaseActivity() {
             sheet.show(supportFragmentManager, "MatchSetupBottomSheet")
         }
         // Pending requests indicator for host (tap opens requests dialog)
-        btnRequests = ImageView(this).apply {
-            setImageResource(android.R.drawable.ic_menu_info_details)
-            layoutParams = ConstraintLayout.LayoutParams(48,48).apply {
-                (this as ConstraintLayout.LayoutParams).endToStart = R.id.btnEndLive
-                (this as ConstraintLayout.LayoutParams).topToBottom = R.id.streamerDetails
-                setMargins(8,8,8,0)
-            }
-            visibility = View.GONE
-        }
-        findViewById<ConstraintLayout>(R.id.liveTopBar).addView(btnRequests)
+        btnRequests = findViewById(R.id.btnRequests)
         // Requests panel overlay (hidden until tapped)
         requestsPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -236,6 +229,7 @@ class LiveStreamActivity : BaseActivity() {
                 topMargin = (resources.displayMetrics.density * 90).toInt()
             }
         )
+        btnRequests.setOnClickListener { showRequestsPanel() }
 
         if (deepId == null) {
             if (!allPermissionsGranted()) {
@@ -511,38 +505,9 @@ class LiveStreamActivity : BaseActivity() {
             }
             // Host: tap viewerCount to open pending requests dialog
             if (currentId != null && currentId == hostId) {
-                tvViewerCount.setOnClickListener {
-                    lifecycleScope.launch {
-                        try {
-                            val resp = RetrofitClient.functionsApi.liveInviteRaw(mapOf("action" to "list", "streamId" to (currentStream?.id ?: return@launch)))
-                            if (!resp.isSuccessful) return@launch
-                            val body = resp.body()?.string() ?: return@launch
-                            val arr = org.json.JSONArray(body)
-                            val items = Array(arr.length()) { i ->
-                                val obj = arr.getJSONObject(i)
-                                val uname = obj.optJSONObject("profiles")?.optString("username") ?: obj.optString("invitee_id").take(6)
-                                val id = obj.optString("id")
-                                Pair(uname, id)
-                            }
-                            if (items.isEmpty()) {
-                                Toast.makeText(this@LiveStreamActivity, "No requests", Toast.LENGTH_SHORT).show()
-                                return@launch
-                            }
-                            val names = items.map { it.first }.toTypedArray()
-                            androidx.appcompat.app.AlertDialog.Builder(this@LiveStreamActivity)
-                                .setTitle("Requests to join")
-                                .setItems(names) { _, which ->
-                                    val inviteId = items[which].second
-                                    lifecycleScope.launch {
-                                        try { RetrofitClient.functionsApi.liveInvite(mapOf("action" to "accept", "inviteId" to inviteId)) } catch (_: Exception) {}
-                                        Toast.makeText(this@LiveStreamActivity, "Accepted", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                                .setNegativeButton(android.R.string.cancel, null)
-                                .show()
-                        } catch (_: Exception) { }
-                    }
-                }
+                // Always show requests icon for host; tint red when there are pending requests
+                btnRequests.visibility = View.VISIBLE
+                tvViewerCount.setOnClickListener { showRequestsPanel() }
                 // Poll pending requests and show indicator
                 lifecycleScope.launch {
                     while (isActive && !isEnded) {
@@ -552,9 +517,15 @@ class LiveStreamActivity : BaseActivity() {
                             if (!resp.isSuccessful) continue
                             val body = resp.body()?.string() ?: "[]"
                             val arr = org.json.JSONArray(body)
-                            val pending = (0 until arr.length()).count { arr.getJSONObject(it).optString("status") == "requested" }
-                            btnRequests.visibility = if (pending > 0) View.VISIBLE else View.GONE
-                            btnRequests.setOnClickListener { tvViewerCount.performClick() }
+                            val pending = (0 until arr.length()).count {
+                                val st = arr.getJSONObject(it).optString("status").lowercase()
+                                st == "requested" || st == "pending" || st == "request"
+                            }
+                            if (pending > 0) {
+                                btnRequests.setColorFilter(android.graphics.Color.RED)
+                            } else {
+                                btnRequests.clearColorFilter()
+                            }
                         } catch (_: Exception) {}
                     }
                 }
@@ -567,8 +538,9 @@ class LiveStreamActivity : BaseActivity() {
                     select = "*,profile:profiles(*)",
                     streamFilter = "eq.$sid"
                 )
-                commentsAdapter.submitList(initial)
-                if (initial.isNotEmpty()) rvLiveComments.scrollToPosition(initial.size - 1)
+                val initialSorted = initial.sortedBy { it.createdAt }
+                commentsAdapter.submitList(initialSorted)
+                if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(initialSorted.size - 1)
                 startCommentsPolling(sid)
             }
         }
@@ -722,7 +694,7 @@ class LiveStreamActivity : BaseActivity() {
     private fun addVideoTile(container: FrameLayout, key: String, track: RemoteVideoTrack) {
         if (videoViews.containsKey(key)) return
         val v = SurfaceViewRenderer(this)
-        v.setScalingType(org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
+        v.setScalingType(livekit.org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
         try { liveKitRoom?.initVideoRenderer(v) } catch (_: Exception) {}
         v.setZOrderMediaOverlay(true)
         val tile = FrameLayout(this)
@@ -794,14 +766,28 @@ class LiveStreamActivity : BaseActivity() {
                     setTextColor(android.graphics.Color.WHITE)
                     textSize = 13f
                 }
-                val btn = Button(this@LiveStreamActivity).apply {
+                val btnAccept = Button(this@LiveStreamActivity).apply {
                     text = "Accept"
                     setOnClickListener {
                         lifecycleScope.launch {
                             try {
                                 RetrofitClient.functionsApi.liveInvite(mapOf("action" to "accept", "inviteId" to id))
                                 Toast.makeText(this@LiveStreamActivity, "Accepted", Toast.LENGTH_SHORT).show()
-                                visibility = View.GONE
+                                showRequestsPanel()
+                            } catch (_: Exception) {
+                                Toast.makeText(this@LiveStreamActivity, "Failed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+                val btnReject = Button(this@LiveStreamActivity).apply {
+                    text = "Reject"
+                    setOnClickListener {
+                        lifecycleScope.launch {
+                            try {
+                                RetrofitClient.functionsApi.liveInvite(mapOf("action" to "reject", "inviteId" to id))
+                                Toast.makeText(this@LiveStreamActivity, "Rejected", Toast.LENGTH_SHORT).show()
+                                showRequestsPanel()
                             } catch (_: Exception) {
                                 Toast.makeText(this@LiveStreamActivity, "Failed", Toast.LENGTH_SHORT).show()
                             }
@@ -809,7 +795,8 @@ class LiveStreamActivity : BaseActivity() {
                     }
                 }
                 addView(tv, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                addView(btn)
+                addView(btnAccept)
+                addView(btnReject)
             }
             requestsPanel.addView(row)
         }
@@ -818,6 +805,34 @@ class LiveStreamActivity : BaseActivity() {
             setOnClickListener { requestsPanel.visibility = View.GONE }
         }
         requestsPanel.addView(close)
+    }
+
+    private fun showRequestsPanel() {
+        lifecycleScope.launch {
+            try {
+                val sid = currentStream?.id ?: return@launch
+                val resp = RetrofitClient.functionsApi.liveInviteRaw(mapOf("action" to "list", "streamId" to sid))
+                if (!resp.isSuccessful) return@launch
+                val body = resp.body()?.string() ?: return@launch
+                val arr = org.json.JSONArray(body)
+                val items = mutableListOf<Pair<String, String>>()
+                val pendingSet = setOf("requested", "pending", "request")
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    if (!pendingSet.contains(obj.optString("status").lowercase())) continue
+                    val uname = obj.optJSONObject("profiles")?.optString("username")
+                        ?: obj.optString("invitee_id").take(6)
+                    val id = obj.optString("id")
+                    items.add(Pair(uname, id))
+                }
+                if (items.isEmpty()) {
+                    Toast.makeText(this@LiveStreamActivity, "No requests", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                renderRequestsPanel(items)
+                requestsPanel.visibility = View.VISIBLE
+            } catch (_: Exception) { }
+        }
     }
 
     /** Send selected gift to current live stream; on success inserts a comment line. */
@@ -1069,14 +1084,35 @@ class LiveStreamActivity : BaseActivity() {
                 R.string.follower_count,
                 profiles.getOrNull(0)?.followersCount?.let { formatCount(it) } ?: formatCount(0)
             )
+            // Host: show requests icon and polling for pending join requests
+            btnRequests.visibility = View.VISIBLE
+            btnRequests.setOnClickListener { showRequestsPanel() }
+            tvViewerCount.setOnClickListener { showRequestsPanel() }
+            launch {
+                while (isActive && !isEnded) {
+                    delay(3000)
+                    try {
+                        val resp = RetrofitClient.functionsApi.liveInviteRaw(mapOf("action" to "list", "streamId" to live.id))
+                        if (!resp.isSuccessful) continue
+                        val body = resp.body()?.string() ?: "[]"
+                        val arr = org.json.JSONArray(body)
+                            val pending = (0 until arr.length()).count {
+                                val st = arr.getJSONObject(it).optString("status").lowercase()
+                                st == "requested" || st == "pending" || st == "request"
+                            }
+                            if (pending > 0) btnRequests.setColorFilter(android.graphics.Color.RED) else btnRequests.clearColorFilter()
+                    } catch (_: Exception) {}
+                }
+            }
             // load comments and poll
             live.id.let { sid ->
                 val initial = RetrofitClient.liveStreamApi.getLiveStreamComments(
                     select = "*,profile:profiles(*)",
                     streamFilter = "eq.$sid"
                 )
-                commentsAdapter.submitList(initial)
-                if (initial.isNotEmpty()) rvLiveComments.scrollToPosition(initial.size - 1)
+                val initialSorted = initial.sortedBy { it.createdAt }
+                commentsAdapter.submitList(initialSorted)
+                if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(initialSorted.size - 1)
                 commentsJob = launch {
                     while (isActive) {
                         delay(3000)
@@ -1084,8 +1120,9 @@ class LiveStreamActivity : BaseActivity() {
                             select = "*,profile:profiles(*)",
                             streamFilter = "eq.$sid"
                         )
-                        commentsAdapter.submitList(updated)
-                        if (updated.isNotEmpty()) rvLiveComments.scrollToPosition(updated.size - 1)
+                        val updatedSorted = updated.sortedBy { it.createdAt }
+                        commentsAdapter.submitList(updatedSorted)
+                        if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(updatedSorted.size - 1)
                     }
                 }
             }
@@ -1100,7 +1137,7 @@ class LiveStreamActivity : BaseActivity() {
         val container = findViewById<FrameLayout>(R.id.flLiveStream)
         container.removeAllViews()
         val preview = SurfaceViewRenderer(this@LiveStreamActivity)
-        preview.setScalingType(org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
+        preview.setScalingType(livekit.org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
         preview.layoutParams = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT
@@ -1136,17 +1173,39 @@ class LiveStreamActivity : BaseActivity() {
                 // Load battle state after connect
                 lifecycleScope.launch { loadBattleState() }
             }
-            // attach remote participants tracks if any
+            // Attach remote participants as separate tiles
             room.remoteParticipants.values.forEach { participant ->
-                participant.videoTrackPublications.forEach { (_, track) ->
-                    (track as? RemoteVideoTrack)?.addRenderer(preview)
+                participant.videoTrackPublications.forEach { pubPair ->
+                    val track = pubPair.second as? RemoteVideoTrack
+                    if (track != null) {
+                        val key = "${participant.sid}_${track.sid}"
+                        addVideoTile(container, key, track)
+                    }
                 }
             }
-            // subscribe to new participants
+            // Subscribe to new remote tracks/unsubscribes to manage tiles
             lifecycleScope.launch {
                 room.events.collect { evt ->
-                    if (evt is RoomEvent.TrackSubscribed && evt.track is RemoteVideoTrack) {
-                        (evt.track as RemoteVideoTrack).addRenderer(preview)
+                    when (evt) {
+                        is RoomEvent.TrackSubscribed -> {
+                            val rt = evt.track as? RemoteVideoTrack
+                            if (rt != null) {
+                                val key = "${evt.participant.sid}_${rt.sid}"
+                                addVideoTile(container, key, rt)
+                            }
+                        }
+                        is RoomEvent.TrackUnsubscribed -> {
+                            val rt = evt.track as? RemoteVideoTrack
+                            if (rt != null) {
+                                val key = "${evt.participant.sid}_${rt.sid}"
+                                removeVideoTile(container, key)
+                            }
+                        }
+                        is RoomEvent.ParticipantDisconnected -> {
+                            val keys = videoViews.keys.filter { it.startsWith("${evt.participant.sid}_") }
+                            keys.forEach { k -> removeVideoTile(container, k) }
+                        }
+                        else -> Unit
                     }
                 }
             }
@@ -1384,7 +1443,8 @@ class LiveStreamActivity : BaseActivity() {
         tags: List<String>,
         accessType: String? = null,
         priceTokens: Int? = null,
-        requiredPlanId: String? = null
+        requiredPlanId: String? = null,
+        isMatch: Boolean = false
     ) {
         val userId = AuthUtils.getCurrentUserId(this) ?: return
         lifecycleScope.launch {
@@ -1432,6 +1492,18 @@ class LiveStreamActivity : BaseActivity() {
                     }
                     liveTopBar.visibility = View.VISIBLE
                     liveTopBar.bringToFront()
+                    if (isMatch) {
+                        val sid = currentStream?.id
+                        val host = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
+                        if (!sid.isNullOrEmpty() && !host.isNullOrEmpty()) {
+                            // Open match setup to mirror web "This is a match"
+                            try {
+                                MatchSetupBottomSheetFragment
+                                    .newInstance(sid, host)
+                                    .show(supportFragmentManager, "MatchSetupBottomSheet")
+                            } catch (_: Exception) { }
+                        }
+                    }
                     lifecycleScope.launch {
                         // Determine the host ID (fallback to current user if missing)
                         val hostId = currentStream?.hostId ?: AuthUtils.getCurrentUserId(this@LiveStreamActivity)!!
@@ -1480,7 +1552,27 @@ class LiveStreamActivity : BaseActivity() {
                                 }
                             }
                         } else {
+                            // Host view: show requests icon and poll pending
                             btnFollowStreamer.visibility = View.GONE
+                            btnRequests.visibility = View.VISIBLE
+                            btnRequests.setOnClickListener { showRequestsPanel() }
+                            tvViewerCount.setOnClickListener { showRequestsPanel() }
+                            launch {
+                                while (isActive && !isEnded) {
+                                    delay(3000)
+                                    try {
+                                        val resp = RetrofitClient.functionsApi.liveInviteRaw(mapOf("action" to "list", "streamId" to (currentStream?.id ?: return@launch)))
+                                        if (!resp.isSuccessful) continue
+                                        val body = resp.body()?.string() ?: "[]"
+                                        val arr = org.json.JSONArray(body)
+                            val pending = (0 until arr.length()).count {
+                                val st = arr.getJSONObject(it).optString("status").lowercase()
+                                st == "requested" || st == "pending" || st == "request"
+                            }
+                                        if (pending > 0) btnRequests.setColorFilter(android.graphics.Color.RED) else btnRequests.clearColorFilter()
+                                    } catch (_: Exception) {}
+                                }
+                            }
                         }
                         // Load and show initial comments and start polling for new comments
                         currentStream?.id?.let { sid ->
@@ -1488,8 +1580,9 @@ class LiveStreamActivity : BaseActivity() {
                                 select = "*,profile:profiles(*)",
                                 streamFilter = "eq.$sid"
                             )
-                            commentsAdapter.submitList(initial)
-                            if (initial.isNotEmpty()) rvLiveComments.scrollToPosition(initial.size - 1)
+                            val initialSorted = initial.sortedBy { it.createdAt }
+                            commentsAdapter.submitList(initialSorted)
+                            if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(initialSorted.size - 1)
                             commentsJob = lifecycleScope.launch {
                                 while (isActive) {
                                     delay(3000)
@@ -1497,8 +1590,9 @@ class LiveStreamActivity : BaseActivity() {
                                         select = "*,profile:profiles(*)",
                                         streamFilter = "eq.$sid"
                                     )
-                                    commentsAdapter.submitList(updated)
-                                    if (updated.isNotEmpty()) rvLiveComments.scrollToPosition(updated.size - 1)
+                                    val updatedSorted = updated.sortedBy { it.createdAt }
+                                    commentsAdapter.submitList(updatedSorted)
+                                    if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(updatedSorted.size - 1)
                                 }
                             }
                         }
@@ -1590,7 +1684,7 @@ class LiveStreamActivity : BaseActivity() {
                             val container = findViewById<FrameLayout>(R.id.flLiveStream)
                             container.removeAllViews()
                             val preview = SurfaceViewRenderer(this@LiveStreamActivity)
-                            preview.setScalingType(org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
+                            preview.setScalingType(livekit.org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
                             preview.layoutParams = FrameLayout.LayoutParams(
                                 FrameLayout.LayoutParams.MATCH_PARENT,
                                 FrameLayout.LayoutParams.MATCH_PARENT
@@ -1787,8 +1881,9 @@ class LiveStreamActivity : BaseActivity() {
                             select = "*,profile:profiles(*)",
                             streamFilter = "eq.$sid"
                         )
-                        commentsAdapter.submitList(updated)
-                        if (updated.isNotEmpty()) rvLiveComments.scrollToPosition(updated.size - 1)
+                        val updatedSorted = updated.sortedBy { it.createdAt }
+                        commentsAdapter.submitList(updatedSorted)
+                        if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(updatedSorted.size - 1)
                     }
                 }
             } catch (_: Exception) {}
