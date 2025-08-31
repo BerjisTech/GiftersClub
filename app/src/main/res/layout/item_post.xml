@@ -10,14 +10,16 @@
         android:id="@+id/lockOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/bg_indigo_zinc_gradient"
-        android:alpha="0.9">
+        android:alpha="0.9"
+        android:background="@drawable/bg_indigo_zinc_gradient">
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:layout_gravity="center"
-            android:gravity="center">
+            android:gravity="center"
+            android:orientation="vertical">
+
             <TextView
                 android:id="@+id/tvLockIcon"
                 android:layout_width="wrap_content"
@@ -25,14 +27,15 @@
                 android:text="@string/_lock"
                 android:textColor="@color/white"
                 android:textSize="36sp" />
+
             <TextView
                 android:id="@+id/tvLockAction"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:text="@string/subscribe_to_view"
                 android:textColor="@color/white"
-                android:textSize="16sp"
-                android:text="@string/subscribe_to_view" />
+                android:textSize="16sp" />
         </LinearLayout>
     </FrameLayout>
 
@@ -67,15 +70,23 @@
         <LinearLayout
             android:id="@+id/postActions"
             android:layout_width="55dp"
-            android:layout_height="200dp"
-            android:gravity="bottom"
+            android:layout_height="300dp"
+            android:gravity="bottom|center_horizontal"
             android:orientation="vertical"
             android:padding="8dp"
             app:layout_constraintBottom_toBottomOf="@id/postDetails"
             app:layout_constraintEnd_toEndOf="@id/postDetails">
 
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/avatarImage"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="@string/user_avatar"
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
+
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="40dp"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="vertical">
@@ -84,8 +95,9 @@
                     android:id="@+id/btnLike"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="30sp"
-                    android:text="@string/_like_emoji" />
+                    android:textColor="@color/yellow_500"
+                    android:text="@string/_like_emoji"
+                    android:textSize="30sp" />
 
                 <TextView
                     android:id="@+id/tvLikeCount"
@@ -97,7 +109,7 @@
             </LinearLayout>
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="40dp"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="vertical">
@@ -106,8 +118,9 @@
                     android:id="@+id/btnComment"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="30sp"
-                    android:text="💬" />
+                    android:textColor="@color/yellow_500"
+                    android:text="💬"
+                    android:textSize="30sp" />
 
                 <TextView
                     android:id="@+id/tvCommentCount"
@@ -120,7 +133,7 @@
 
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="40dp"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="vertical">
@@ -129,11 +142,36 @@
                     android:id="@+id/btnShare"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="30sp"
-                    android:text="🔁" />
+                    android:text="➦"
+                    android:textColor="@color/yellow_500"
+                    android:textSize="30sp" />
 
                 <TextView
                     android:id="@+id/tvShareCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:text="0"
+                    android:textColor="@android:color/white" />
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/btnRepost"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/yellow_500"
+                    android:text="🔁"
+                    android:textSize="30sp" />
+
+                <TextView
+                    android:id="@+id/tvRepostCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="4dp"
@@ -152,26 +190,19 @@
             app:layout_constraintBottom_toBottomOf="@id/postDetails"
             app:layout_constraintEnd_toEndOf="@id/postDetails"
             app:layout_constraintStart_toStartOf="@id/postDetails">
+
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/postDetailPlaceholderView">
+                app:layout_constraintEnd_toStartOf="@id/postDetailPlaceholderView"
+                app:layout_constraintStart_toStartOf="parent">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
-
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:id="@+id/avatarImage"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:contentDescription="@string/user_avatar"
-                        android:scaleType="centerCrop"
-                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -212,7 +243,7 @@
                 android:layout_width="55dp"
                 android:layout_height="50dp"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintEnd_toEndOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

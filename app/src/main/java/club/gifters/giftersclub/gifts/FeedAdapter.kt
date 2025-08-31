@@ -53,6 +53,7 @@ class FeedAdapter(
     private val onLike: (Post) -> Unit,
     private val onComment: (Post) -> Unit,
     private val onShare: (Post) -> Unit,
+    private val onRepost: (Post) -> Unit,
     private val onProfileClick: (String) -> Unit,
     private val onLocked: (Post) -> Unit
 ): ListAdapter<FeedItem, RecyclerView.ViewHolder>(Diff) {
@@ -186,6 +187,7 @@ class FeedAdapter(
         private val btnComment: TextView = itemView.findViewById(R.id.btnComment)
         private val tvCommentCount: TextView = itemView.findViewById(R.id.tvCommentCount)
         private val btnShare: TextView = itemView.findViewById(R.id.btnShare)
+        private val btnRepost: TextView = itemView.findViewById(R.id.btnRepost)
         private val tvShareCount: TextView = itemView.findViewById(R.id.tvShareCount)
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private var current: Post? = null
@@ -288,6 +290,7 @@ class FeedAdapter(
             btnLike.setOnClickListener { onLike(post) }
             btnComment.setOnClickListener { onComment(post) }
             btnShare.setOnClickListener { onShare(post) }
+            btnRepost.setOnClickListener { onRepost(post) }
             tvLikeCount.text = "0"
             tvShareCount.text = "0"
             tvCommentCount.text = "0"
