@@ -111,6 +111,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var customTimerSec = 15
     private lateinit var etContent: EditText
     private lateinit var btnEditMedia: Button
+    private lateinit var btnEditMediaCard: androidx.cardview.widget.CardView
     private lateinit var btnApplyFilter: Button
     private lateinit var btnPost: Button
     private lateinit var progressBar: ProgressBar
@@ -235,6 +236,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         layoutDetails = view.findViewById(R.id.layoutDetails)
         etContent = view.findViewById(R.id.etContent)
         btnEditMedia = view.findViewById(R.id.btnEditMedia)
+        btnEditMediaCard = view.findViewById(R.id.btnEditMediaCard)
         btnApplyFilter = view.findViewById(R.id.btnApplyFilter)
         btnPost = view.findViewById(R.id.btnPost)
         progressBar = view.findViewById(R.id.progressBar)
@@ -245,6 +247,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnPost.setOnClickListener {
             submitPost()
         }
+
+        // Show edit button only for photo or text; hide for video mode
+        fun updateEditVisibility() {
+            val show = !isVideoSelected && !isVideoMode // text, or photo selection without video
+            btnEditMediaCard.visibility = if (show) View.VISIBLE else View.GONE
+        }
+        updateEditVisibility()
     // Access type (free/subscription/paid) and pricing
         rgAccessType = view.findViewById(R.id.rgAccessType)
         etPrice = view.findViewById(R.id.etPrice)
@@ -611,6 +620,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             } else {
                 btnCapture.clearColorFilter()
             }
+            // update edit visibility when mode toggles
+            val show = !isVideoSelected && !isVideoMode
+            btnEditMediaCard.visibility = if (show) View.VISIBLE else View.GONE
         }
         btnTextMode.setOnClickListener {
             showStep(layoutTextEditor)
@@ -979,6 +991,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         } else {
             selectedUris.addAll(uris.take(10))
         }
+        // Update edit button visibility after selection: hide for video, show for photo/text
+        btnEditMediaCard.visibility = if (!isVideoSelected && !isVideoMode) View.VISIBLE else View.GONE
         // Proceed to next step after selection
         if (isVideoSelected || selectedUris.isEmpty()) {
             showStep(layoutDetails)

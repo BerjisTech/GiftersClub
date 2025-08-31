@@ -214,6 +214,12 @@ class FeedAdapter(
         }
 
         fun bind(post: Post) {
+            // Reposter card: default hidden to avoid stale recycled state
+            val reposterCard = itemView.findViewById<androidx.cardview.widget.CardView>(R.id.reposterDetailsCard)
+            val reposterUsername = itemView.findViewById<TextView>(R.id.reposterUsername)
+            reposterUsername.text = ""
+            reposterCard.visibility = View.GONE
+
             current = post
             post.profile?.let { p ->
                 username.text = p.username
@@ -293,6 +299,8 @@ class FeedAdapter(
             btnRepost.setOnClickListener { onRepost(post) }
             tvLikeCount.text = "0"
             tvShareCount.text = "0"
+            val tvRepostCount = itemView.findViewById<TextView>(R.id.tvRepostCount)
+            tvRepostCount.text = "0"
             tvCommentCount.text = "0"
             scope.launch {
                 val likes = CommentApiHolder.getPostReactionCountValue(post.id, "like")
@@ -303,8 +311,30 @@ class FeedAdapter(
                 tvShareCount.text = shares.toString()
             }
             scope.launch {
+                val reposts = CommentApiHolder.getPostReactionCountValue(post.id, "repost")
+                tvRepostCount.text = reposts.toString()
+            }
+            scope.launch {
                 val comments = CommentApiHolder.getPostCommentCountValue(post.id)
                 tvCommentCount.text = comments.toString()
+            }
+
+            // Reposter details card support (shown when backend includes reposter info in future)
+            // If backend provides reposter user id, fetch username and show card
+            post.reposterUserId?.takeIf { it.isNotBlank() }?.let { uid ->
+                scope.launch {
+                    try {
+                        val prof = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$uid").firstOrNull()
+                        val uname = prof?.username?.takeIf { it.isNotBlank() }
+                        if (!uname.isNullOrBlank()) {
+                            reposterUsername.post {
+                                reposterUsername.text = uname
+                                reposterCard.visibility = View.VISIBLE
+                                reposterCard.setOnClickListener { onProfileClick(uname) }
+                            }
+                        }
+                    } catch (_: Exception) {}
+                }
             }
         }
     }

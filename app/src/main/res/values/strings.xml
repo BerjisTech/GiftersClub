@@ -246,4 +246,5 @@
     <string name="no_plans_available"><![CDATA[You haven\'t created any subscriptions plans. Head over to profile -> settings -> subscriptions to add subscription plans]]></string>
     <string name="live_requires_plan_and_above">This live stream is for a higher subscription plan</string>
     <string name="please_retry_after_topup">Top up your tokens and try again</string>
+    <string name="reposted"> reposted</string>
 </resources>

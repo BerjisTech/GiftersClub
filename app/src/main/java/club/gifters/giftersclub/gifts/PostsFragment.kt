@@ -151,6 +151,26 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 val chooser = android.content.Intent.createChooser(intent, "Share Post")
                 startActivity(chooser)
             },
+            onRepost = { post ->
+                lifecycleScope.launch {
+                    val userId = AuthUtils.getCurrentUserId(requireContext()) ?: return@launch
+                    val already = CommentApiHolder.isPostReactedByUser(post.id, "repost")
+                    if (!already) {
+                        val body = mapOf(
+                            "post_id" to post.id,
+                            "user_id" to userId,
+                            "type" to "repost"
+                        )
+                        try { CommentApiHolder.reactToPost(body) } catch (_: Exception) {}
+                    }
+                    // Refresh the single item count displays
+                    adapter.currentList
+                        .indexOfFirst { it is FeedItem.PostItem && it.post.id == post.id }
+                        .takeIf { it >= 0 }
+                        ?.let { idx -> adapter.notifyItemChanged(idx) }
+                    android.widget.Toast.makeText(requireContext(), if (already) "Already reposted" else "Reposted", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            },
             onProfileClick = { uname ->
                 parentFragmentManager.beginTransaction()
                     .replace(R.id.mainContentContainer, GifterFragment.newInstance(uname))

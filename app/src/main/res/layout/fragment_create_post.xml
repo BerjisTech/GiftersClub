@@ -586,6 +586,7 @@
                 app:layout_constraintStart_toStartOf="parent">
 
                 <androidx.cardview.widget.CardView
+                    android:id="@+id/btnEditMediaCard"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:cardCornerRadius="7dp">
