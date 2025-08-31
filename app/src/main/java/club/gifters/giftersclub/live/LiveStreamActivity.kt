@@ -141,6 +141,10 @@ class LiveStreamActivity : BaseActivity() {
     private val userIdToStreamId: MutableMap<String, String> = mutableMapOf() // also stores usernames under key "uname:<userId>"
     private val tokenTallies: MutableMap<String, Int> = mutableMapOf()
 
+    private val lastGiftAtByStream: MutableMap<String, String?> = mutableMapOf()
+    private val tokenPills: MutableMap<String, TextView> = mutableMapOf()
+    private val namePills: MutableMap<String, TextView> = mutableMapOf()
+
     private fun startCommentsPolling(sid: String) {
         commentsJob?.cancel()
         commentsJob = lifecycleScope.launch {
@@ -155,10 +159,27 @@ class LiveStreamActivity : BaseActivity() {
                 for (s in streams) {
                     try {
                         merged += RetrofitClient.liveStreamApi.getLiveStreamComments("*,profile:profiles(*)", "eq.$s")
+                        // also poll gifts per stream to maintain token tallies for overlays
+                        val since = lastGiftAtByStream[s]?.let { "gt.$it" }
+                        val events = RetrofitClient.liveStreamApi.getGiftEvents(
+                            streamFilter = "eq.$s",
+                            createdAfterFilter = since
+                        )
+                        if (events.isNotEmpty()) {
+                            lastGiftAtByStream[s] = events.last().createdAt
+                            events.forEach { e ->
+                                val rid = e.recipientId
+                                val inc = e.tokensUsed ?: 0
+                                tokenTallies[rid] = (tokenTallies[rid] ?: 0) + inc
+                                // update pill if visible
+                                tokenPills[rid]?.text = (tokenTallies[rid] ?: 0).toString()
+                            }
+                        }
                     } catch (_: Exception) {}
                 }
-                commentsAdapter.submitList(merged.sortedBy { it.createdAt })
-                if (merged.isNotEmpty()) rvLiveComments.scrollToPosition(merged.size - 1)
+                val ordered = merged.sortedByDescending { it.createdAt }
+                commentsAdapter.submitList(ordered)
+                if (ordered.isNotEmpty()) rvLiveComments.scrollToPosition(0)
             }
         }
     }
@@ -701,6 +722,50 @@ class LiveStreamActivity : BaseActivity() {
         gd.cornerRadius = 8 * resources.displayMetrics.density
         tile.background = gd
         tile.addView(v, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        // overlay pills container
+        val overlay = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = android.view.Gravity.BOTTOM
+                bottomMargin = (8 * resources.displayMetrics.density).toInt()
+                marginStart = (8 * resources.displayMetrics.density).toInt()
+                marginEnd = (8 * resources.displayMetrics.density).toInt()
+            }
+            setPadding(0,0,0,0)
+            weightSum = 1f
+        }
+        val name = TextView(this).apply {
+            setTextColor(android.graphics.Color.WHITE)
+            setBackgroundColor(0xE0D946EF.toInt()) // approx pink-500 with opacity
+            textSize = 12f
+            setPadding(12,6,12,6)
+        }
+        val tokens = TextView(this).apply {
+            setTextColor(android.graphics.Color.WHITE)
+            setBackgroundColor(0xE060A5FA.toInt()) // approx blue-400 with opacity
+            textSize = 12f
+            setPadding(12,6,12,6)
+        }
+        val leftLp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { weight = 0f }
+        val rightLp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            weight = 0f
+            gravity = android.view.Gravity.END
+        }
+        overlay.addView(name, leftLp)
+        overlay.addView(View(this), LinearLayout.LayoutParams(0, 0, 1f)) // spacer
+        overlay.addView(tokens, rightLp)
+        tile.addView(overlay)
+        // Try to resolve participant identity -> userId for pill data
+        val parts = key.split("_")
+        val participantSid = parts.firstOrNull() ?: ""
+        val uid = try { liveKitRoom?.remoteParticipants?.get(participantSid)?.identity ?: "" } catch (_: Exception) { "" }
+        val userId = if (uid.contains("-")) uid.substringAfterLast("-") else uid
+        if (userId.isNotEmpty()) {
+            name.text = "@${userIdToStreamId["uname:" + userId] ?: userId.take(6)}"
+            tokens.text = (tokenTallies[userId] ?: 0).toString()
+            tokenPills[userId] = tokens
+            namePills[userId] = name
+        }
         container.addView(tile)
         layoutTiles(container)
         videoViews[key] = v
@@ -725,6 +790,39 @@ class LiveStreamActivity : BaseActivity() {
         gd.cornerRadius = 8 * resources.displayMetrics.density
         tile.background = gd
         tile.addView(v, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        // overlay pills for local user
+        val overlay = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = android.view.Gravity.BOTTOM
+                bottomMargin = (8 * resources.displayMetrics.density).toInt()
+                marginStart = (8 * resources.displayMetrics.density).toInt()
+                marginEnd = (8 * resources.displayMetrics.density).toInt()
+            }
+        }
+        val name = TextView(this).apply {
+            setTextColor(android.graphics.Color.WHITE)
+            setBackgroundColor(0xE0D946EF.toInt())
+            textSize = 12f
+            setPadding(12,6,12,6)
+        }
+        val tokens = TextView(this).apply {
+            setTextColor(android.graphics.Color.WHITE)
+            setBackgroundColor(0xE060A5FA.toInt())
+            textSize = 12f
+            setPadding(12,6,12,6)
+        }
+        overlay.addView(name)
+        overlay.addView(View(this), LinearLayout.LayoutParams(0, 0, 1f))
+        overlay.addView(tokens)
+        tile.addView(overlay)
+        val me = AuthUtils.getCurrentUserId(this) ?: ""
+        if (me.isNotEmpty()) {
+            name.text = "@${userIdToStreamId["uname:" + me] ?: me.take(6)}"
+            tokens.text = (tokenTallies[me] ?: 0).toString()
+            tokenPills[me] = tokens
+            namePills[me] = name
+        }
         container.addView(tile)
         layoutTiles(container)
         videoViews[key] = v
@@ -1176,9 +1274,9 @@ class LiveStreamActivity : BaseActivity() {
                     select = "*,profile:profiles(*)",
                     streamFilter = "eq.$sid"
                 )
-                val initialSorted = initial.sortedBy { it.createdAt }
+                val initialSorted = initial.sortedByDescending { it.createdAt }
                 commentsAdapter.submitList(initialSorted)
-                if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(initialSorted.size - 1)
+                if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(0)
                 commentsJob = launch {
                     while (isActive) {
                         delay(3000)
@@ -1186,9 +1284,9 @@ class LiveStreamActivity : BaseActivity() {
                             select = "*,profile:profiles(*)",
                             streamFilter = "eq.$sid"
                         )
-                        val updatedSorted = updated.sortedBy { it.createdAt }
+                        val updatedSorted = updated.sortedByDescending { it.createdAt }
                         commentsAdapter.submitList(updatedSorted)
-                        if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(updatedSorted.size - 1)
+                        if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(0)
                     }
                 }
             }
@@ -1648,21 +1746,21 @@ class LiveStreamActivity : BaseActivity() {
                                 select = "*,profile:profiles(*)",
                                 streamFilter = "eq.$sid"
                             )
-                            val initialSorted = initial.sortedBy { it.createdAt }
-                            commentsAdapter.submitList(initialSorted)
-                            if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(initialSorted.size - 1)
-                            commentsJob = lifecycleScope.launch {
-                                while (isActive) {
-                                    delay(3000)
-                                    val updated = RetrofitClient.liveStreamApi.getLiveStreamComments(
-                                        select = "*,profile:profiles(*)",
-                                        streamFilter = "eq.$sid"
-                                    )
-                                    val updatedSorted = updated.sortedBy { it.createdAt }
-                                    commentsAdapter.submitList(updatedSorted)
-                                    if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(updatedSorted.size - 1)
-                                }
+                        val initialSorted = initial.sortedByDescending { it.createdAt }
+                        commentsAdapter.submitList(initialSorted)
+                        if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(0)
+                        commentsJob = lifecycleScope.launch {
+                            while (isActive) {
+                                delay(3000)
+                                val updated = RetrofitClient.liveStreamApi.getLiveStreamComments(
+                                    select = "*,profile:profiles(*)",
+                                    streamFilter = "eq.$sid"
+                                )
+                                val updatedSorted = updated.sortedByDescending { it.createdAt }
+                                commentsAdapter.submitList(updatedSorted)
+                                if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(0)
                             }
+                        }
                         }
                     }
                     // Prefer LiveKit-managed camera; skip CameraX preview to avoid camera conflicts
