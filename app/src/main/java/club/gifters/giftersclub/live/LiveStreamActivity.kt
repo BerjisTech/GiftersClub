@@ -763,19 +763,87 @@ class LiveStreamActivity : BaseActivity() {
     private fun layoutTiles(container: FrameLayout) {
         val n = container.childCount
         if (n == 0) return
-        val cols = kotlin.math.ceil(kotlin.math.sqrt(n.toDouble())).toInt()
-        val rows = kotlin.math.ceil(n / cols.toDouble()).toInt()
         val w = container.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
         val h = container.height.takeIf { it > 0 } ?: resources.displayMetrics.heightPixels
-        val cellW = w / cols
-        val cellH = h / rows
-        for (i in 0 until n) {
-            val child = container.getChildAt(i)
-            val r = i / cols
-            val c = i % cols
-            val left = c * cellW
-            val top = r * cellH
-            child.layout(left, top, left + cellW, top + cellH)
+
+        fun place(childIndex: Int, l: Int, t: Int, r: Int, b: Int) {
+            if (childIndex >= 0 && childIndex < n) {
+                container.getChildAt(childIndex).layout(l, t, r, b)
+            }
+        }
+
+        when (n) {
+            1 -> place(0, 0, 0, w, h)
+            2 -> {
+                val cw = w / 2
+                val ch = kotlin.math.min(h, w / 2) // keep tiles roughly square
+                place(0, 0, 0, cw, ch)
+                place(1, cw, 0, w, ch)
+            }
+            3 -> {
+                // One large left (2/3 width), two stacked squares on right (1/3 width)
+                val leftW = (w * 2) / 3
+                val rightW = w - leftW
+                val rightH = h / 2
+                place(0, 0, 0, leftW, h)
+                place(1, leftW, 0, w, rightH)
+                place(2, leftW, rightH, w, h)
+            }
+            4 -> {
+                val cw = w / 2
+                val ch = h / 2
+                place(0, 0, 0, cw, ch)
+                place(1, cw, 0, w, ch)
+                place(2, 0, ch, cw, h)
+                place(3, cw, ch, w, h)
+            }
+            5 -> {
+                // One large top (full width, half height), then 2x2 grid bottom
+                val topH = h / 2
+                place(0, 0, 0, w, topH)
+                val bw = w / 2
+                val bh = (h - topH) / 2
+                place(1, 0, topH, bw, topH + bh)
+                place(2, bw, topH, w, topH + bh)
+                place(3, 0, topH + bh, bw, h)
+                place(4, bw, topH + bh, w, h)
+            }
+            6 -> {
+                val cw = w / 3
+                val ch = h / 2
+                for (i in 0 until 6) {
+                    val r = i / 3
+                    val c = i % 3
+                    val l = c * cw
+                    val t = r * ch
+                    place(i, l, t, l + cw, t + ch)
+                }
+            }
+            9 -> {
+                val cw = w / 3
+                val ch = h / 3
+                for (i in 0 until 9) {
+                    val r = i / 3
+                    val c = i % 3
+                    val l = c * cw
+                    val t = r * ch
+                    place(i, l, t, l + cw, t + ch)
+                }
+            }
+            else -> {
+                // Fallback: simple grid with ceil(sqrt(n)) columns
+                val cols = kotlin.math.ceil(kotlin.math.sqrt(n.toDouble())).toInt()
+                val rows = kotlin.math.ceil(n / cols.toDouble()).toInt()
+                val cw = w / cols
+                val ch = h / rows
+                for (i in 0 until n) {
+                    val r = i / cols
+                    val c = i % cols
+                    val l = c * cw
+                    val t = r * ch
+                    place(i, l, t, l + cw, t + ch)
+                }
+            }
         }
         container.requestLayout()
     }
@@ -1822,22 +1890,33 @@ class LiveStreamActivity : BaseActivity() {
                         val arr = org.json.JSONArray(body)
                         for (i in 0 until arr.length()) {
                             val obj = arr.getJSONObject(i)
-                            if (obj.optString("invitee_id") == userId && obj.optString("status") == "accepted") {
-                                // Get guest token and re-connect as publisher
+                            if (obj.optString("invitee_id") == userId && obj.optString("status").lowercase() == "accepted") {
+                                // Obtain provisioned guest stream id, then deep link into it for full host view
                                 try {
-                                    val tk = RetrofitClient.functionsApi.liveSessionAction(mapOf("action" to "token", "streamId" to streamId, "type" to "guest"))
-                                    if (tk.isSuccessful) {
-                                        val token = tk.body()?.get("token") as? String
-                                        if (!token.isNullOrEmpty()) {
-                                            try { liveKitRoom?.disconnect() } catch (_: Exception) {}
-                                            val roomOptions = RoomOptions(true, true, null, LocalAudioTrackOptions(), LocalVideoTrackOptions(), null, null)
-                                            val room = LiveKit.create(this@LiveStreamActivity, roomOptions, LiveKitOverrides())
-                                            liveKitRoom = room
-                                            room.connect(LiveKitConfig.WS_URL, token, ConnectOptions())
-                                            room.localParticipant.setCameraEnabled(true)
-                                            room.localParticipant.setMicrophoneEnabled(true)
-                                            invitePollJob?.cancel()
-                                            break
+                                    val prov = RetrofitClient.functionsApi.liveInviteRaw(
+                                        mapOf("action" to "provision", "streamId" to streamId, "inviteeId" to userId)
+                                    )
+                                    val guestStreamId = if (prov.isSuccessful) {
+                                        org.json.JSONObject(prov.body()?.string() ?: "{}").optString("id")
+                                    } else ""
+                                    if (guestStreamId.isNotEmpty()) {
+                                        withContext(Dispatchers.Main) { handleDeepLinkStream(guestStreamId) }
+                                        invitePollJob?.cancel(); break
+                                    } else {
+                                        // Fallback: join as guest publisher in same room (older backend)
+                                        val tk = RetrofitClient.functionsApi.liveSessionAction(mapOf("action" to "token", "streamId" to streamId, "type" to "guest"))
+                                        if (tk.isSuccessful) {
+                                            val token = tk.body()?.get("token") as? String
+                                            if (!token.isNullOrEmpty()) {
+                                                try { liveKitRoom?.disconnect() } catch (_: Exception) {}
+                                                val roomOptions = RoomOptions(true, true, null, LocalAudioTrackOptions(), LocalVideoTrackOptions(), null, null)
+                                                val room = LiveKit.create(this@LiveStreamActivity, roomOptions, LiveKitOverrides())
+                                                liveKitRoom = room
+                                                room.connect(LiveKitConfig.WS_URL, token, ConnectOptions())
+                                                room.localParticipant.setCameraEnabled(true)
+                                                room.localParticipant.setMicrophoneEnabled(true)
+                                                invitePollJob?.cancel(); break
+                                            }
                                         }
                                     }
                                 } catch (_: Exception) {}
