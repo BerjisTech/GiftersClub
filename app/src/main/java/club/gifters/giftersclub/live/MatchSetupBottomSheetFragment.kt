@@ -270,7 +270,7 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
         searchJob?.cancel()
         val q = et.text?.toString()?.trim() ?: return
         if (q.length < 2) return
-        searchJob = viewLifecycleOwner.lifecycleScope.launch {
+        searchJob = lifecycleScope.launch {
             delay(200)
             try {
                 val res = RetrofitClient.profileApi.searchProfiles("*", "username.ilike.%$q%,name.ilike.%$q%")
