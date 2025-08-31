@@ -218,20 +218,9 @@ class LiveStreamActivity : BaseActivity() {
         // Pending requests indicator for host (tap opens requests dialog)
         btnRequests = findViewById(R.id.btnRequests)
         // Requests panel overlay (hidden until tapped) - inflate from XML for styling
-        requestsPanel = layoutInflater.inflate(
-            R.layout.overlay_requests_panel,
-            null
-        ) as LinearLayout
-        val panelLp = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT
-        ).apply {
-            gravity = android.view.Gravity.TOP
-            topMargin = (resources.displayMetrics.density * 90).toInt()
-        }
-        (findViewById<ViewGroup>(android.R.id.content)).addView(requestsPanel, panelLp)
-        requestsPanel.findViewById<View>(R.id.btnCloseRequests).setOnClickListener { requestsPanel.visibility = View.GONE }
-        btnRequests.setOnClickListener { showRequestsPanel() }
+        // Deprecated overlay panel replaced by bottom sheet dialog
+        requestsPanel = LinearLayout(this) // placeholder; not used for UI anymore
+        btnRequests.setOnClickListener { openRequestsBottomSheet() }
 
         if (deepId == null) {
             if (!allPermissionsGranted()) {
@@ -509,7 +498,7 @@ class LiveStreamActivity : BaseActivity() {
             if (currentId != null && currentId == hostId) {
                 // Always show requests icon for host; tint red when there are pending requests
                 btnRequests.visibility = View.VISIBLE
-                tvViewerCount.setOnClickListener { showRequestsPanel() }
+                tvViewerCount.setOnClickListener { openRequestsBottomSheet() }
                 // Poll pending requests and show indicator
                 lifecycleScope.launch {
                     while (isActive && !isEnded) {
@@ -833,31 +822,15 @@ class LiveStreamActivity : BaseActivity() {
     }
 
     private fun showRequestsPanel() {
-        lifecycleScope.launch {
-            try {
-                val sid = currentStream?.id ?: return@launch
-                val resp = RetrofitClient.functionsApi.liveInviteRaw(mapOf("action" to "list", "streamId" to sid))
-                if (!resp.isSuccessful) return@launch
-                val body = resp.body()?.string() ?: return@launch
-                val arr = org.json.JSONArray(body)
-                val items = mutableListOf<Pair<String, String>>()
-                val pendingSet = setOf("requested", "pending", "request")
-                for (i in 0 until arr.length()) {
-                    val obj = arr.getJSONObject(i)
-                    if (!pendingSet.contains(obj.optString("status").lowercase())) continue
-                    val uname = obj.optJSONObject("profiles")?.optString("username")
-                        ?: obj.optString("invitee_id").take(6)
-                    val id = obj.optString("id")
-                    items.add(Pair(uname, id))
-                }
-                if (items.isEmpty()) {
-                    Toast.makeText(this@LiveStreamActivity, "No requests", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-                renderRequestsPanel(items)
-                requestsPanel.visibility = View.VISIBLE
-            } catch (_: Exception) { }
-        }
+        openRequestsBottomSheet()
+    }
+
+    private fun openRequestsBottomSheet() {
+        val sid = currentStream?.id ?: return
+        try {
+            RequestsBottomSheetFragment.newInstance(sid)
+                .show(supportFragmentManager, "RequestsBottomSheet")
+        } catch (_: Exception) {}
     }
 
     /** Send selected gift to current live stream; on success inserts a comment line. */
@@ -1111,8 +1084,8 @@ class LiveStreamActivity : BaseActivity() {
             )
             // Host: show requests icon and polling for pending join requests
             btnRequests.visibility = View.VISIBLE
-            btnRequests.setOnClickListener { showRequestsPanel() }
-            tvViewerCount.setOnClickListener { showRequestsPanel() }
+            btnRequests.setOnClickListener { openRequestsBottomSheet() }
+            tvViewerCount.setOnClickListener { openRequestsBottomSheet() }
             launch {
                 while (isActive && !isEnded) {
                     delay(3000)
