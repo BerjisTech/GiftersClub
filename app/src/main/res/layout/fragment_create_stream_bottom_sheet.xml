@@ -196,6 +196,7 @@
                         android:id="@+id/btnOpenSubscriptionSettingsFromLive"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:paddingHorizontal="8dp"
                         android:background="@drawable/bg_green_emerald_gradient"
                         android:text="Create a Subscription Plan"
                         android:textColor="@color/white" />
