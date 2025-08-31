@@ -758,7 +758,7 @@ class LiveStreamActivity : BaseActivity() {
         // Try to resolve participant identity -> userId for pill data
         val parts = key.split("_")
         val participantSid = parts.firstOrNull() ?: ""
-        val uid = try { liveKitRoom?.remoteParticipants?.get(participantSid)?.identity ?: "" } catch (_: Exception) { "" }
+        val uid = try { liveKitRoom?.remoteParticipants?.values?.firstOrNull { it.sid.toString() == participantSid }?.identity?.toString() ?: "" } catch (_: Exception) { "" }
         val userId = if (uid.contains("-")) uid.substringAfterLast("-") else uid
         if (userId.isNotEmpty()) {
             name.text = "@${userIdToStreamId["uname:" + userId] ?: userId.take(6)}"

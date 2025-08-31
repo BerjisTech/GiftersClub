@@ -104,12 +104,13 @@
                 android:id="@+id/cbThisIsMatch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:visibility="gone"
                 android:text="This is a match" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Live access"
+                android:text="Live stream access"
                 android:textStyle="bold" />
 
             <RadioGroup
