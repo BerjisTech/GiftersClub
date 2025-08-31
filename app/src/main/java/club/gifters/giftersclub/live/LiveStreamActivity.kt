@@ -114,6 +114,8 @@ class LiveStreamActivity : BaseActivity() {
     private var paywallPlanTokens: Int = 0
     // Multi-host: map participant/track to its renderer for tiling
     private val videoViews: MutableMap<String, SurfaceViewRenderer> = mutableMapOf()
+    // Whether the video container is in grid mode (local + remotes as tiles)
+    private var isGridMode: Boolean = false
 
     // UI references for dynamic live stream controls
     private lateinit var liveTopBar: ConstraintLayout
@@ -215,20 +217,20 @@ class LiveStreamActivity : BaseActivity() {
         }
         // Pending requests indicator for host (tap opens requests dialog)
         btnRequests = findViewById(R.id.btnRequests)
-        // Requests panel overlay (hidden until tapped)
-        requestsPanel = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xCC000000.toInt())
-            visibility = View.GONE
-            setPadding(16,16,16,16)
+        // Requests panel overlay (hidden until tapped) - inflate from XML for styling
+        requestsPanel = layoutInflater.inflate(
+            R.layout.overlay_requests_panel,
+            null
+        ) as LinearLayout
+        val panelLp = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            gravity = android.view.Gravity.TOP
+            topMargin = (resources.displayMetrics.density * 90).toInt()
         }
-        (findViewById<ViewGroup>(android.R.id.content)).addView(
-            requestsPanel,
-            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
-                gravity = android.view.Gravity.TOP
-                topMargin = (resources.displayMetrics.density * 90).toInt()
-            }
-        )
+        (findViewById<ViewGroup>(android.R.id.content)).addView(requestsPanel, panelLp)
+        requestsPanel.findViewById<View>(R.id.btnCloseRequests).setOnClickListener { requestsPanel.visibility = View.GONE }
         btnRequests.setOnClickListener { showRequestsPanel() }
 
         if (deepId == null) {
@@ -594,6 +596,7 @@ class LiveStreamActivity : BaseActivity() {
                         participant.videoTrackPublications.forEach { pubPair ->
                             val track = pubPair.second as? RemoteVideoTrack
                             if (track != null) {
+                                ensureGridMode(container)
                                 val key = "${participant.sid}_${track.sid}"
                                 addVideoTile(container, key, track)
                             }
@@ -607,6 +610,7 @@ class LiveStreamActivity : BaseActivity() {
                                     val rt = event.track as? RemoteVideoTrack
                                     // Key by participant + track sid (avoid relying on publication field)
                                     if (rt != null) {
+                                        ensureGridMode(container)
                                         val key = "${event.participant.sid}_${rt.sid}"
                                         addVideoTile(container, key, rt)
                                     }
@@ -714,6 +718,52 @@ class LiveStreamActivity : BaseActivity() {
         track.addRenderer(v)
     }
 
+    private fun addLocalTile(container: FrameLayout) {
+        val room = liveKitRoom ?: return
+        val localPubPair = room.localParticipant.videoTrackPublications.firstOrNull() ?: return
+        val localTrack = localPubPair.second as? LocalVideoTrack ?: return
+        val key = "local_${localTrack.sid ?: "cam"}"
+        if (videoViews.containsKey(key)) return
+        val v = SurfaceViewRenderer(this)
+        v.setScalingType(livekit.org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
+        try { room.initVideoRenderer(v) } catch (_: Exception) {}
+        v.setZOrderMediaOverlay(true)
+        val tile = FrameLayout(this)
+        tile.layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+        val gd = android.graphics.drawable.GradientDrawable()
+        gd.setColor(0x00000000)
+        gd.setStroke((resources.displayMetrics.density).toInt(), 0x55FFFFFF.toInt())
+        gd.cornerRadius = 8 * resources.displayMetrics.density
+        tile.background = gd
+        tile.addView(v, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        container.addView(tile)
+        layoutTiles(container)
+        videoViews[key] = v
+        localTrack.addRenderer(v)
+    }
+
+    private fun ensureGridMode(container: FrameLayout) {
+        if (isGridMode) return
+        isGridMode = true
+        // Replace the full-screen preview with tiled layout including local track
+        try { previewView?.release() } catch (_: Exception) {}
+        previewView = null
+        container.removeAllViews()
+        addLocalTile(container)
+        // Also add any currently subscribed remote tracks
+        try {
+            liveKitRoom?.remoteParticipants?.values?.forEach { p ->
+                p.videoTrackPublications.forEach { pubPair ->
+                    val rt = pubPair.second as? RemoteVideoTrack
+                    if (rt != null) {
+                        val key = "${p.sid}_${rt.sid}"
+                        addVideoTile(container, key, rt)
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
     private fun removeVideoTile(container: FrameLayout, key: String) {
         val v = videoViews.remove(key) ?: return
         try { v.release() } catch (_: Exception) {}
@@ -751,60 +801,35 @@ class LiveStreamActivity : BaseActivity() {
     }
 
     private fun renderRequestsPanel(items: List<Pair<String,String>>) {
-        requestsPanel.removeAllViews()
-        val title = TextView(this).apply {
-            text = "Requests to join"
-            setTextColor(android.graphics.Color.WHITE)
-            textSize = 16f
-        }
-        requestsPanel.addView(title)
+        val list = requestsPanel.findViewById<LinearLayout>(R.id.listRequests)
+        list.removeAllViews()
         for ((uname, id) in items) {
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                val tv = TextView(this@LiveStreamActivity).apply {
-                    text = uname
-                    setTextColor(android.graphics.Color.WHITE)
-                    textSize = 13f
-                }
-                val btnAccept = Button(this@LiveStreamActivity).apply {
-                    text = "Accept"
-                    setOnClickListener {
-                        lifecycleScope.launch {
-                            try {
-                                RetrofitClient.functionsApi.liveInvite(mapOf("action" to "accept", "inviteId" to id))
-                                Toast.makeText(this@LiveStreamActivity, "Accepted", Toast.LENGTH_SHORT).show()
-                                showRequestsPanel()
-                            } catch (_: Exception) {
-                                Toast.makeText(this@LiveStreamActivity, "Failed", Toast.LENGTH_SHORT).show()
-                            }
-                        }
+            val row = layoutInflater.inflate(R.layout.item_request_row, list, false)
+            row.findViewById<TextView>(R.id.tvUsername).text = uname
+            row.findViewById<Button>(R.id.btnAcceptRequest).setOnClickListener {
+                lifecycleScope.launch {
+                    try {
+                        RetrofitClient.functionsApi.liveInvite(mapOf("action" to "accept", "inviteId" to id))
+                        Toast.makeText(this@LiveStreamActivity, "Accepted", Toast.LENGTH_SHORT).show()
+                        showRequestsPanel()
+                    } catch (_: Exception) {
+                        Toast.makeText(this@LiveStreamActivity, "Failed", Toast.LENGTH_SHORT).show()
                     }
                 }
-                val btnReject = Button(this@LiveStreamActivity).apply {
-                    text = "Reject"
-                    setOnClickListener {
-                        lifecycleScope.launch {
-                            try {
-                                RetrofitClient.functionsApi.liveInvite(mapOf("action" to "reject", "inviteId" to id))
-                                Toast.makeText(this@LiveStreamActivity, "Rejected", Toast.LENGTH_SHORT).show()
-                                showRequestsPanel()
-                            } catch (_: Exception) {
-                                Toast.makeText(this@LiveStreamActivity, "Failed", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }
-                }
-                addView(tv, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                addView(btnAccept)
-                addView(btnReject)
             }
-            requestsPanel.addView(row)
+            row.findViewById<Button>(R.id.btnRejectRequest).setOnClickListener {
+                lifecycleScope.launch {
+                    try {
+                        RetrofitClient.functionsApi.liveInvite(mapOf("action" to "reject", "inviteId" to id))
+                        Toast.makeText(this@LiveStreamActivity, "Rejected", Toast.LENGTH_SHORT).show()
+                        showRequestsPanel()
+                    } catch (_: Exception) {
+                        Toast.makeText(this@LiveStreamActivity, "Failed", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            list.addView(row)
         }
-        val close = Button(this).apply {
-            text = "Close"
-            setOnClickListener { requestsPanel.visibility = View.GONE }
-        }
-        requestsPanel.addView(close)
     }
 
     private fun showRequestsPanel() {
@@ -1178,6 +1203,7 @@ class LiveStreamActivity : BaseActivity() {
                 participant.videoTrackPublications.forEach { pubPair ->
                     val track = pubPair.second as? RemoteVideoTrack
                     if (track != null) {
+                        ensureGridMode(container)
                         val key = "${participant.sid}_${track.sid}"
                         addVideoTile(container, key, track)
                     }
@@ -1190,6 +1216,7 @@ class LiveStreamActivity : BaseActivity() {
                         is RoomEvent.TrackSubscribed -> {
                             val rt = evt.track as? RemoteVideoTrack
                             if (rt != null) {
+                                ensureGridMode(container)
                                 val key = "${evt.participant.sid}_${rt.sid}"
                                 addVideoTile(container, key, rt)
                             }

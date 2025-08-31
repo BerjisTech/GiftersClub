@@ -138,6 +138,7 @@ class MatchSetupBottomSheetFragment : BottomSheetDialogFragment() {
                             }
                         } catch (_: Exception) {}
                     }
+                    android.widget.Toast.makeText(requireContext(), "Match started", android.widget.Toast.LENGTH_SHORT).show()
                     dismiss()
                 } catch (_: Exception) {}
             }
