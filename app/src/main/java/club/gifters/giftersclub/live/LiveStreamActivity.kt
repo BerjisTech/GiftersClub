@@ -148,15 +148,16 @@ class LiveStreamActivity : BaseActivity() {
     private fun startCommentsPolling(sid: String) {
         commentsJob?.cancel()
         commentsJob = lifecycleScope.launch {
-            val streams = try {
-                val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,room_id", "eq.$sid")
-                val room = rows.firstOrNull()?.roomId
-                if (!room.isNullOrEmpty()) RetrofitClient.liveStreamApi.getLiveStreamsByRoomId("id", "eq.$room").map { it.id } else listOf(sid)
-            } catch (_: Exception) { listOf(sid) }
             while (isActive && !isEnded) {
                 delay(2000)
+                // Recompute cohost streams on each tick to catch room_id changes
+                val streamIds = try {
+                    val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,room_id", "eq.$sid")
+                    val room = rows.firstOrNull()?.roomId
+                    if (!room.isNullOrEmpty()) RetrofitClient.liveStreamApi.getLiveStreamsByRoomId("id", "eq.$room").map { it.id } else listOf(sid)
+                } catch (_: Exception) { listOf(sid) }
                 val merged = mutableListOf<club.gifters.giftersclub.model.LiveStreamComment>()
-                for (s in streams) {
+                for (s in streamIds) {
                     try {
                         merged += RetrofitClient.liveStreamApi.getLiveStreamComments("*,profile:profiles(*)", "eq.$s")
                         // also poll gifts per stream to maintain token tallies for overlays
@@ -715,7 +716,7 @@ class LiveStreamActivity : BaseActivity() {
         val tileLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         tile.layoutParams = tileLp
         // set border (1dp gray for non-match; colored when match)
-        val strokeColor = if (isMatch) android.graphics.Color.TRANSPARENT else 0x55FFFFFF.toInt()
+        val strokeColor = if (isMatch) android.graphics.Color.TRANSPARENT else android.graphics.Color.parseColor("#cbd5e1")
         val gd = android.graphics.drawable.GradientDrawable()
         gd.setColor(0x00000000)
         gd.setStroke((resources.displayMetrics.density).toInt(), strokeColor)
@@ -786,7 +787,7 @@ class LiveStreamActivity : BaseActivity() {
         tile.layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         val gd = android.graphics.drawable.GradientDrawable()
         gd.setColor(0x00000000)
-        gd.setStroke((resources.displayMetrics.density).toInt(), 0x55FFFFFF.toInt())
+        gd.setStroke((resources.displayMetrics.density).toInt(), android.graphics.Color.parseColor("#cbd5e1"))
         gd.cornerRadius = 8 * resources.displayMetrics.density
         tile.background = gd
         tile.addView(v, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
