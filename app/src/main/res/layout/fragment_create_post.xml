@@ -269,72 +269,16 @@
                 app:layout_constraintStart_toStartOf="parent">
 
 
-                <!-- Circular zoom control -->
-                <com.akaita.android.circularseekbar.CircularSeekBar
-                    android:id="@+id/zoomControl"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:visibility="visible"
-                    app:layout_constraintBottom_toTopOf="@id/captureButtonAndProgressBar"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent" />
-
-                <!-- Zoom preset levels -->
+                <!-- Bottom controls: timers, mode switches -->
                 <LinearLayout
-                    android:id="@+id/zoomLevels"
-                    android:layout_width="match_parent"
+                    android:id="@+id/bottomControlsTop"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:orientation="horizontal"
-                    app:layout_constraintBottom_toTopOf="@id/zoomControl"
+                    app:layout_constraintBottom_toTopOf="@id/captureButtonAndProgressBar"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent">
-
-                    <TextView
-                        android:id="@+id/zoom1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:padding="8dp"
-                        android:text="1x"
-                        android:textColor="@android:color/white" />
-
-                    <TextView
-                        android:id="@+id/zoom2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:padding="8dp"
-                        android:text="2x"
-                        android:textColor="@android:color/white" />
-
-                    <TextView
-                        android:id="@+id/zoom4"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:padding="8dp"
-                        android:text="4x"
-                        android:textColor="@android:color/white" />
-
-                    <TextView
-                        android:id="@+id/zoom8"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:padding="8dp"
-                        android:text="8x"
-                        android:textColor="@android:color/white" />
-
-                    <View
-                        android:layout_width="2dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginHorizontal="4dp"
-                        android:background="@color/white" />
-
-                    <!-- Bottom controls: timers, mode switches -->
-                    <LinearLayout
-                        android:id="@+id/bottomControlsTop"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:orientation="horizontal">
 
                         <TextView
                             android:id="@+id/btnTimer10m"
@@ -367,9 +311,6 @@
                             android:padding="8dp"
                             android:text="@string/_5s"
                             android:textColor="@color/white" />
-
-
-                    </LinearLayout>
 
 
                 </LinearLayout>
@@ -434,13 +375,14 @@
                     app:layout_constraintEnd_toStartOf="@id/btnTextMode"
                     app:layout_constraintTop_toTopOf="@id/captureButtonAndProgressBar" />
 
-                <ImageView
+                <TextView
                     android:id="@+id/btnTextMode"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginHorizontal="10dp"
-                    android:contentDescription="@string/create_text_post"
-                    android:src="@drawable/text"
+                    android:text="Text"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"
                     app:layout_constraintBottom_toBottomOf="@id/captureButtonAndProgressBar"
                     app:layout_constraintEnd_toStartOf="@id/btnSelectDevice"
                     app:layout_constraintTop_toTopOf="@id/captureButtonAndProgressBar" />

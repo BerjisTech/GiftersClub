@@ -20,6 +20,7 @@ import android.os.Looper
 import android.util.Base64
 import android.util.TypedValue
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
@@ -133,7 +134,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var btnTimer5s: TextView
     private lateinit var btnTimer15s: TextView
     private lateinit var btnModeToggle: ImageView
-    private lateinit var btnTextMode: ImageView
+    private lateinit var btnTextMode: TextView
     private lateinit var btnCapture: ImageView
     private lateinit var btnSelectDevice: ImageView
     private lateinit var layoutFilterOptions: LinearLayout
@@ -149,12 +150,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var btnCrop: ImageView
     private lateinit var btnScale: ImageView
 
-    // Camera zoom controls
-    private lateinit var zoomControl: CircularSeekBar
-    private lateinit var zoom1: TextView
-    private lateinit var zoom2: TextView
-    private lateinit var zoom4: TextView
-    private lateinit var zoom8: TextView
+    // Pinch-to-zoom
+    private lateinit var scaleGestureDetector: ScaleGestureDetector
     private var currentZoomRatio = 1f
 
     // Text post editor components
@@ -370,9 +367,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnTimer15s = view.findViewById(R.id.btnTimer15s)
         btnModeToggle = view.findViewById(R.id.btnModeToggle)
         // initialize photo/video icon
-        btnModeToggle.setImageResource(if (isVideoMode) R.drawable.video else R.drawable.camera)
+        btnModeToggle.setImageResource(if (isVideoMode) R.drawable.camera else R.drawable.video)
         // initialize photo/video icon
-        btnModeToggle.setImageResource(if (isVideoMode) R.drawable.video else R.drawable.camera)
+        btnModeToggle.setImageResource(if (isVideoMode) R.drawable.camera else R.drawable.video)
         btnTextMode = view.findViewById(R.id.btnTextMode)
         // Text post editor view bindings
         layoutTextEditor = view.findViewById(R.id.layoutTextEditor)
@@ -652,7 +649,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
         btnModeToggle.setOnClickListener {
             isVideoMode = !isVideoMode
-            btnModeToggle.setImageResource(if (isVideoMode) R.drawable.video else R.drawable.camera)
+            btnModeToggle.setImageResource(if (isVideoMode) R.drawable.camera else R.drawable.video)
             if (isVideoMode) {
                 btnCapture.setColorFilter(
                     ContextCompat.getColor(requireContext(), R.color.yellow_500),
@@ -739,34 +736,23 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
         }
         btnScale = view.findViewById(R.id.btnScale)
-        btnScale.setOnClickListener {
-            // TODO: implement pinch-to-scale behavior on GPUImageView
-        }
-        // Camera zoom controls
-        zoomControl = view.findViewById(R.id.zoomControl)
-        zoom1 = view.findViewById(R.id.zoom1)
-        zoom2 = view.findViewById(R.id.zoom2)
-        zoom4 = view.findViewById(R.id.zoom4)
-        zoom8 = view.findViewById(R.id.zoom8)
-        // Configure circular zoom control programmatically
-        zoomControl.max = 800f
-        zoomControl.progress = 100f
-        // zoomControl.setBarColor(Color.WHITE)
-        // zoomControl.setPointerColor(Color.WHITE)
-        zoomControl.setOnCircularSeekBarChangeListener(object : OnCircularSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: CircularSeekBar?, progress: Float, fromUser: Boolean) {
-                val ratio = progress / 100f
-                camera?.cameraControl?.setZoomRatio(ratio)
-                currentZoomRatio = ratio
-            }
-            override fun onStartTrackingTouch(seekBar: CircularSeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: CircularSeekBar?) {}
-        })
+        btnScale.setOnClickListener { /* pinch-to-zoom implemented on preview */ }
 
-        zoom1.setOnClickListener  { setZoomRatio(1f) }
-        zoom2.setOnClickListener  { setZoomRatio(2f) }
-        zoom4.setOnClickListener  { setZoomRatio(4f) }
-        zoom8.setOnClickListener  { setZoomRatio(8f) }
+        // Pinch-to-zoom on the camera preview
+        scaleGestureDetector = ScaleGestureDetector(requireContext(), object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                val state = camera?.cameraInfo?.zoomState?.value ?: return true
+                val newRatio = (state.zoomRatio * detector.scaleFactor)
+                    .coerceIn(state.minZoomRatio, state.maxZoomRatio)
+                camera?.cameraControl?.setZoomRatio(newRatio)
+                currentZoomRatio = newRatio
+                return true
+            }
+        })
+        previewView.setOnTouchListener { _, ev ->
+            scaleGestureDetector.onTouchEvent(ev)
+            true
+        }
 
         baseFilter = GPUImageFilter()
         contrastFilter = GPUImageContrastFilter(1.0f)
@@ -883,7 +869,6 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             val clamped = ratio.coerceIn(state.minZoomRatio, state.maxZoomRatio)
             camera?.cameraControl?.setZoomRatio(clamped)
             currentZoomRatio = clamped
-            zoomControl.progress = clamped * 100f
             if (clamped != ratio) {
                 Toast.makeText(
                     requireContext(),

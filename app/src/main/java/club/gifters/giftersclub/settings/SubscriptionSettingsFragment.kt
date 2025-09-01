@@ -97,21 +97,18 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
             )
             descToPersist?.let { updates["description"] = it }
             RetrofitClient.subscriptionPlanApi.updateSubscriptionPlan(
-              editingPlanId!!,
+              "eq.${editingPlanId!!}",
               updates
             ).isSuccessful
           } else {
-            val plan = SubscriptionPlan(
-              id = "",
-              creator_id = userId,
-              name = name,
-              description = descToPersist,
-              tokens = tokens,
-              duration_type = duration,
-              created_at = "",
-              updated_at = ""
+            val body = mutableMapOf<String, Any>(
+              "creator_id" to userId,
+              "name" to name,
+              "tokens" to tokens,
+              "duration_type" to duration
             )
-            RetrofitClient.subscriptionPlanApi.createSubscriptionPlan(plan).isSuccessful
+            descToPersist?.let { body["description"] = it }
+            RetrofitClient.subscriptionPlanApi.createSubscriptionPlanMap(body).isSuccessful
           }
         }
         Toast.makeText(context,
@@ -165,7 +162,7 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
       lifecycleScope.launch {
         val userId = AuthUtils.getCurrentUserId(requireContext()) ?: return@launch
         val ok = withContext(Dispatchers.IO) {
-          RetrofitClient.subscriptionPlanApi.deleteSubscriptionPlan(plan.id).isSuccessful
+          RetrofitClient.subscriptionPlanApi.deleteSubscriptionPlan("eq.${plan.id}").isSuccessful
         }
         Toast.makeText(context,
           if (ok) "Plan deleted" else "Failed to delete plan",
