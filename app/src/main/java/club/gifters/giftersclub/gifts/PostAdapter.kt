@@ -196,6 +196,17 @@ class PostAdapter(
                 val likes = CommentApiHolder.getPostReactionCountValue(post.id, "like")
                 tvLikeCount.text = likes.toString()
             }
+            // Set like button text based on liked state
+            scope.launch {
+                try {
+                    val liked = CommentApiHolder.isPostLikedByUser(post.id)
+                    btnLike.text = itemView.context.getString(
+                        if (liked) R.string._like_emoji_filled else R.string._like_emoji
+                    )
+                } catch (_: Exception) {
+                    btnLike.text = itemView.context.getString(R.string._like_emoji)
+                }
+            }
             scope.launch {
                 val shares = CommentApiHolder.getPostReactionCountValue(post.id, "share")
                 tvShareCount.text = shares.toString()

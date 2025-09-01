@@ -122,7 +122,9 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             chatPane.visibility = View.VISIBLE
 
             val rvMessages = chatPane.findViewById<RecyclerView>(R.id.rvMessages)
-            rvMessages.layoutManager = LinearLayoutManager(requireContext())
+            rvMessages.layoutManager = LinearLayoutManager(requireContext()).apply {
+                stackFromEnd = true
+            }
             val msgAdapter = MessageAdapter(userId)
             rvMessages.adapter = msgAdapter
 
@@ -156,7 +158,9 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 chatPane.visibility = View.VISIBLE
 
                 val rvMsgs = chatPane.findViewById<RecyclerView>(R.id.rvMessages)
-                rvMsgs.layoutManager = LinearLayoutManager(requireContext())
+                rvMsgs.layoutManager = LinearLayoutManager(requireContext()).apply {
+                    stackFromEnd = true
+                }
                 val innerMsgAdapter = MessageAdapter(userId)
                 rvMsgs.adapter = innerMsgAdapter
 
@@ -386,8 +390,15 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 // Log.w("ChatFragment", "Error marking messages as read", e)
             }
 
+            var initialScrollDone = false
             while (isActive) {
                 try {
+                    // Determine if user is currently at bottom before updating the list
+                    val lm = rvMessages.layoutManager as? LinearLayoutManager
+                    val lastVisible = lm?.findLastCompletelyVisibleItemPosition() ?: -1
+                    val wasAtBottom = !rvMessages.canScrollVertically(1) ||
+                            (lastVisible >= msgAdapter.itemCount - 1 && msgAdapter.itemCount > 0)
+
                     val msgs = chatApi.getMessages(
                         select = "*",
                         orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId)," +
@@ -396,7 +407,12 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     )
                     msgAdapter.submitList(msgs)
                     if (msgs.isNotEmpty()) {
-                        // rvMessages.scrollToPosition(msgs.size - 1)
+                        if (!initialScrollDone) {
+                            rvMessages.scrollToPosition(msgs.size - 1)
+                            initialScrollDone = true
+                        } else if (wasAtBottom) {
+                            rvMessages.scrollToPosition(msgs.size - 1)
+                        }
                     }
                 } catch (e: Exception) {
                     // Log.w("ChatFragment", "Error polling messages", e)
@@ -526,9 +542,13 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 if (attachmentsPayload.isNotEmpty()) payload["attachments"] = attachmentsPayload
                 val resp = chatApi.sendMessage(payload)
                 if (resp.isSuccessful) {
+                    // Only auto-scroll if user was already at the bottom
+                    val wasAtBottom = !rvMessages.canScrollVertically(1)
                     resp.body()?.firstOrNull()?.let { newMsg ->
                         msgAdapter.addMessage(newMsg)
-                        rvMessages.scrollToPosition(msgAdapter.itemCount - 1)
+                        if (wasAtBottom) {
+                            rvMessages.scrollToPosition(msgAdapter.itemCount - 1)
+                        }
                     }
                     etMessage.text.clear()
                 }
