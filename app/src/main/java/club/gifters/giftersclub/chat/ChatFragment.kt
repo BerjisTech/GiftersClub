@@ -421,8 +421,27 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             data?.data?.let { uri ->
                 selectedAttachment = uri
                 view?.findViewById<FrameLayout>(R.id.attachmentPreviewContainer)?.isVisible = true
-                view?.findViewById<ImageView>(R.id.ivAttachmentPreview)?.setImageURI(uri)
+                setAttachmentPreview(uri)
             }
+        }
+    }
+
+    private fun setAttachmentPreview(uri: Uri) {
+        val iv = view?.findViewById<ImageView>(R.id.ivAttachmentPreview) ?: return
+        val type = try { requireContext().contentResolver.getType(uri) } catch (_: Exception) { null }
+        val isVideo = type?.startsWith("video/") == true || (uri.path?.endsWith(".mp4") == true)
+        if (!isVideo) {
+            iv.setImageURI(uri)
+            return
+        }
+        try {
+            val retriever = android.media.MediaMetadataRetriever()
+            retriever.setDataSource(requireContext(), uri)
+            val bmp = retriever.frameAtTime
+            retriever.release()
+            if (bmp != null) iv.setImageBitmap(bmp) else iv.setImageResource(android.R.drawable.ic_media_play)
+        } catch (_: Exception) {
+            iv.setImageResource(android.R.drawable.ic_media_play)
         }
     }
 
@@ -441,13 +460,30 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     try {
                         val type = requireContext().contentResolver.getType(uri)
                             ?: "application/octet-stream"
+                        val isVideo = type.startsWith("video/") || (uri.path?.endsWith(".mp4") == true)
                         val ext = type.substringAfterLast('/', "bin")
                         val filename = "${System.currentTimeMillis()}-${UUID.randomUUID()}.$ext"
-                        val bytes = withContext(Dispatchers.IO) {
-                            requireContext().contentResolver.openInputStream(uri)
-                                ?.use { it.readBytes() }
-                        } ?: throw Exception("Failed to read attachment data")
-                        val body = bytes.toRequestBody(type.toMediaTypeOrNull())
+                        val body: okhttp3.RequestBody = if (isVideo) {
+                            object : okhttp3.RequestBody() {
+                                override fun contentType() = type.toMediaTypeOrNull()
+                                override fun contentLength(): Long = getContentLength(requireContext(), uri) ?: -1L
+                                override fun writeTo(sink: okio.BufferedSink) {
+                                    val input = requireContext().contentResolver.openInputStream(uri)
+                                        ?: throw Exception("Failed to open attachment stream")
+                                    input.use { ins ->
+                                        val out = sink.outputStream()
+                                        ins.copyTo(out)
+                                        out.flush()
+                                    }
+                                }
+                            }
+                        } else {
+                            val bytes = withContext(Dispatchers.IO) {
+                                requireContext().contentResolver.openInputStream(uri)
+                                    ?.use { it.readBytes() }
+                            } ?: throw Exception("Failed to read attachment data")
+                            bytes.toRequestBody(type.toMediaTypeOrNull())
+                        }
                         val presignResp = withContext(Dispatchers.IO) {
                             RetrofitClient.functionsApi.uploadMedia(
                                 PresignRequest(
@@ -501,4 +537,24 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             }
         }
     }
+
+    private fun getContentLength(ctx: Context, uri: Uri): Long? = try {
+        ctx.contentResolver.openAssetFileDescriptor(uri, "r")?.use { afd ->
+            val len = afd.length
+            if (len > 0) return len
+        }
+        val cursor = ctx.contentResolver.query(
+            uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null
+        )
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val idx = it.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                if (idx >= 0) {
+                    val size = it.getLong(idx)
+                    if (size > 0) return size
+                }
+            }
+        }
+        null
+    } catch (_: Exception) { null }
 }
