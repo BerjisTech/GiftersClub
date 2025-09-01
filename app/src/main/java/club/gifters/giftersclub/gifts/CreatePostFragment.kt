@@ -193,14 +193,47 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         private const val TAG = "CreatePostFragment"
     }
 
-    /**
-     * Show exactly one of the four editor steps.
-     */
+    private enum class Step { MEDIA, EDIT, DETAILS, TEXT }
+    private val stepStack: MutableList<Step> = mutableListOf()
+
+    /** Show exactly one of the steps and record navigation for back handling. */
     private fun showStep(step: View) {
-        layoutMedia.isVisible = step === layoutMedia
-        layoutEdit.isVisible = step === layoutEdit
-        layoutDetails.isVisible = step === layoutDetails
-        layoutTextEditor.isVisible = step === layoutTextEditor
+        val next = when (step) {
+            layoutMedia      -> Step.MEDIA
+            layoutEdit       -> Step.EDIT
+            layoutDetails    -> Step.DETAILS
+            layoutTextEditor -> Step.TEXT
+            else             -> Step.MEDIA
+        }
+        if (stepStack.isEmpty() || stepStack.last() != next) stepStack.add(next)
+        layoutMedia.isVisible = next == Step.MEDIA
+        layoutEdit.isVisible = next == Step.EDIT
+        layoutDetails.isVisible = next == Step.DETAILS
+        layoutTextEditor.isVisible = next == Step.TEXT
+    }
+
+    private fun showPreviousStepOrExit() {
+        if (stepStack.size > 1) {
+            // pop current and show previous without pushing again
+            stepStack.removeLast()
+            when (stepStack.last()) {
+                Step.MEDIA   -> { layoutMedia?.let { v ->
+                        layoutMedia.isVisible = true; layoutEdit.isVisible = false; layoutDetails.isVisible = false; layoutTextEditor.isVisible = false }
+                }
+                Step.EDIT    -> { layoutEdit?.let { v ->
+                        layoutMedia.isVisible = false; layoutEdit.isVisible = true; layoutDetails.isVisible = false; layoutTextEditor.isVisible = false }
+                }
+                Step.DETAILS -> { layoutDetails?.let { v ->
+                        layoutMedia.isVisible = false; layoutEdit.isVisible = false; layoutDetails.isVisible = true; layoutTextEditor.isVisible = false }
+                }
+                Step.TEXT    -> { layoutTextEditor?.let { v ->
+                        layoutMedia.isVisible = false; layoutEdit.isVisible = false; layoutDetails.isVisible = false; layoutTextEditor.isVisible = true }
+                }
+            }
+        } else {
+            // let system handle back (pop fragment)
+            requireActivity().onBackPressed()
+        }
     }
 
     private fun startCamera() {
@@ -241,9 +274,17 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnPost = view.findViewById(R.id.btnPost)
         progressBar = view.findViewById(R.id.progressBar)
 
-        btnEditMedia.setOnClickListener {
-            showStep(layoutMedia)
-        }
+        // initialize step stack to the first step
+        if (stepStack.isEmpty()) stepStack.add(Step.MEDIA)
+
+        // Back press should go to previous step, not exit immediately
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner,
+            object : androidx.activity.OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() { showPreviousStepOrExit() }
+            }
+        )
+
+        btnEditMedia.setOnClickListener { showStep(layoutMedia) }
         btnPost.setOnClickListener {
             submitPost()
         }
@@ -888,11 +929,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 ContextCompat.getMainExecutor(requireContext()),
                 object : VideoCapture.OnVideoSavedCallback {
                     override fun onError(videoCaptureError: Int, message: String, cause: Throwable?) {
-                        Toast.makeText(requireContext(), "Video capture failed", Toast.LENGTH_SHORT)
-                            .show()
+                        val ctx = context ?: return
+                        Toast.makeText(ctx, "Video capture failed", Toast.LENGTH_SHORT).show()
                     }
 
                     override fun onVideoSaved(output: VideoCapture.OutputFileResults) {
+                        if (!isAdded) return
                         val savedUri = Uri.fromFile(videoFile)
                         handleSelectedMedia(listOf(savedUri))
                     }
@@ -977,14 +1019,16 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     }
 
     private fun handleSelectedMedia(uris: List<Uri>) {
+        if (!isAdded) return
+        val ctx = context ?: return
         selectedUris.clear()
         isVideoSelected = uris.any { uri ->
-            val mime = requireContext().contentResolver.getType(uri)
+            val mime = ctx.contentResolver.getType(uri)
             (mime?.startsWith("video/") == true) || (uri.path?.endsWith(".mp4") == true)
         }
         if (isVideoSelected) {
             val videoUri = uris.first { uri ->
-                val mime = requireContext().contentResolver.getType(uri)
+                val mime = ctx.contentResolver.getType(uri)
                 (mime?.startsWith("video/") == true) || (uri.path?.endsWith(".mp4") == true)
             }
             selectedUris.add(videoUri)
@@ -1112,21 +1156,39 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     val rawType = requireContext().contentResolver.getType(uri)
                     val isVideo = rawType?.startsWith("video/") == true || uri.path?.endsWith(".mp4") == true
                     val type = rawType ?: "application/octet-stream"
-                    val ext = if (isVideo) "bin" else type.substringAfterLast('/', "bin")
+                    // Use real extension for both image and video for better downstream handling
+                    val ext = type.substringAfterLast('/', "bin")
                     val ts = System.currentTimeMillis()
                     val filename = "${post.id}-$ts-$index.$ext"
-                    val bytes = withContext(Dispatchers.IO) {
-                        requireContext().contentResolver.openInputStream(uri)?.use { stream ->
-                            if (index == 0 && editedBitmap != null && !isVideo) {
-                                java.io.ByteArrayOutputStream().apply {
-                                    editedBitmap!!.compress(Bitmap.CompressFormat.JPEG, 90, this)
-                                }.toByteArray()
-                            } else {
-                                stream.readBytes()
+                    // Build request body. For large videos, stream directly to avoid OOM.
+                    val body: okhttp3.RequestBody = if (isVideo) {
+                        object : okhttp3.RequestBody() {
+                            override fun contentType() = type.toMediaTypeOrNull()
+                            override fun writeTo(sink: okio.BufferedSink) {
+                                val input = requireContext().contentResolver.openInputStream(uri)
+                                    ?: throw Exception("Failed to open video stream")
+                                input.use { ins ->
+                                    // Stream copy without Okio.source (avoid dependency issues)
+                                    val out = sink.outputStream()
+                                    ins.copyTo(out)
+                                    out.flush()
+                                }
                             }
-                        } ?: throw Exception("Failed to read media data")
+                        }
+                    } else {
+                        val bytes = withContext(Dispatchers.IO) {
+                            requireContext().contentResolver.openInputStream(uri)?.use { stream ->
+                                if (index == 0 && editedBitmap != null) {
+                                    java.io.ByteArrayOutputStream().apply {
+                                        editedBitmap!!.compress(Bitmap.CompressFormat.JPEG, 90, this)
+                                    }.toByteArray()
+                                } else {
+                                    stream.readBytes()
+                                }
+                            } ?: throw Exception("Failed to read media data")
+                        }
+                        bytes.toRequestBody(type.toMediaTypeOrNull())
                     }
-                    val body = bytes.toRequestBody(type.toMediaTypeOrNull())
                     val presignResp = withContext(Dispatchers.IO) {
                         RetrofitClient.functionsApi.uploadMedia(
                             PresignRequest(fileName = filename, fileType = type, bucket = "post", overwrite = false)

@@ -15,6 +15,9 @@ import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.model.SubscriptionPlan
 import club.gifters.giftersclub.network.RetrofitClient
 import android.widget.ArrayAdapter
+import android.view.LayoutInflater
+import org.json.JSONArray
+import org.json.JSONObject
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,6 +34,7 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
   private lateinit var spinnerDuration: Spinner
   private lateinit var btnSave: MaterialButton
   private lateinit var btnCancel: MaterialButton
+  private lateinit var offeringsContainer: LinearLayout
   private var editingPlanId: String? = null
 
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -42,6 +46,7 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
     spinnerDuration = view.findViewById(R.id.spinnerDurationType)
     btnSave = view.findViewById(R.id.btnSavePlan)
     btnCancel = view.findViewById(R.id.btnCancelEdit)
+    offeringsContainer = view.findViewById(R.id.offeringsContainer)
 
     ArrayAdapter.createFromResource(
       requireContext(),
@@ -57,6 +62,9 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
       loadPlans(userId)
     }
 
+    // initialize with one offering row
+    addOfferingRow("")
+
     btnSave.setOnClickListener {
       lifecycleScope.launch {
         val name = etName.text.toString().trim()
@@ -68,6 +76,18 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
           Toast.makeText(context, "Name and valid token amount required", Toast.LENGTH_SHORT).show()
           return@launch
         }
+        // Build description, embedding offerings as JSON if provided
+        val offerings = getOfferings()
+        val descToPersist: String? = if (offerings.isNotEmpty()) {
+          val json = JSONObject().apply {
+            put("text", desc ?: "")
+            put("features", JSONArray(offerings))
+          }
+          json.toString()
+        } else {
+          desc
+        }
+
         val success = withContext(Dispatchers.IO) {
           if (editingPlanId != null) {
             val updates = mutableMapOf<String, Any>(
@@ -75,7 +95,7 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
               "tokens" to tokens,
               "duration_type" to duration
             )
-            desc?.let { updates["description"] = it }
+            descToPersist?.let { updates["description"] = it }
             RetrofitClient.subscriptionPlanApi.updateSubscriptionPlan(
               editingPlanId!!,
               updates
@@ -85,7 +105,7 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
               id = "",
               creator_id = userId,
               name = name,
-              description = desc,
+              description = descToPersist,
               tokens = tokens,
               duration_type = duration,
               created_at = "",
@@ -128,7 +148,10 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
     item.findViewById<ImageButton>(R.id.btnEditPlan).setOnClickListener {
       editingPlanId = plan.id
       etName.setText(plan.name)
-      etDescription.setText(plan.description ?: "")
+      // If description is JSON with features, populate UI accordingly
+      val (descText, features) = parseDescription(plan.description)
+      etDescription.setText(descText)
+      setOfferings(features)
       etTokens.setText(plan.tokens.toString())
       val idx = when (plan.duration_type) {
         "monthly" -> 1
@@ -160,5 +183,64 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
     etTokens.text?.clear()
     spinnerDuration.setSelection(0)
     btnCancel.visibility = View.GONE
+    setOfferings(emptyList())
+  }
+
+  private fun addOfferingRow(text: String?) {
+    val row = LayoutInflater.from(requireContext())
+      .inflate(R.layout.item_offering_input, offeringsContainer, false)
+    val et = row.findViewById<EditText>(R.id.etOffering)
+    val btn = row.findViewById<ImageButton>(R.id.btnAddOffering)
+    et.setText(text ?: "")
+    btn.setOnClickListener {
+      addOfferingRow("")
+      updateOfferingButtons()
+    }
+    offeringsContainer.addView(row)
+    updateOfferingButtons()
+  }
+
+  private fun updateOfferingButtons() {
+    val count = offeringsContainer.childCount
+    for (i in 0 until count) {
+      val row = offeringsContainer.getChildAt(i)
+      val btn = row.findViewById<ImageButton>(R.id.btnAddOffering)
+      btn.visibility = if (i == count - 1) View.VISIBLE else View.INVISIBLE
+    }
+  }
+
+  private fun getOfferings(): List<String> {
+    val list = mutableListOf<String>()
+    for (i in 0 until offeringsContainer.childCount) {
+      val row = offeringsContainer.getChildAt(i)
+      val et = row.findViewById<EditText>(R.id.etOffering)
+      val value = et.text?.toString()?.trim().orEmpty()
+      if (value.isNotEmpty()) list.add(value)
+    }
+    return list
+  }
+
+  private fun setOfferings(items: List<String>) {
+    offeringsContainer.removeAllViews()
+    if (items.isEmpty()) {
+      addOfferingRow("")
+    } else {
+      items.forEach { addOfferingRow(it) }
+    }
+    updateOfferingButtons()
+  }
+
+  private fun parseDescription(desc: String?): Pair<String, List<String>> {
+    if (desc.isNullOrBlank()) return "" to emptyList()
+    return try {
+      val obj = JSONObject(desc)
+      val text = obj.optString("text", desc)
+      val features = obj.optJSONArray("features")?.let { ja ->
+        List(ja.length()) { idx -> ja.optString(idx).orEmpty() }.filter { it.isNotBlank() }
+      } ?: emptyList()
+      text to features
+    } catch (_: Exception) {
+      desc to emptyList()
+    }
   }
 }

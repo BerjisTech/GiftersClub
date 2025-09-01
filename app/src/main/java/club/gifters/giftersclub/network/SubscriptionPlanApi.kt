@@ -31,6 +31,15 @@ interface SubscriptionPlanApi {
     ): Response<SubscriptionPlan>
 
     /**
+     * Create via a minimal body map (avoid sending created_at/updated_at).
+     */
+    @Headers("Prefer: return=minimal")
+    @POST("subscription_plans")
+    suspend fun createSubscriptionPlanMap(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Void>
+
+    /**
      * Update an existing subscription plan by ID.
      */
     @PATCH("subscription_plans")
