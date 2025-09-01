@@ -47,6 +47,8 @@ class MainActivity : BaseActivity() {
         const val EXTRA_SHOW_CREATE_SHEET = "EXTRA_SHOW_CREATE_SHEET"
         /** Intent extra to open Settings at a particular tab index */
         const val EXTRA_OPEN_SETTINGS_TAB = "EXTRA_OPEN_SETTINGS_TAB"
+        /** Intent extra to immediately open the current user's profile */
+        const val EXTRA_OPEN_PROFILE = "EXTRA_OPEN_PROFILE"
     }
 
     private fun enlargeCreateItem(bottomNav: BottomNavigationView) {
@@ -110,6 +112,25 @@ class MainActivity : BaseActivity() {
                 .replace(R.id.mainContentContainer, club.gifters.giftersclub.settings.SettingsFragment.newInstance(tabIndex))
                 .addToBackStack(null)
                 .commit()
+        }
+        // If requested, open current user's profile
+        if (intent.getBooleanExtra(EXTRA_OPEN_PROFILE, false)) {
+            AuthUtils.getCurrentUserId(this)?.let { uid ->
+                lifecycleScope.launch {
+                    try {
+                        RetrofitClient.profileApi.getProfileByUserId("*", "eq.$uid")
+                            .firstOrNull()?.let { prof ->
+                                supportFragmentManager.beginTransaction()
+                                    .replace(
+                                        R.id.mainContentContainer,
+                                        club.gifters.giftersclub.gifts.GifterFragment.newInstance(prof.username)
+                                    )
+                                    .addToBackStack(null)
+                                    .commit()
+                            }
+                    } catch (_: Exception) { }
+                }
+            }
         }
         RetrofitClient.init(this)
         // Resume-live banner action

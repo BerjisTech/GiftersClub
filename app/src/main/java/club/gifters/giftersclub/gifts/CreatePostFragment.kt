@@ -1395,84 +1395,27 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 //                        )
                     }
                 }
-                for ((index, uri) in selectedUris.withIndex()) {
-                    val rawType = requireContext().contentResolver.getType(uri)
-                    val isVideo = rawType?.startsWith("video/") == true || uri.path?.endsWith(".mp4") == true
-                    val type = rawType ?: "application/octet-stream"
-                    // Use real extension for both image and video for better downstream handling
-                    val ext = type.substringAfterLast('/', "bin")
-                    val ts = System.currentTimeMillis()
-                    val filename = "${post.id}-$ts-$index.$ext"
-                    // Build request body. For large videos, stream directly to avoid OOM.
-                    val body: okhttp3.RequestBody = if (isVideo) {
-                        object : okhttp3.RequestBody() {
-                            override fun contentType() = type.toMediaTypeOrNull()
-                            override fun contentLength(): Long {
-                                return getContentLength(uri) ?: -1L
-                            }
-                            override fun writeTo(sink: okio.BufferedSink) {
-                                val input = requireContext().contentResolver.openInputStream(uri)
-                                    ?: throw Exception("Failed to open video stream")
-                                input.use { ins ->
-                                    val out = sink.outputStream()
-                                    ins.copyTo(out)
-                                    out.flush()
-                                }
+                // Background media upload and navigate to profile
+                startBackgroundPostUpload(post.id, selectedUris.toList(), editedBitmap)
+                Toast.makeText(requireContext(), "Uploading in background", Toast.LENGTH_SHORT).show()
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        val prof = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$userId").firstOrNull()
+                        val uname = prof?.username
+                        withContext(Dispatchers.Main) {
+                            if (!uname.isNullOrBlank()) {
+                                requireActivity().supportFragmentManager.beginTransaction()
+                                    .replace(R.id.mainContentContainer, club.gifters.giftersclub.gifts.GifterFragment.newInstance(uname))
+                                    .addToBackStack(null)
+                                    .commit()
+                            } else {
+                                parentFragmentManager.popBackStack()
                             }
                         }
-                    } else {
-                        val bytes = withContext(Dispatchers.IO) {
-                            requireContext().contentResolver.openInputStream(uri)?.use { stream ->
-                                if (index == 0 && editedBitmap != null) {
-                                    java.io.ByteArrayOutputStream().apply {
-                                        editedBitmap!!.compress(Bitmap.CompressFormat.JPEG, 90, this)
-                                    }.toByteArray()
-                                } else {
-                                    stream.readBytes()
-                                }
-                            } ?: throw Exception("Failed to read media data")
-                        }
-                        bytes.toRequestBody(type.toMediaTypeOrNull())
-                    }
-                    val presignResp = withContext(Dispatchers.IO) {
-                        RetrofitClient.functionsApi.uploadMedia(
-                            PresignRequest(fileName = filename, fileType = type, bucket = "post", overwrite = false)
-                        )
-                    }
-                    if (!presignResp.isSuccessful) throw HttpException(presignResp)
-                    val presignData = presignResp.body()!!
-
-                    val putReq = Request.Builder()
-                        .url(presignData.uploadUrl)
-                        .put(body)
-                        .build()
-                    val putResp = withContext(Dispatchers.IO) {
-                        RetrofitClient.awsClient.newCall(putReq).execute()
-                    }
-                    if (!putResp.isSuccessful) {
-                        val errorBody = withContext(Dispatchers.IO) { putResp.body?.string().orEmpty() }
-                        // Log.e(TAG, "S3 post upload failed: HTTP ${putResp.code} body=$errorBody")
-                        throw Exception("Upload failed: ${putResp.code} body=$errorBody")
-                    }
-                    val publicUrl = presignData.publicUrl
-                    val mediaResp = postApi.createPostMedia(
-                        createMedia = CreatePostMediaRequest(
-                            post.id,
-                            if (isVideo) "video" else "photo",
-                            publicUrl,
-                            index
-                        )
-                    )
-                    if (!mediaResp.isSuccessful) {
-                        // Log.e(
-//                            TAG,
-//                            "Failed to save post media: HTTP ${mediaResp.code()} ${mediaResp.errorBody()?.string()}"
-//                        )
+                    } catch (_: Exception) {
+                        withContext(Dispatchers.Main) { parentFragmentManager.popBackStack() }
                     }
                 }
-                Toast.makeText(requireContext(), "Post created successfully", Toast.LENGTH_SHORT)
-                    .show()
-                parentFragmentManager.popBackStack()
             } catch (e: Exception) {
                 // Log.e(TAG, "Failed to create post", e)
                 Toast.makeText(requireContext(), "Failed to create post", Toast.LENGTH_SHORT).show()
@@ -1504,6 +1447,92 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
             null
         } catch (_: Exception) { null }
+    }
+
+    private fun startBackgroundPostUpload(postId: String, uris: List<Uri>, editedBitmap: Bitmap?) {
+        val appCtx = requireContext().applicationContext
+        val mgr = appCtx.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val channelId = "post_uploads"
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            mgr.createNotificationChannel(
+                android.app.NotificationChannel(channelId, "Post Uploads", android.app.NotificationManager.IMPORTANCE_LOW)
+            )
+        }
+        val notifBuilder = androidx.core.app.NotificationCompat.Builder(appCtx, channelId)
+            .setSmallIcon(android.R.drawable.stat_sys_upload)
+            .setContentTitle("Uploading post")
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+        val notifId = (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                val total = uris.size.coerceAtLeast(1)
+                var done = 0
+                uris.forEachIndexed { index, uri ->
+                    val rawType = appCtx.contentResolver.getType(uri)
+                    val isVideo = rawType?.startsWith("video/") == true || uri.path?.endsWith(".mp4") == true
+                    val type = rawType ?: "application/octet-stream"
+                    val ext = type.substringAfterLast('/', "bin")
+                    val ts = System.currentTimeMillis()
+                    val filename = "${postId}-$ts-$index.$ext"
+                    val body: okhttp3.RequestBody = if (isVideo) {
+                        object : okhttp3.RequestBody() {
+                            override fun contentType() = type.toMediaTypeOrNull()
+                            override fun contentLength(): Long = getContentLength(uri) ?: -1L
+                            override fun writeTo(sink: okio.BufferedSink) {
+                                val input = appCtx.contentResolver.openInputStream(uri) ?: throw Exception("Failed to open video stream")
+                                input.use { ins ->
+                                    val out = sink.outputStream(); ins.copyTo(out); out.flush()
+                                }
+                            }
+                        }
+                    } else {
+                        val bytes = appCtx.contentResolver.openInputStream(uri)?.use { stream ->
+                            if (index == 0 && editedBitmap != null) {
+                                java.io.ByteArrayOutputStream().apply {
+                                    editedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, this)
+                                }.toByteArray()
+                            } else stream.readBytes()
+                        } ?: throw Exception("Failed to read media data")
+                        bytes.toRequestBody(type.toMediaTypeOrNull())
+                    }
+                    val presignResp = RetrofitClient.functionsApi.uploadMedia(
+                        PresignRequest(fileName = filename, fileType = type, bucket = "post", overwrite = false)
+                    )
+                    if (!presignResp.isSuccessful) throw HttpException(presignResp)
+                    val presignData = presignResp.body()!!
+                    val putReq = Request.Builder().url(presignData.uploadUrl).put(body).build()
+                    val putResp = RetrofitClient.awsClient.newCall(putReq).execute()
+                    if (!putResp.isSuccessful) throw Exception("Upload failed: ${putResp.code}")
+                    val publicUrl = presignData.publicUrl
+                    val mediaResp = postApi.createPostMedia(
+                        createMedia = CreatePostMediaRequest(
+                            postId,
+                            if (isVideo) "video" else "photo",
+                            publicUrl,
+                            index
+                        )
+                    )
+                    if (!mediaResp.isSuccessful) throw Exception("Failed to save post media")
+                    done++
+                    val progress = (done * 100 / total).coerceIn(0, 100)
+                    mgr.notify(
+                        notifId,
+                        notifBuilder.setContentText("$done of $total uploaded").setProgress(100, progress, false).build()
+                    )
+                }
+                mgr.notify(
+                    notifId,
+                    notifBuilder.setContentText("Post published").setOngoing(false).setSmallIcon(android.R.drawable.stat_sys_upload_done).setProgress(0, 0, false).build()
+                )
+            } catch (_: Exception) {
+                mgr.notify(
+                    notifId,
+                    notifBuilder.setContentText("Upload failed").setOngoing(false).setSmallIcon(android.R.drawable.stat_notify_error).setProgress(0, 0, false).build()
+                )
+            }
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

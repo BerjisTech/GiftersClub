@@ -110,6 +110,17 @@ class LiveStreamActivity : BaseActivity() {
     private var isEnded: Boolean = false
     private var lastGiftAt: String? = null
     private val giftCombos = mutableMapOf<String, Pair<Int, Int>>() // key -> (count, commentIndex)
+    private val processedGiftIds: java.util.LinkedHashSet<String> = object : java.util.LinkedHashSet<String>() {
+        override fun add(element: String): Boolean {
+            val added = super.add(element)
+            if (size > 1000) {
+                // remove oldest to cap memory
+                val it = iterator()
+                if (it.hasNext()) { it.next(); it.remove() }
+            }
+            return added
+        }
+    }
     private var paywallPlanId: String? = null
     private var paywallPlanTokens: Int = 0
     // Multi-host: map participant/track to its renderer for tiling
@@ -723,6 +734,9 @@ class LiveStreamActivity : BaseActivity() {
                                     if (events.isNotEmpty()) {
                                         lastGiftAt = events.last().createdAt
                                         events.forEach { e ->
+                                            if (!processedGiftIds.add(e.id)) {
+                                                return@forEach
+                                            }
                                             val giftName = e.gift?.name ?: "gift"
                                             val key = e.gifterId + "_" + e.giftId
                                             val combo = giftCombos[key]
@@ -1064,18 +1078,7 @@ class LiveStreamActivity : BaseActivity() {
                 )
             )
             if (resp.isSuccessful) {
-                // Insert a comment row: user_id = gifterId; content = "sent a {giftName}"
-                try {
-                    RetrofitClient.liveStreamApi.createLiveStreamComment(
-                        select = "*,profile:profiles(*)",
-                        comment = LiveStreamCommentRequest(
-                            liveStreamId = stream.id,
-                            parentCommentId = null,
-                            userId = gifterId,
-                            content = "sent a ${gift.name}"
-                        )
-                    )
-                } catch (_: Exception) { }
+                // Do not insert an explicit comment; gift events are rendered as comments, avoiding duplicates.
                 Toast.makeText(this, getString(R.string.gift_sent_success), Toast.LENGTH_SHORT).show()
             } else {
                 // fallthrough to error handler
