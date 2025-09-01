@@ -67,6 +67,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     private var convsPollingJob: Job? = null
     private lateinit var notificationApi: NotificationApi
     private lateinit var chatListAdapter: ChatListAdapter
+    private var currentPartnerId: String? = null
 
 
     companion object {
@@ -101,6 +102,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 if (chatPane.isVisible) {
                     chatPane.isVisible = false
                     convoList.isVisible = true
+                    // Refresh conversation list so unread badges reflect latest state
+                    loadChatList()
                 } else {
                     isEnabled = false
                     requireActivity().onBackPressed()
@@ -356,6 +359,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         msgAdapter: MessageAdapter,
         rvMessages: RecyclerView
     ) {
+        currentPartnerId = partnerId
         lifecycleScope.launch {
             val partnerProfile =
                 RetrofitClient.profileApi.getProfileByUserId("*", "eq.$partnerId").firstOrNull()
@@ -373,13 +377,15 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             }
             // The rest of your logic that depends on partnerProfile should go here
         }
+        // Immediately mark any unread messages in this conversation as read and refresh list
+        markConversationAsRead(partnerId)
         pollingJob?.cancel()
         pollingJob = lifecycleScope.launch {
             // mark unread messages as read on first load
             try {
                 val resp = chatApi.markMessagesAsRead(
-                    senderFilter = "sender_id.eq.$partnerId",
-                    receiverFilter = "receiver_id.eq.$userId",
+                    senderFilter = "eq.$partnerId",
+                    receiverFilter = "eq.$userId",
                     readFilter = "is.null",
                     updates = mapOf("read_at" to Instant.now().toString())
                 )
@@ -413,6 +419,22 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                         } else if (wasAtBottom) {
                             rvMessages.scrollToPosition(msgs.size - 1)
                         }
+                        // Align with web: proactively mark partner->me messages as read while viewing
+                        val hasPartnerToMe = msgs.any { it.senderId == partnerId && it.receiverId == userId }
+                        if (hasPartnerToMe) {
+                            try {
+                                val resp = chatApi.markMessagesAsRead(
+                                    senderFilter = "eq.$partnerId",
+                                    receiverFilter = "eq.$userId",
+                                    readFilter = "is.null",
+                                    updates = mapOf("read_at" to Instant.now().toString())
+                                )
+                                if (resp.isSuccessful) {
+                                    clearUnreadBadgeLocal(partnerId)
+                                    loadChatList()
+                                }
+                            } catch (_: Exception) { }
+                        }
                     }
                 } catch (e: Exception) {
                     // Log.w("ChatFragment", "Error polling messages", e)
@@ -440,6 +462,38 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 setAttachmentPreview(uri)
             }
         }
+    }
+
+    private fun markConversationAsRead(partnerId: String) {
+        lifecycleScope.launch {
+            try {
+                val resp = chatApi.markMessagesAsRead(
+                    senderFilter = "eq.$partnerId",
+                    receiverFilter = "eq.$userId",
+                    readFilter = "is.null",
+                    updates = mapOf("read_at" to Instant.now().toString())
+                )
+                if (resp.isSuccessful) {
+                    // Immediately reflect in UI, then refresh from server
+                    clearUnreadBadgeLocal(partnerId)
+                    loadChatList()
+                }
+            } catch (_: Exception) { }
+        }
+    }
+
+    private fun clearUnreadBadgeLocal(partnerId: String) {
+        val current = chatListAdapter.currentList
+        if (current.isNullOrEmpty()) return
+        val updated = current.map { item ->
+            if (item is ChatListItem.Conversation && item.ui.partner.userId == partnerId) {
+                val ui = item.ui
+                ChatListItem.Conversation(
+                    ui.copy(unreadCount = 0)
+                )
+            } else item
+        }
+        chatListAdapter.submitList(updated)
     }
 
     private fun setAttachmentPreview(uri: Uri) {
