@@ -40,8 +40,10 @@
     <string name="notifications">Notifications</string>
     <string name="home">Home</string>
     <string name="friends">Friends</string>
+    <string name="explore">Explore</string>
     <string name="create">Create</string>
     <string name="inbox">Inbox</string>
+    <string name="chats">Chats</string>
     <string name="profile">Profile</string>
 
     <!-- Chat header items -->
@@ -68,6 +70,7 @@
     <string name="wishlist">Wishlist</string>
     <string name="send">Send</string>
     <string name="chat_with_user">Chat</string>
+    <string name="chat">Chat</string>
     <string name="type_a_message" tools:ignore="TypographyEllipsis">Type a message...</string>
     <string name="attach">Attach</string>
     <string name="notification_message">Notification message</string>
@@ -247,4 +250,9 @@
     <string name="live_requires_plan_and_above">This live stream is for a higher subscription plan</string>
     <string name="please_retry_after_topup">Top up your tokens and try again</string>
     <string name="reposted"> reposted</string>
+    <string name="report_user">Report user</string>
+    <string name="block_user">Block user</string>
+    <string name="reported">Reported</string>
+    <string name="blocked">Blocked</string>
+    <string name="more">More</string>
 </resources>

@@ -75,12 +75,16 @@
         android:id="@+id/bottomNavView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
         app:itemIconTint="@null"
         app:itemTextColor="@color/pink_500"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/bottom_nav_menu" />
+
+    <!-- No overlayed center button; create uses bottom nav item -->
 
 
     <!-- Update banner overlay (included layout); anchored near top app bar -->

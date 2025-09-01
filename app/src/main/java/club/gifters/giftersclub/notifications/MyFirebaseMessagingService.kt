@@ -32,17 +32,26 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
   }
 
   override fun onMessageReceived(message: RemoteMessage) {
-    message.notification?.let {
-      val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-      val channelId = "gifters_notifications"
-      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-        mgr.createNotificationChannel(
-          NotificationChannel(channelId, "Gifters Club", NotificationManager.IMPORTANCE_HIGH)
-        )
-      }
+    val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    val channelId = "gifters_notifications"
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+      mgr.createNotificationChannel(
+        NotificationChannel(channelId, "Gifters Club", NotificationManager.IMPORTANCE_HIGH)
+      )
+    }
+
+    // Prefer explicit title/body from data if available (works for data-only pushes)
+    val dataTitle = message.data["title"]
+    val dataBody = message.data["body"]
+
+    val title = message.notification?.title ?: dataTitle
+    val body = message.notification?.body ?: dataBody
+
+    if (!title.isNullOrBlank() || !body.isNullOrBlank()) {
       val notif = NotificationCompat.Builder(this, channelId)
-        .setContentTitle(it.title)
-        .setContentText(it.body)
+        .setContentTitle(title ?: "Gifters Club")
+        .setContentText(body ?: "")
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setSmallIcon(android.R.drawable.ic_dialog_info)
         .setAutoCancel(true)
         .build()

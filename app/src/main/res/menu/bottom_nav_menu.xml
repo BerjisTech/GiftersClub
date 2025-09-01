@@ -5,17 +5,17 @@
         android:icon="@drawable/home"
         android:title="@string/home" />
     <item
-        android:id="@+id/nav_friends"
-        android:icon="@drawable/friends"
-        android:title="@string/friends" />
+        android:id="@+id/nav_explore"
+        android:icon="@drawable/explore"
+        android:title="@string/explore" />
     <item
         android:id="@+id/nav_create"
-        android:icon="@android:drawable/ic_menu_add"
+        android:icon="@drawable/ic_nav_create"
         android:title="@string/create" />
     <item
         android:id="@+id/nav_inbox"
         android:icon="@drawable/notifications"
-        android:title="@string/inbox" />
+        android:title="@string/chats" />
     <item
         android:id="@+id/nav_profile"
         android:icon="@drawable/profile"

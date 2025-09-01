@@ -300,6 +300,19 @@ class LiveStreamActivity : BaseActivity() {
                 BottomSheetBehavior.STATE_HALF_EXPANDED else BottomSheetBehavior.STATE_HIDDEN
         }
 
+        // Ensure initial relayout when container measures
+        try {
+            val container = findViewById<FrameLayout>(R.id.flLiveStream)
+            container.viewTreeObserver.addOnGlobalLayoutListener(object: android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    if (container.width > 0 && container.height > 0) {
+                        layoutTiles(container)
+                        container.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    }
+                }
+            })
+        } catch (_: Exception) {}
+
         // End stream when user taps close; ask for confirmation
         val endDialog = AlertDialog.Builder(this)
             .setTitle(R.string.end_live_stream)
@@ -613,7 +626,23 @@ class LiveStreamActivity : BaseActivity() {
                             }
                         }
                     }
-                    // Listen for subscribe/unsubscribe to manage tiles
+                    // Send a 'hello' identity message so viewers can label tiles accurately
+                    try {
+                        val uid = AuthUtils.getCurrentUserId(this@LiveStreamActivity) ?: ""
+                        val uname = try {
+                            val prof = if (uid.isNotEmpty()) RetrofitClient.profileApi.getProfileByUserId("*", "eq.$uid").firstOrNull() else null
+                            prof?.username ?: ""
+                        } catch (_: Exception) { "" }
+                        val json = org.json.JSONObject().apply {
+                            put("type", "hello"); put("user_id", uid); put("username", uname)
+                        }
+                        // Publish as reliable by default (SDK default)
+                        room.localParticipant.publishData(
+                            json.toString().toByteArray(Charsets.UTF_8)
+                        )
+                    } catch (_: Exception) {}
+
+                    // Listen for subscribe/unsubscribe/data to manage tiles and labels
                     launch {
                         room.events.collect { event ->
                             when (event) {
@@ -625,6 +654,20 @@ class LiveStreamActivity : BaseActivity() {
                                         val key = "${event.participant.sid}_${rt.sid}"
                                         addVideoTile(container, key, rt)
                                     }
+                                }
+                                is RoomEvent.DataReceived -> {
+                                    try {
+                                        val txt = String(event.data, Charsets.UTF_8)
+                                        val obj = org.json.JSONObject(txt)
+                                        if (obj.optString("type") == "hello") {
+                                            val helloUid = obj.optString("user_id")
+                                            val helloName = obj.optString("username")
+                                            if (helloUid.isNotEmpty()) {
+                                                userIdToStreamId["uname:" + helloUid] = if (helloName.isNotEmpty()) helloName else helloUid.take(6)
+                                                namePills[helloUid]?.text = "@" + (userIdToStreamId["uname:" + helloUid] ?: helloUid.take(6))
+                                            }
+                                        }
+                                    } catch (_: Exception) { }
                                 }
                                 is RoomEvent.TrackUnsubscribed -> {
                                     val rt = event.track as? RemoteVideoTrack
@@ -930,8 +973,10 @@ class LiveStreamActivity : BaseActivity() {
                 }
             }
             else -> {
-                // Fallback: simple grid with ceil(sqrt(n)) columns
-                val cols = kotlin.math.ceil(kotlin.math.sqrt(n.toDouble())).toInt()
+                // Fallback: pick columns based on available width to keep tiles usable on phones
+                val minTilePx = (120 * resources.displayMetrics.density).toInt()
+                val maxColsByWidth = kotlin.math.max(1, w / minTilePx)
+                val cols = kotlin.math.min(kotlin.math.min(3, n), kotlin.math.max(1, maxColsByWidth))
                 val rows = kotlin.math.ceil(n / cols.toDouble()).toInt()
                 val cw = w / cols
                 val ch = h / rows
@@ -1334,20 +1379,21 @@ class LiveStreamActivity : BaseActivity() {
                     val localPubPair = room.localParticipant.videoTrackPublications.firstOrNull()
                     val localTrack = localPubPair?.second as? LocalVideoTrack
                     localTrack?.addRenderer(preview)
+                    // After connect, enumerate any already-subscribed remote tracks
+                    val container = findViewById<FrameLayout>(R.id.flLiveStream)
+                    room.remoteParticipants.values.forEach { participant ->
+                        participant.videoTrackPublications.forEach { pubPair ->
+                            val track = pubPair.second as? RemoteVideoTrack
+                            if (track != null) {
+                                ensureGridMode(container)
+                                val key = "${participant.sid}_${track.sid}"
+                                addVideoTile(container, key, track)
+                            }
+                        }
+                    }
                 } catch (_: Exception) { }
                 // Load battle state after connect
                 lifecycleScope.launch { loadBattleState() }
-            }
-            // Attach remote participants as separate tiles
-            room.remoteParticipants.values.forEach { participant ->
-                participant.videoTrackPublications.forEach { pubPair ->
-                    val track = pubPair.second as? RemoteVideoTrack
-                    if (track != null) {
-                        ensureGridMode(container)
-                        val key = "${participant.sid}_${track.sid}"
-                        addVideoTile(container, key, track)
-                    }
-                }
             }
             // Subscribe to new remote tracks/unsubscribes to manage tiles
             lifecycleScope.launch {
@@ -1980,50 +2026,27 @@ class LiveStreamActivity : BaseActivity() {
         invitePollJob?.cancel()
         val userId = AuthUtils.getCurrentUserId(this) ?: return
         invitePollJob = lifecycleScope.launch {
+            // Resolve room_id for the host stream once (best-effort)
+            var roomId: String? = null
+            try {
+                val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,room_id", "eq.$streamId")
+                roomId = rows.firstOrNull()?.roomId
+            } catch (_: Exception) {}
             while (isActive) {
                 try {
-                    // fetch invites filtered via REST: invitee_id=eq.userId & streamId
-                    val resp = RetrofitClient.functionsApi.liveInviteRaw(mapOf("action" to "list", "streamId" to streamId))
-                    if (resp.isSuccessful) {
-                        val body = resp.body()?.string() ?: "[]"
-                        val arr = org.json.JSONArray(body)
-                        for (i in 0 until arr.length()) {
-                            val obj = arr.getJSONObject(i)
-                            if (obj.optString("invitee_id") == userId && obj.optString("status").lowercase() == "accepted") {
-                                // Obtain provisioned guest stream id, then deep link into it for full host view
-                                try {
-                                    val prov = RetrofitClient.functionsApi.liveInviteRaw(
-                                        mapOf("action" to "provision", "streamId" to streamId, "inviteeId" to userId)
-                                    )
-                                    val guestStreamId = if (prov.isSuccessful) {
-                                        org.json.JSONObject(prov.body()?.string() ?: "{}").optString("id")
-                                    } else ""
-                                    if (guestStreamId.isNotEmpty()) {
-                                        withContext(Dispatchers.Main) { handleDeepLinkStream(guestStreamId) }
-                                        invitePollJob?.cancel(); break
-                                    } else {
-                                        // Fallback: join as guest publisher in same room (older backend)
-                                        val tk = RetrofitClient.functionsApi.liveSessionAction(mapOf("action" to "token", "streamId" to streamId, "type" to "guest"))
-                                        if (tk.isSuccessful) {
-                                            val token = tk.body()?.get("token") as? String
-                                            if (!token.isNullOrEmpty()) {
-                                                try { liveKitRoom?.disconnect() } catch (_: Exception) {}
-                                                val roomOptions = RoomOptions(true, true, null, LocalAudioTrackOptions(), LocalVideoTrackOptions(), null, null)
-                                                val room = LiveKit.create(this@LiveStreamActivity, roomOptions, LiveKitOverrides())
-                                                liveKitRoom = room
-                                                room.connect(LiveKitConfig.WS_URL, token, ConnectOptions())
-                                                room.localParticipant.setCameraEnabled(true)
-                                                room.localParticipant.setMicrophoneEnabled(true)
-                                                invitePollJob?.cancel(); break
-                                            }
-                                        }
-                                    }
-                                } catch (_: Exception) {}
-                            }
-                        }
+                    // If we know the room, look for my provisioned stream in that room
+                    val guestId = if (!roomId.isNullOrEmpty()) {
+                        try {
+                            val siblings = RetrofitClient.liveStreamApi.getLiveStreamsByRoomId("id,host_id,status,started_at", "eq.$roomId")
+                            siblings.firstOrNull { it.hostId == userId && (it.status == "live" || it.status == "scheduled") }?.id ?: ""
+                        } catch (_: Exception) { "" }
+                    } else ""
+                    if (guestId.isNotEmpty()) {
+                        withContext(Dispatchers.Main) { handleDeepLinkStream(guestId) }
+                        invitePollJob?.cancel(); break
                     }
                 } catch (_: Exception) {}
-                delay(3000)
+                delay(1500)
             }
         }
     }

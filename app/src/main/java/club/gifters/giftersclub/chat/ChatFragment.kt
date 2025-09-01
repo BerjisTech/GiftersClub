@@ -141,28 +141,14 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             )
             return
         }
-        // Initialize unified chat/notification list
+        // Initialize chat list (notifications now in accordion)
         val rvConvs = view.findViewById<RecyclerView>(R.id.rvConversations)
         rvConvs.layoutManager = LinearLayoutManager(requireContext())
         // Prepare APIs for notifications
         notificationApi = RetrofitClient.notificationApi
         // Adapter merging header entries and conversations
         chatListAdapter = ChatListAdapter(
-            onHeaderClick = { type ->
-                when (type) {
-                    HeaderType.NEW_FOLLOWERS -> parentFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, FriendsFragment.newInstance(0))
-                        .addToBackStack(null).commit()
-
-                    HeaderType.ACTIVITY -> parentFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, NotificationListFragment())
-                        .addToBackStack(null).commit()
-
-                    HeaderType.SYSTEM_NOTIFICATIONS -> parentFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, SystemNotificationsFragment())
-                        .addToBackStack(null).commit()
-                }
-            },
+            onHeaderClick = { _ -> /* headers handled by accordion */ },
             onConversationClick = { ui ->
                 // user tapped a conversation: show its chat pane
                 rvConvs.visibility = View.GONE
@@ -190,30 +176,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             }
         )
         rvConvs.adapter = chatListAdapter
-        // show static headers + empty placeholder immediately for new users
-        chatListAdapter.submitList(
-            listOf(
-                ChatListItem.Header(
-                    HeaderType.NEW_FOLLOWERS,
-                    getString(R.string.new_followers),
-                    getString(R.string.new_followers_preview),
-                    0L
-                ),
-                ChatListItem.Header(
-                    HeaderType.ACTIVITY,
-                    getString(R.string.activity),
-                    getString(R.string.activity_preview),
-                    0L
-                ),
-                ChatListItem.Header(
-                    HeaderType.SYSTEM_NOTIFICATIONS,
-                    getString(R.string.system_notifications),
-                    getString(R.string.system_notifications_preview),
-                    0L
-                ),
-                ChatListItem.Empty
-            )
-        )
+        // initial placeholder
+        chatListAdapter.submitList(listOf(ChatListItem.Empty))
         loadChatList()
 
         // Poll every few seconds to refresh chats and notifications
@@ -235,6 +199,39 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             uploadJob?.cancel()
             attachmentPreviewContainer.isVisible = false
             selectedAttachment = null
+        }
+
+        // Swipe-to-refresh
+        val swipe = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipeRefresh)
+        swipe.setOnRefreshListener { loadChatList { swipe.isRefreshing = false } }
+
+        // Accordion setup
+        val accordionHeader = view.findViewById<View>(R.id.accordionHeader)
+        val accordionCaret = view.findViewById<TextView>(R.id.tvAccordionCaret)
+        val accordionContent = view.findViewById<View>(R.id.accordionContent)
+        val rowFollowers = view.findViewById<View>(R.id.rowNewFollowers)
+        val rowActivity = view.findViewById<View>(R.id.rowActivity)
+        val rowSystem = view.findViewById<View>(R.id.rowSystem)
+        fun toggleAccordion() {
+            val showing = accordionContent.isVisible
+            accordionContent.isVisible = !showing
+            accordionCaret.text = if (showing) ">" else "v"
+        }
+        accordionHeader.setOnClickListener { toggleAccordion() }
+        rowFollowers.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, FriendsFragment.newInstance(0))
+                .addToBackStack(null).commit()
+        }
+        rowActivity.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, NotificationListFragment())
+                .addToBackStack(null).commit()
+        }
+        rowSystem.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, SystemNotificationsFragment())
+                .addToBackStack(null).commit()
         }
     }
 
@@ -259,7 +256,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         }
     }
 
-    private fun loadChatList() {
+    private fun loadChatList(done: (() -> Unit)? = null) {
         lifecycleScope.launch {
             // compute header timestamps, but never fail entire load
             val notes = try {
@@ -328,40 +325,21 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 emptyList()
             }
 
-            // always show the static headers, then placeholder if no chats, then chats
-            val items = mutableListOf<ChatListItem>().apply {
-                add(
-                    ChatListItem.Header(
-                        HeaderType.NEW_FOLLOWERS,
-                        getString(R.string.new_followers),
-                        getString(R.string.new_followers_preview),
-                        lastFollow
-                    )
-                )
-                add(
-                    ChatListItem.Header(
-                        HeaderType.ACTIVITY,
-                        getString(R.string.activity),
-                        getString(R.string.activity_preview),
-                        lastActivity
-                    )
-                )
-                add(
-                    ChatListItem.Header(
-                        HeaderType.SYSTEM_NOTIFICATIONS,
-                        getString(R.string.system_notifications),
-                        getString(R.string.system_notifications_preview),
-                        lastSystem
-                    )
-                )
-                if (sortedConvs.isEmpty()) {
-                    // show placeholder when no chats
-                    add(ChatListItem.Empty)
-                }
-                sortedConvs.forEach { add(ChatListItem.Conversation(it)) }
-            }
-            items.sortByDescending { it.time }
+            // Update accordion timestamps
+            fun rel(ts: Long): String = if (ts > 0L) {
+                android.text.format.DateUtils.getRelativeTimeSpanString(
+                    ts, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS
+                ).toString()
+            } else ""
+            view?.findViewById<TextView>(R.id.tvNewFollowersTime)?.text = rel(lastFollow)
+            view?.findViewById<TextView>(R.id.tvActivityTime)?.text = rel(lastActivity)
+            view?.findViewById<TextView>(R.id.tvSystemTime)?.text = rel(lastSystem)
+
+            // Only conversations in the list now
+            val items = if (sortedConvs.isEmpty()) listOf(ChatListItem.Empty)
+            else sortedConvs.map { ChatListItem.Conversation(it) }
             chatListAdapter.submitList(items)
+            done?.invoke()
         }
     }
 

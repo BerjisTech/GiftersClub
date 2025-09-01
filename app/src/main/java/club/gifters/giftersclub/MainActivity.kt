@@ -1,53 +1,44 @@
 package club.gifters.giftersclub
 
-import club.gifters.giftersclub.network.RetrofitClient
+import android.Manifest
+import android.animation.Animator
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import club.gifters.giftersclub.BaseActivity
-import androidx.appcompat.app.AppCompatActivity
+import android.util.TypedValue
 import android.view.View
-import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import android.view.ViewGroup
+import android.widget.Button
 import android.widget.FrameLayout
-import androidx.viewpager2.widget.ViewPager2
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.cardview.widget.CardView
+import androidx.core.app.ActivityCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import com.google.android.material.tabs.TabLayoutMediator
+import androidx.viewpager2.widget.ViewPager2
+import club.gifters.giftersclub.chat.ChatFragment
+import club.gifters.giftersclub.explore.ExploreFragment
+import club.gifters.giftersclub.gifts.CreatePostFragment
 import club.gifters.giftersclub.gifts.GiftFragment
+import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.gifts.LeaderboardFragment
 import club.gifters.giftersclub.gifts.PostsFragment
-import club.gifters.giftersclub.gifts.CreatePostFragment
-import club.gifters.giftersclub.gifts.AccountFragment
 import club.gifters.giftersclub.gifts.WishlistsFragment
-import club.gifters.giftersclub.chat.ChatFragment
-import club.gifters.giftersclub.chat.NotificationListFragment
-import android.content.Intent
-import club.gifters.giftersclub.live.LiveStreamActivity
-import club.gifters.giftersclub.CreateOrGoLiveBottomSheetFragment
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import club.gifters.giftersclub.AuthUtils
-import club.gifters.giftersclub.AuthActivity
-import com.google.firebase.messaging.FirebaseMessaging
-import club.gifters.giftersclub.gifts.GifterFragment
-import club.gifters.giftersclub.social.FriendsFragment
-import club.gifters.giftersclub.explore.ExploreFragment
-import android.widget.ImageView
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.app.ActivityCompat
-import androidx.cardview.widget.CardView
-import android.widget.Button
-import android.widget.TextView
-import android.net.Uri
+import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.util.NetworkUtils
-import kotlinx.coroutines.withContext
-import java.io.IOException
-import retrofit2.HttpException
 import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieCompositionFactory
-import android.animation.Animator
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import retrofit2.HttpException
+import java.io.IOException
 
 class MainActivity : BaseActivity() {
     companion object {
@@ -56,6 +47,36 @@ class MainActivity : BaseActivity() {
         const val EXTRA_SHOW_CREATE_SHEET = "EXTRA_SHOW_CREATE_SHEET"
         /** Intent extra to open Settings at a particular tab index */
         const val EXTRA_OPEN_SETTINGS_TAB = "EXTRA_OPEN_SETTINGS_TAB"
+    }
+
+    private fun enlargeCreateItem(bottomNav: BottomNavigationView) {
+        // Ensure clicking the menu item opens create
+        bottomNav.menu.findItem(R.id.nav_create)?.setOnMenuItemClickListener {
+            CreateOrGoLiveBottomSheetFragment().show(supportFragmentManager, CreateOrGoLiveBottomSheetFragment.TAG)
+            true
+        }
+        bottomNav.post {
+            val menu = bottomNav.menu
+            val menuView = bottomNav.getChildAt(0) as? ViewGroup ?: return@post
+            var createIndex = -1
+            for (i in 0 until menu.size()) {
+                if (menu.getItem(i).itemId == R.id.nav_create) { createIndex = i; break }
+            }
+            if (createIndex < 0 || createIndex >= menuView.childCount) return@post
+            val itemView = menuView.getChildAt(createIndex) as? ViewGroup ?: return@post
+            val iconId = com.google.android.material.R.id.icon
+            val iconView = itemView.findViewById<ImageView>(iconId) ?: return@post
+            val sizePx = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, 60f, resources.displayMetrics
+            ).toInt()
+            val lp = iconView.layoutParams
+            lp.width = sizePx
+            lp.height = sizePx
+            iconView.layoutParams = lp
+            iconView.scaleType = ImageView.ScaleType.CENTER_CROP
+            // Optionally hide label text for the center item to avoid overlap
+            menu.getItem(createIndex).title = ""
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -302,11 +323,9 @@ class MainActivity : BaseActivity() {
                     finish()
                     true
                 }
-                R.id.nav_friends -> {
+                R.id.nav_explore -> {
                     supportFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer,
-                            FriendsFragment.newInstance(0)
-                        )
+                        .replace(R.id.mainContentContainer, ExploreFragment())
                         .addToBackStack(null)
                         .commit()
                     true
@@ -367,6 +386,9 @@ class MainActivity : BaseActivity() {
         updateBars()
         // Initial check for active host livestream (show resume banner)
         lifecycleScope.launch(Dispatchers.IO) { checkActiveHostLive() }
+
+        // Enlarge only the nav_create icon to ~60dp and attach action
+        enlargeCreateItem(bottomNav)
     }
 
     override fun onResume() {

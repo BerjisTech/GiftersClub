@@ -66,11 +66,6 @@
             android:textAppearance="?attr/textAppearanceBody2"
             android:visibility="gone" />
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@drawable/bg_sky_slate_gradient"
-            android:layout_margin="10dp"/>
 
         <!-- Recommended trending search queries -->
         <LinearLayout
