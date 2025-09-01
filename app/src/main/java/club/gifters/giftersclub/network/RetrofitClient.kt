@@ -188,9 +188,9 @@ object RetrofitClient {
 
     // AWS S3 presigned URL API for media uploads (requires Supabase JWT auth)
     val awsClient = client.newBuilder()
-        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .connectTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
         // Do not swallow IOExceptions here either
         .addInterceptor { chain ->
             val original = chain.request()

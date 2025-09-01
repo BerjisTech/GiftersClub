@@ -1407,11 +1407,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     val body: okhttp3.RequestBody = if (isVideo) {
                         object : okhttp3.RequestBody() {
                             override fun contentType() = type.toMediaTypeOrNull()
+                            override fun contentLength(): Long {
+                                return getContentLength(uri) ?: -1L
+                            }
                             override fun writeTo(sink: okio.BufferedSink) {
                                 val input = requireContext().contentResolver.openInputStream(uri)
                                     ?: throw Exception("Failed to open video stream")
                                 input.use { ins ->
-                                    // Stream copy without Okio.source (avoid dependency issues)
                                     val out = sink.outputStream()
                                     ins.copyTo(out)
                                     out.flush()
@@ -1478,6 +1480,30 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 progressBar.isVisible = false
             }
         }
+    }
+
+    private fun getContentLength(uri: Uri): Long? {
+        return try {
+            // Try via AssetFileDescriptor
+            requireContext().contentResolver.openAssetFileDescriptor(uri, "r")?.use { afd ->
+                val len = afd.length
+                if (len > 0) return len
+            }
+            // Fallback to query OpenableColumns.SIZE
+            val cursor = requireContext().contentResolver.query(
+                uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null
+            )
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val idx = it.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                    if (idx >= 0) {
+                        val size = it.getLong(idx)
+                        if (size > 0) return size
+                    }
+                }
+            }
+            null
+        } catch (_: Exception) { null }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

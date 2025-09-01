@@ -347,10 +347,16 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val uid = getCurrentUserId()
-                
-                // Fetch raw queries and group locally to compute frequencies
-                val raw = RetrofitClient.searchQueriesApi.searchRecommendedQueries(
-                    userId = "not.eq.$uid",
+                // Build PostgREST filter for user_id
+                val userFilter = if (uid.isNullOrBlank()) "not.is.null" else "not.eq.$uid"
+                // Fetch raw queries (distinct), then group locally for top trends
+                val raw = RetrofitClient.searchQueriesApi.searchQueries(
+                    select = "query",
+                    distinct = "query",
+                    queryFilter = null,
+                    userIdFilter = userFilter,
+                    order = "created_at.desc",
+                    limit = 1000
                 )
                 val freq = raw.groupingBy { it.query }.eachCount()
                 val trending = freq.entries
@@ -361,6 +367,10 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                 recommendedAdapter.submitList(trending)
                 rvRecommendedQueries.visibility =
                     if (trending.isNotEmpty()) View.VISIBLE else View.GONE
+                // Also show initial container if any recommended exists
+                if (trending.isNotEmpty()) {
+                    initialSearchContainer.visibility = View.VISIBLE
+                }
             } catch (e: HttpException) {
                 val url = e.response()?.raw()?.request?.url
                 val code = e.code()

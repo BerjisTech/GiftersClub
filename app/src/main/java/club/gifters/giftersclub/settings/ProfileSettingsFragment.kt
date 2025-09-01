@@ -130,12 +130,13 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
 
     private fun uploadImage(uri: Uri) {
         lifecycleScope.launch {
+            val ctx = context ?: return@launch
             try {
-                val type = requireContext().contentResolver.getType(uri).orEmpty()
+                val type = ctx.contentResolver.getType(uri).orEmpty()
                 val ext = type.substringAfterLast('/', "")
                 val filename = "profile-$userId.$ext"
                 val bytes = withContext(Dispatchers.IO) {
-                    requireContext().contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    ctx.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                 } ?: return@launch
 
                 val presignResp = RetrofitClient.functionsApi.uploadMedia(
@@ -156,10 +157,10 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
                 }
                 if (!putResp.isSuccessful) throw Exception("Upload failed: ${putResp.code}")
 
+                if (!isAdded) return@launch
                 updateProfile(mapOf("image" to presignData.publicUrl))
             } catch (_: Exception) {
-                Toast.makeText(requireContext(), "Failed to upload image", Toast.LENGTH_SHORT)
-                    .show()
+                context?.let { Toast.makeText(it, "Failed to upload image", Toast.LENGTH_SHORT).show() }
             }
         }
     }
@@ -168,16 +169,17 @@ class ProfileSettingsFragment : Fragment(R.layout.fragment_profile_settings) {
         lifecycleScope.launch {
             try {
                 val updated = profileApi.updateProfile(userIdFilter = "eq.$userId", updates = updates)
+                if (!isAdded) return@launch
                 if (updated.isNotEmpty()) {
                     val newImage = updated[0].image
                     ivAvatar.load(newImage) {
                         transformations(CircleCropTransformation())
                         placeholder(android.R.color.darker_gray)
                     }
-                    Toast.makeText(requireContext(), "Profile updated", Toast.LENGTH_SHORT).show()
+                    context?.let { Toast.makeText(it, "Profile updated", Toast.LENGTH_SHORT).show() }
                 }
             } catch (_: Exception) {
-                Toast.makeText(requireContext(), "Failed to update profile", Toast.LENGTH_SHORT).show()
+                context?.let { Toast.makeText(it, "Failed to update profile", Toast.LENGTH_SHORT).show() }
             }
         }
     }
