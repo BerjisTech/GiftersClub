@@ -120,4 +120,6 @@ dependencies {
 
     // Android FlexboxLayout for responsive wrapping rows (used in fragment_purchase_tokens_bottom_sheet.xml)
     implementation("com.google.android.flexbox:flexbox:3.0.0")
+    // WorkManager for resilient background uploads
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 }

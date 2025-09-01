@@ -10,6 +10,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- Camera and audio for live photo/video capture -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Foreground service for background uploads via WorkManager -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Remove screen-capture permission inherited from LiveKit -->
     <uses-permission
@@ -196,6 +199,14 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <!-- Declare WorkManager's foreground service with dataSync type for API 34+ -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge"
+            tools:replace="android:foregroundServiceType" />
 
         <activity android:name=".live.LiveStreamActivity" />
 

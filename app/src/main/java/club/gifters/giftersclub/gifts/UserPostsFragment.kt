@@ -39,6 +39,8 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
     private var username: String? = null
     private var swipeRefreshLayout: SwipeRefreshLayout? = null
     private var emptyTextView: TextView? = null
+    private var tvPendingUpload: TextView? = null
+    private var workObserverRegistered = false
 
     private var isSelectionMode = false
     private val selectedPosts = mutableSetOf<Post>()
@@ -85,6 +87,7 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerViewPosts)
+        tvPendingUpload = view.findViewById(R.id.tvPendingUpload)
         recyclerView.layoutManager = GridLayoutManager(context, 3) // 3 columns
         swipeRefreshLayout = view.findViewById(R.id.swipeRefresh)
         emptyTextView = view.findViewById(R.id.textEmpty)
@@ -119,6 +122,8 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
 
         // Load initial posts
         loadPosts(clear = true)
+        updatePendingBanner()
+        observeUploadWork()
 
         // Infinite scroll
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -138,6 +143,11 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
                 }
             }
         })
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updatePendingBanner()
     }
 
     private fun togglePostSelection(post: Post) {
@@ -183,6 +193,58 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
             } else {
                 "@${username} has not uploaded anything yet"
             }
+        }
+    }
+
+    private fun updatePendingBanner() {
+        val ctx = requireContext()
+        val pending = UploadTracker.hasPending(ctx, userId)
+        val isVideo = UploadTracker.isPendingVideo(ctx, userId)
+        tvPendingUpload?.text = if (isVideo) "Uploading video…" else "Posting… your new post is uploading"
+        tvPendingUpload?.visibility = if (pending) View.VISIBLE else View.GONE
+    }
+
+    private fun observeUploadWork() {
+        if (workObserverRegistered || userId.isNullOrBlank()) return
+        val tag = "post-upload-${userId}"
+        androidx.work.WorkManager.getInstance(requireContext())
+            .getWorkInfosByTagLiveData(tag)
+            .observe(viewLifecycleOwner) { infos ->
+                val running = infos.any { it.state == androidx.work.WorkInfo.State.ENQUEUED || it.state == androidx.work.WorkInfo.State.RUNNING }
+                if (running) {
+                    tvPendingUpload?.visibility = View.VISIBLE
+                    injectPlaceholder()
+                } else {
+                    tvPendingUpload?.visibility = View.GONE
+                    // Reload posts so the new one appears after upload completes
+                    loadPosts(clear = true)
+                }
+            }
+        workObserverRegistered = true
+    }
+
+    private fun injectPlaceholder() {
+        // Prepend a synthetic placeholder post at the top if not already present
+        val list = adapter.currentList.toMutableList()
+        val hasPlaceholder = list.firstOrNull()?.id?.startsWith("pending-") == true
+        if (!hasPlaceholder) {
+            val placeholder = club.gifters.giftersclub.model.Post(
+                id = "pending-" + System.currentTimeMillis(),
+                userId = userId ?: "",
+                content = "",
+                quotePostId = null,
+                replyCommentId = null,
+                createdAt = null,
+                profile = null,
+                media = emptyList(),
+                reactionCounts = null,
+                accessType = "free",
+                price = null,
+                requiredPlanId = null,
+                tags = emptyList()
+            )
+            list.add(0, placeholder)
+            adapter.submitList(list)
         }
     }
 

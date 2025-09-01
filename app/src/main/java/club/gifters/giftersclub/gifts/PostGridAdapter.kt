@@ -61,7 +61,7 @@ class PostGridAdapter(
                             }
                         }
                         if (bitmap != null) postImage.setImageBitmap(bitmap)
-                        else postImage.setImageResource(R.drawable.bg_sky_blue_gradient)
+                        else postImage.setImageResource(R.drawable.video)
                     }
             } else {
                 postImage.load(mediaItem?.url) { placeholder(R.drawable.bg_sky_blue_gradient) }

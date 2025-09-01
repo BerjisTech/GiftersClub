@@ -182,6 +182,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var torchEnabled = false
     private var isVideoMode = false
     private var isRecording = false
+    private var recordingActive = false
     private var isPaused = false
     private var camera: Camera? = null
     private var recordTimer: CountDownTimer? = null
@@ -956,10 +957,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     override fun onError(videoCaptureError: Int, message: String, cause: Throwable?) {
                         val ctx = context ?: return
                         Toast.makeText(ctx, "Video capture failed", Toast.LENGTH_SHORT).show()
+                        recordingActive = false
                     }
 
                     override fun onVideoSaved(output: VideoCapture.OutputFileResults) {
                         if (!isAdded) return
+                        recordingActive = false
                         // Record this segment
                         if (isPaused || (recordLimitMs != null)) {
                             recordedSegments.add(videoFile)
@@ -995,6 +998,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             )
         }
         isRecording = true
+        recordingActive = true
         isPaused = false
         currentSegmentStartMs = System.currentTimeMillis()
         btnCapture.setImageResource(R.drawable.stop_record)
@@ -1022,8 +1026,11 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     private fun stopRecording() {
         if (!isRecording) return
-        videoCapture?.stopRecording()
+        try {
+            if (recordingActive) videoCapture?.stopRecording()
+        } catch (_: Exception) {}
         isRecording = false
+        recordingActive = false
         isPaused = false
         btnCapture.setImageResource(R.drawable.record)
         recordTimer?.cancel()
@@ -1034,14 +1041,25 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     private fun pauseRecording() {
         if (!isRecording || recordLimitMs == null) return
-        videoCapture?.stopRecording()
+        try { if (recordingActive) videoCapture?.stopRecording() } catch (_: Exception) {}
         isRecording = false
+        recordingActive = false
         isPaused = true
         btnUndoSegment.visibility = if (recordedSegments.isNotEmpty()) View.VISIBLE else View.GONE
         recordTimer?.cancel()
         // Keep progress bar visible while paused
         pbRecordProgress.isVisible = true
         updateSegmentsBar()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try { recordTimer?.cancel() } catch (_: Exception) {}
+        if (isRecording) {
+            try { if (recordingActive) videoCapture?.stopRecording() } catch (_: Exception) {}
+            isRecording = false
+            recordingActive = false
+        }
     }
 
     private fun updateSegmentsBar() {
@@ -1178,7 +1196,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     retriever.setDataSource(requireContext(), uri)
                     val bmp = retriever.getFrameAtTime(0)
                     retriever.release()
-                    ivPostPreview.setImageBitmap(bmp)
+                    if (bmp != null) ivPostPreview.setImageBitmap(bmp)
+                    else ivPostPreview.setImageResource(R.drawable.video)
                 }
                 editedBitmap != null -> {
                     ivPostPreview.setImageBitmap(editedBitmap)
@@ -1395,27 +1414,14 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 //                        )
                     }
                 }
-                // Background media upload and navigate to profile
-                startBackgroundPostUpload(post.id, selectedUris.toList(), editedBitmap)
+                // Background media upload via WorkManager and navigate to profile
+                enqueuePostUploadWork(post.id, selectedUris.toList(), editedBitmap)
                 Toast.makeText(requireContext(), "Uploading in background", Toast.LENGTH_SHORT).show()
-                lifecycleScope.launch(Dispatchers.IO) {
-                    try {
-                        val prof = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$userId").firstOrNull()
-                        val uname = prof?.username
-                        withContext(Dispatchers.Main) {
-                            if (!uname.isNullOrBlank()) {
-                                requireActivity().supportFragmentManager.beginTransaction()
-                                    .replace(R.id.mainContentContainer, club.gifters.giftersclub.gifts.GifterFragment.newInstance(uname))
-                                    .addToBackStack(null)
-                                    .commit()
-                            } else {
-                                parentFragmentManager.popBackStack()
-                            }
-                        }
-                    } catch (_: Exception) {
-                        withContext(Dispatchers.Main) { parentFragmentManager.popBackStack() }
-                    }
-                }
+                // Return to MainActivity and open profile there (CreatePostActivity has no mainContentContainer)
+                val intent = android.content.Intent(requireContext(), club.gifters.giftersclub.MainActivity::class.java)
+                intent.putExtra(club.gifters.giftersclub.MainActivity.EXTRA_OPEN_PROFILE, true)
+                startActivity(intent)
+                requireActivity().finish()
             } catch (e: Exception) {
                 // Log.e(TAG, "Failed to create post", e)
                 Toast.makeText(requireContext(), "Failed to create post", Toast.LENGTH_SHORT).show()
@@ -1425,15 +1431,15 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
     }
 
-    private fun getContentLength(uri: Uri): Long? {
+    private fun getContentLength(uri: Uri): Long? = getContentLength(requireContext().applicationContext, uri)
+
+    private fun getContentLength(ctx: android.content.Context, uri: Uri): Long? {
         return try {
-            // Try via AssetFileDescriptor
-            requireContext().contentResolver.openAssetFileDescriptor(uri, "r")?.use { afd ->
+            ctx.contentResolver.openAssetFileDescriptor(uri, "r")?.use { afd ->
                 val len = afd.length
                 if (len > 0) return len
             }
-            // Fallback to query OpenableColumns.SIZE
-            val cursor = requireContext().contentResolver.query(
+            val cursor = ctx.contentResolver.query(
                 uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null
             )
             cursor?.use {
@@ -1449,90 +1455,44 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         } catch (_: Exception) { null }
     }
 
-    private fun startBackgroundPostUpload(postId: String, uris: List<Uri>, editedBitmap: Bitmap?) {
+    private fun enqueuePostUploadWork(postId: String, uris: List<Uri>, editedBitmap: Bitmap?) {
         val appCtx = requireContext().applicationContext
-        val mgr = appCtx.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-        val channelId = "post_uploads"
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            mgr.createNotificationChannel(
-                android.app.NotificationChannel(channelId, "Post Uploads", android.app.NotificationManager.IMPORTANCE_LOW)
-            )
-        }
-        val notifBuilder = androidx.core.app.NotificationCompat.Builder(appCtx, channelId)
-            .setSmallIcon(android.R.drawable.stat_sys_upload)
-            .setContentTitle("Uploading post")
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-        val notifId = (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
-
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+        // Mark pending for current user so profile can show a banner
+        val currentUid = club.gifters.giftersclub.AuthUtils.getCurrentUserId(appCtx)
+        UploadTracker.addPending(appCtx, currentUid, postId)
+        UploadTracker.setPendingVideo(appCtx, currentUid, isVideoSelected)
+        // persist edited image (first item) if present and not a video selection
+        val finalUris = uris.toMutableList()
+        if (finalUris.isNotEmpty() && !isVideoSelected && editedBitmap != null) {
             try {
-                val total = uris.size.coerceAtLeast(1)
-                var done = 0
-                uris.forEachIndexed { index, uri ->
-                    val rawType = appCtx.contentResolver.getType(uri)
-                    val isVideo = rawType?.startsWith("video/") == true || uri.path?.endsWith(".mp4") == true
-                    val type = rawType ?: "application/octet-stream"
-                    val ext = type.substringAfterLast('/', "bin")
-                    val ts = System.currentTimeMillis()
-                    val filename = "${postId}-$ts-$index.$ext"
-                    val body: okhttp3.RequestBody = if (isVideo) {
-                        object : okhttp3.RequestBody() {
-                            override fun contentType() = type.toMediaTypeOrNull()
-                            override fun contentLength(): Long = getContentLength(uri) ?: -1L
-                            override fun writeTo(sink: okio.BufferedSink) {
-                                val input = appCtx.contentResolver.openInputStream(uri) ?: throw Exception("Failed to open video stream")
-                                input.use { ins ->
-                                    val out = sink.outputStream(); ins.copyTo(out); out.flush()
-                                }
-                            }
-                        }
-                    } else {
-                        val bytes = appCtx.contentResolver.openInputStream(uri)?.use { stream ->
-                            if (index == 0 && editedBitmap != null) {
-                                java.io.ByteArrayOutputStream().apply {
-                                    editedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, this)
-                                }.toByteArray()
-                            } else stream.readBytes()
-                        } ?: throw Exception("Failed to read media data")
-                        bytes.toRequestBody(type.toMediaTypeOrNull())
-                    }
-                    val presignResp = RetrofitClient.functionsApi.uploadMedia(
-                        PresignRequest(fileName = filename, fileType = type, bucket = "post", overwrite = false)
-                    )
-                    if (!presignResp.isSuccessful) throw HttpException(presignResp)
-                    val presignData = presignResp.body()!!
-                    val putReq = Request.Builder().url(presignData.uploadUrl).put(body).build()
-                    val putResp = RetrofitClient.awsClient.newCall(putReq).execute()
-                    if (!putResp.isSuccessful) throw Exception("Upload failed: ${putResp.code}")
-                    val publicUrl = presignData.publicUrl
-                    val mediaResp = postApi.createPostMedia(
-                        createMedia = CreatePostMediaRequest(
-                            postId,
-                            if (isVideo) "video" else "photo",
-                            publicUrl,
-                            index
-                        )
-                    )
-                    if (!mediaResp.isSuccessful) throw Exception("Failed to save post media")
-                    done++
-                    val progress = (done * 100 / total).coerceIn(0, 100)
-                    mgr.notify(
-                        notifId,
-                        notifBuilder.setContentText("$done of $total uploaded").setProgress(100, progress, false).build()
+                val tmp = java.io.File(appCtx.cacheDir, "EDIT_${System.currentTimeMillis()}.jpg")
+                java.io.FileOutputStream(tmp).use { out -> editedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
+                finalUris[0] = Uri.fromFile(tmp)
+            } catch (_: Exception) { }
+        }
+        // Persist URI read permission for background (WorkManager) use across process restarts and older devices
+        try {
+            finalUris.forEach { uri ->
+                if ("content".equals(uri.scheme, true)) {
+                    requireContext().contentResolver.takePersistableUriPermission(
+                        uri,
+                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
                     )
                 }
-                mgr.notify(
-                    notifId,
-                    notifBuilder.setContentText("Post published").setOngoing(false).setSmallIcon(android.R.drawable.stat_sys_upload_done).setProgress(0, 0, false).build()
-                )
-            } catch (_: Exception) {
-                mgr.notify(
-                    notifId,
-                    notifBuilder.setContentText("Upload failed").setOngoing(false).setSmallIcon(android.R.drawable.stat_notify_error).setProgress(0, 0, false).build()
-                )
             }
-        }
+        } catch (_: Exception) { }
+        val uriStrings = finalUris.map { it.toString() }
+        val types = finalUris.map { appCtx.contentResolver.getType(it) ?: "application/octet-stream" }
+        val data = UploadPostWorker.buildInput(postId, uriStrings, types)
+        val work = androidx.work.OneTimeWorkRequestBuilder<UploadPostWorker>()
+            .setInputData(data)
+            .setConstraints(
+                androidx.work.Constraints.Builder().setRequiredNetworkType(androidx.work.NetworkType.CONNECTED).build()
+            )
+            .addTag("post-upload-${currentUid}")
+            .build()
+        androidx.work.WorkManager.getInstance(appCtx)
+            .enqueue(work)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
