@@ -9,13 +9,15 @@ android.buildFeatures.buildConfig = true
 android {
     namespace = "club.gifters.giftersclub"
     compileSdk = 35
+    // Ensure a 16K-page-aware toolchain if/when compiling native code
+    ndkVersion = "26.3.11579264"
 
     defaultConfig {
         applicationId = "club.gifters.giftersclub"
         minSdk = 24
         targetSdk = 35
-        versionCode = 28
-        versionName = "1.0.28"
+        versionCode = 30
+        versionName = "1.0.30"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -40,6 +42,8 @@ android {
         buildConfigField("String", "ROLLBAR_ENV", "\"$rollbarEnv\"")
         // Expose token to manifest as a placeholder so you can use docs' manifest-based init
         manifestPlaceholders["ROLLBAR_ACCESS_TOKEN"] = rollbarClientToken
+
+        // ABI selection moved to productFlavors below to allow x86_64 for dev/debug
     }
 
     buildTypes {
@@ -59,6 +63,28 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+    }
+}
+
+android {
+    // Create flavors so dev builds can include x86_64 for emulator,
+    // while prod builds ship arm64-v8a only.
+    flavorDimensions += listOf("dist")
+    productFlavors {
+        create("dev") {
+            dimension = "dist"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            ndk {
+                abiFilters += listOf("arm64-v8a", "x86_64")
+            }
+        }
+        create("prod") {
+            dimension = "dist"
+            ndk {
+                abiFilters += listOf("arm64-v8a")
+            }
+        }
     }
 }
 
@@ -83,18 +109,20 @@ dependencies {
     // Full‑range color‑picker for text/background: AmbilWarna via JitPack
     implementation("com.github.yukuku:ambilwarna:2.0.1")
     // Image cropping UI via uCrop (JitPack)
-    // Image cropping UI via uCrop (Maven Central native build)
-    implementation("com.yalantis:ucrop:2.2.0-native")
+    // Image cropping UI via uCrop (Maven Central, non-native artifact)
+    implementation("com.yalantis:ucrop:2.2.0")
     // Circular zoom control (rotary seekbar) via Maven Central
     implementation("com.akaita.android:circular-seek-bar:1.0")
     // CameraX for live camera preview and capture
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
-    // LiveKit Android SDK for WebRTC SFU streaming (v2.x)
-    implementation("io.livekit:livekit-android:2.+")
+    // LiveKit Android SDK for WebRTC SFU streaming (pinned)
+    implementation("io.livekit:livekit-android:2.20.1")
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    // Google Play Billing library (adds BILLING permission via manifest)
+    implementation(libs.billing.ktx)
     // Rollbar Android SDK for crash/error reporting
     implementation("com.rollbar:rollbar-android:1.10.3")
     coreLibraryDesugaring(libs.desugar.jdk.libs)

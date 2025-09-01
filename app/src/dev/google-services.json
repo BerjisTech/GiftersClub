@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "47173124679",
+    "project_id": "gifters-club",
+    "storage_bucket": "gifters-club.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:47173124679:android:27ce963168ac67944c2762",
+        "android_client_info": {
+          "package_name": "club.gifters.giftersclub.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlROsuqYVYURx7VMhAT0vNnEv7DdV0YL4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+

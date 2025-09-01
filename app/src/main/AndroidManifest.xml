@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- Camera and audio for live photo/video capture -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Play Billing permission (also provided by billing-ktx library manifest) -->
+    <uses-permission android:name="com.android.vending.BILLING" />
     <!-- Foreground service for background uploads via WorkManager -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
