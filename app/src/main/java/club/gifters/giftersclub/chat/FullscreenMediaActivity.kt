@@ -4,63 +4,60 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.widget.ImageView
-import android.widget.VideoView
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.PlayerView
 import club.gifters.giftersclub.BaseActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import coil.load
 import club.gifters.giftersclub.R
+import club.gifters.giftersclub.media.MediaCache
 
 /**
  * Fullscreen viewer for image or video attachments.
  */
 class FullscreenMediaActivity : BaseActivity() {
+    private var player: ExoPlayer? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_fullscreen_media)
         val url = intent.getStringExtra("url") ?: return
         val type = intent.getStringExtra("type")
         val iv = findViewById<ImageView>(R.id.fullscreenImage)
-        val vv = findViewById<VideoView>(R.id.fullscreenVideo)
+        val pv = findViewById<PlayerView>(R.id.fullscreenPlayer)
         if (type == "video") {
             iv.isVisible = false
-            vv.isVisible = true
-            vv.setVideoURI(Uri.parse(url))
-            vv.setOnPreparedListener { mp ->
-                mp.isLooping = true
-                // Fit video inside the screen without stretching (letterbox if needed)
-                val videoW = mp.videoWidth.takeIf { it > 0 } ?: return@setOnPreparedListener
-                val videoH = mp.videoHeight.takeIf { it > 0 } ?: return@setOnPreparedListener
-                val metrics = DisplayMetrics()
-                windowManager.defaultDisplay.getRealMetrics(metrics)
-                val screenW = metrics.widthPixels
-                val screenH = metrics.heightPixels
-                val videoRatio = videoW.toFloat() / videoH
-                val screenRatio = screenW.toFloat() / screenH
-                val targetW: Int
-                val targetH: Int
-                if (videoRatio > screenRatio) {
-                    // Limited by width
-                    targetW = screenW
-                    targetH = (screenW / videoRatio).toInt()
-                } else {
-                    // Limited by height
-                    targetH = screenH
-                    targetW = (screenH * videoRatio).toInt()
-                }
-                val lp = vv.layoutParams
-                lp.width = targetW
-                lp.height = targetH
-                vv.layoutParams = lp
-                vv.requestLayout()
-            }
-            vv.start()
+            pv.isVisible = true
+            // Build ExoPlayer with a media source that uses cache
+            val factory = MediaCache.cacheDataSourceFactory(this)
+            val mediaSourceFactory = DefaultMediaSourceFactory(factory)
+            val exo = ExoPlayer.Builder(this)
+                .setMediaSourceFactory(mediaSourceFactory)
+                .build()
+            pv.player = exo
+            exo.repeatMode = Player.REPEAT_MODE_ONE
+            exo.setMediaItem(MediaItem.fromUri(url))
+            exo.prepare()
+            exo.playWhenReady = true
+            player = exo
         } else {
-            vv.isVisible = false
+            pv.isVisible = false
             iv.isVisible = true
-            iv.load(url) { placeholder(android.R.color.darker_gray) }
+            iv.load(url) {
+                placeholder(android.R.color.darker_gray)
+                memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                diskCachePolicy(coil.request.CachePolicy.ENABLED)
+            }
         }
         // Tap to close fullscreen
         findViewById<ImageView>(R.id.fullscreenClose).setOnClickListener { finish() }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        player?.release(); player = null
     }
 }

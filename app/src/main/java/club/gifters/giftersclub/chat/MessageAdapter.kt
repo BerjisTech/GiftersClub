@@ -13,6 +13,10 @@ import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Message
 import coil.load
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import coil.size.Size
+import club.gifters.giftersclub.media.MediaCache
 import java.time.OffsetDateTime
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -153,6 +157,16 @@ class MessageAdapter(
             val maxHeight = (300 * metrics.density).toInt()
             msg.attachments?.forEach { attach ->
                 if (attach.type == "image") {
+                    // Prefetch image into cache
+                    try {
+                        val req = ImageRequest.Builder(itemView.context)
+                            .data(attach.url)
+                            .size(Size.ORIGINAL)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .build()
+                        coil.Coil.imageLoader(itemView.context).enqueue(req)
+                    } catch (_: Exception) {}
                     val iv = ImageView(itemView.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             maxBubbleWidth,
@@ -173,6 +187,8 @@ class MessageAdapter(
                     iv.load(attach.url) { placeholder(android.R.color.darker_gray) }
                     llAttachments.addView(iv)
                 } else {
+                    // Prefetch first chunk of video into cache to speed up fullscreen playback
+                    try { MediaCache.prefetch(itemView.context, attach.url, 1_500_000L) } catch (_: Exception) {}
                     val vv = VideoView(itemView.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             maxBubbleWidth,
