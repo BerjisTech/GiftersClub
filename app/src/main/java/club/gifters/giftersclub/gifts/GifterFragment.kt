@@ -54,6 +54,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        (activity as? club.gifters.giftersclub.MainActivity)?.setLoading(true)
         val imageAvatar = view.findViewById<ImageView>(R.id.imageAvatar)
         val textName    = view.findViewById<TextView>(R.id.textName)
         val textUser    = view.findViewById<TextView>(R.id.textUsername)
@@ -189,6 +190,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
                 // default to Posts tab
                 viewPager.currentItem = 0
             }
+            (activity as? club.gifters.giftersclub.MainActivity)?.setLoading(false)
         }
     }
 

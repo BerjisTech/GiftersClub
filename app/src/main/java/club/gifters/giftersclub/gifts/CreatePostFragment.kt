@@ -111,6 +111,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private val enabledAdjustable = mutableSetOf<String>()
     private var customTimerSec = 15
     private lateinit var etContent: EditText
+    private lateinit var ivPostPreview: ImageView
     private lateinit var btnEditMedia: Button
     private lateinit var btnEditMediaCard: androidx.cardview.widget.CardView
     private lateinit var btnApplyFilter: Button
@@ -135,11 +136,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var btnTimer15s: TextView
     private lateinit var btnModeToggle: ImageView
     private lateinit var btnTextMode: TextView
+    private lateinit var btnUndoSegment: ImageView
     private lateinit var btnCapture: ImageView
     private lateinit var btnSelectDevice: ImageView
     private lateinit var layoutFilterOptions: LinearLayout
     private lateinit var hsvFilters: HorizontalScrollView
     private lateinit var pbRecordProgress: CircularProgressIndicator
+    private lateinit var segmentsBar: LinearLayout
     private lateinit var tvElapsedTime: TextView
     private var recordStartTimeMs: Long = 0L
     private var elapsedHandler: Handler? = null
@@ -179,8 +182,14 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var torchEnabled = false
     private var isVideoMode = false
     private var isRecording = false
+    private var isPaused = false
     private var camera: Camera? = null
     private var recordTimer: CountDownTimer? = null
+    private var totalRecordedMs: Long = 0L
+    private var currentSegmentStartMs: Long = 0L
+    private val recordedSegments = mutableListOf<java.io.File>()
+    private val recordedSegmentDurations = mutableListOf<Long>()
+    private var pendingFinalize: Boolean = false
     private val longPressHandler = Handler(Looper.getMainLooper())
     private var longPressRunnable: Runnable? = null
     private var isLongPress = false
@@ -264,6 +273,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         layoutMedia = view.findViewById(R.id.layoutMedia)
         layoutEdit = view.findViewById(R.id.layoutEdit)
         layoutDetails = view.findViewById(R.id.layoutDetails)
+        ivPostPreview = view.findViewById(R.id.ivPostPreview)
         etContent = view.findViewById(R.id.etContent)
         btnEditMedia = view.findViewById(R.id.btnEditMedia)
         btnEditMediaCard = view.findViewById(R.id.btnEditMediaCard)
@@ -306,14 +316,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 }
                 R.id.rbSubscriberOnly -> {
                     etPrice.visibility = View.GONE
-                    // Show either plans dropdown (if loaded) or no-plans message
-                    if (postPlanIdByName.isNotEmpty()) {
-                        layoutPostPlanPicker.visibility = View.VISIBLE
-                        view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.GONE
-                    } else {
-                        layoutPostPlanPicker.visibility = View.GONE
-                        view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.VISIBLE
-                    }
+                    val hasPlans = postPlanIdByName.isNotEmpty()
+                    layoutPostPlanPicker.visibility = if (hasPlans) View.VISIBLE else View.GONE
+                    view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = if (hasPlans) View.GONE else View.VISIBLE
                 }
                 else -> {
                     etPrice.visibility = View.GONE
@@ -338,13 +343,17 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         actvPostPlan.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvPostPlan.showDropDown() }
                         actvPostPlan.setOnClickListener { actvPostPlan.showDropDown() }
                         actvPostPlan.setText("All", false)
-                        // Ensure correct visibility based on selected radio
+                        // Adjust only if currently on subscriber-only
                         if (rgAccessType.checkedRadioButtonId == R.id.rbSubscriberOnly) {
                             layoutPostPlanPicker.visibility = View.VISIBLE
+                            view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.GONE
                         }
                     } else {
-                        // No plans: show message and settings link when Subscriber Only is chosen
-                        view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.VISIBLE
+                        // No plans loaded: only show message if subscriber-only is selected
+                        if (rgAccessType.checkedRadioButtonId == R.id.rbSubscriberOnly) {
+                            layoutPostPlanPicker.visibility = View.GONE
+                            view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.VISIBLE
+                        }
                         view.findViewById<Button>(R.id.btnOpenSubscriptionSettingsFromPost).setOnClickListener {
                             val intent = android.content.Intent(requireContext(), club.gifters.giftersclub.MainActivity::class.java)
                             intent.putExtra(club.gifters.giftersclub.MainActivity.EXTRA_OPEN_SETTINGS_TAB, 4)
@@ -371,6 +380,22 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         // initialize photo/video icon
         btnModeToggle.setImageResource(if (isVideoMode) R.drawable.camera else R.drawable.video)
         btnTextMode = view.findViewById(R.id.btnTextMode)
+        btnUndoSegment = view.findViewById(R.id.btnUndoSegment)
+        btnUndoSegment.visibility = View.GONE
+        btnUndoSegment.setOnClickListener {
+            if (isPaused && recordedSegments.isNotEmpty()) {
+                val file = recordedSegments.removeLast()
+                val dur = recordedSegmentDurations.removeLast()
+                totalRecordedMs = (totalRecordedMs - dur).coerceAtLeast(0L)
+                try { file.delete() } catch (_: Exception) {}
+                // update progress bar to reflect removal
+                recordLimitMs?.let { limit ->
+                    val p = ((totalRecordedMs * 100) / limit).toInt().coerceIn(0, 100)
+                    pbRecordProgress.progress = p
+                }
+                if (recordedSegments.isEmpty()) btnUndoSegment.visibility = View.GONE
+            }
+        }
         // Text post editor view bindings
         layoutTextEditor = view.findViewById(R.id.layoutTextEditor)
         flTextCanvas = view.findViewById(R.id.flTextCanvas)
@@ -580,6 +605,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         layoutFilterOptions = view.findViewById(R.id.layoutFilterOptions)
         hsvFilters = view.findViewById(R.id.hsvFilters)
         pbRecordProgress = view.findViewById(R.id.pbRecordProgress)
+        segmentsBar = view.findViewById(R.id.segmentsBar)
         tvElapsedTime = view.findViewById(R.id.tvElapsedTime)
 
         btnSelectDevice.setOnClickListener {
@@ -669,9 +695,19 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     if (isVideoMode) {
-                        // start video recording with current timer (default 5s if unset)
-                        if (recordLimitMs == null) recordLimitMs = 5 * 1000L
-                        startRecording()
+                        // Timer-based recording supports pause/resume
+                        if (recordLimitMs != null) {
+                            if (isRecording && !isPaused) {
+                                pauseRecording()
+                            } else {
+                                // start or resume
+                                if (recordLimitMs == null) recordLimitMs = 5 * 1000L
+                                startRecording()
+                            }
+                        } else {
+                            // No timer: behave as before (press-and-hold capture)
+                            if (!isRecording) startRecording()
+                        }
                     } else {
                         // Photo mode, potential long press
                         isLongPress = false
@@ -689,7 +725,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     longPressRunnable?.let { longPressHandler.removeCallbacks(it) }
-                    if (isRecording && recordLimitMs == null) {
+                    if (isRecording && recordLimitMs == null && !isPaused) {
                         stopRecording()
                     } else if (!isLongPress && !isVideoMode) {
                         takePhoto()
@@ -753,6 +789,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             scaleGestureDetector.onTouchEvent(ev)
             true
         }
+
+        // Initialize segments bar (empty)
+        updateSegmentsBar()
 
         baseFilter = GPUImageFilter()
         contrastFilter = GPUImageContrastFilter(1.0f)
@@ -835,6 +874,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
             layoutEdit.isVisible = false
             layoutDetails.isVisible = true
+            updatePostPreview()
         }
     }
 
@@ -920,38 +960,135 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
                     override fun onVideoSaved(output: VideoCapture.OutputFileResults) {
                         if (!isAdded) return
-                        val savedUri = Uri.fromFile(videoFile)
-                        handleSelectedMedia(listOf(savedUri))
+                        // Record this segment
+                        if (isPaused || (recordLimitMs != null)) {
+                            recordedSegments.add(videoFile)
+                            val segDur = System.currentTimeMillis() - currentSegmentStartMs
+                            recordedSegmentDurations.add(segDur)
+                            totalRecordedMs += segDur
+                            updateSegmentsBar()
+                            if (pendingFinalize) {
+                                pendingFinalize = false
+                                // Merge all segments into a single file (fallback to last if merge fails)
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    val merged = withContext(Dispatchers.IO) { mergeSegmentsSafely(recordedSegments) }
+                                    val file = merged ?: recordedSegments.lastOrNull() ?: videoFile
+                                    handleSelectedMedia(listOf(Uri.fromFile(file)))
+                                    // clean up other segments if merged
+                                    if (merged != null) {
+                                        recordedSegments.forEach { if (it != merged) try { it.delete() } catch (_: Exception) {} }
+                                    }
+                                    // reset state for next recording
+                                    recordedSegments.clear()
+                                    recordedSegmentDurations.clear()
+                                    totalRecordedMs = 0L
+                                    updateSegmentsBar()
+                                }
+                            }
+                        } else {
+                            // No timer flow: proceed directly
+                            val savedUri = Uri.fromFile(videoFile)
+                            handleSelectedMedia(listOf(savedUri))
+                        }
                     }
                 }
             )
         }
         isRecording = true
+        isPaused = false
+        currentSegmentStartMs = System.currentTimeMillis()
         btnCapture.setImageResource(R.drawable.stop_record)
         pbRecordProgress.isVisible = true
         recordTimer?.cancel()
         recordLimitMs?.let { limit ->
-            recordTimer = object : CountDownTimer(limit, limit / 100) {
+            val remaining = (limit - totalRecordedMs).coerceAtLeast(0L)
+            recordTimer = object : CountDownTimer(remaining, (remaining.coerceAtLeast(1000L) / 100)) {
                 override fun onTick(millisUntilFinished: Long) {
-                    val p = ((limit - millisUntilFinished) * 100 / limit).toInt()
+                    val elapsed = totalRecordedMs + (remaining - millisUntilFinished)
+                    val p = ((elapsed * 100) / limit).toInt().coerceIn(0, 100)
                     pbRecordProgress.progress = p
+                    updateSegmentsBar()
                 }
 
                 override fun onFinish() {
                     pbRecordProgress.progress = 100
+                    pendingFinalize = true
                     stopRecording()
                 }
             }.apply { start() }
         }
+        updateSegmentsBar()
     }
 
     private fun stopRecording() {
         if (!isRecording) return
         videoCapture?.stopRecording()
         isRecording = false
+        isPaused = false
         btnCapture.setImageResource(R.drawable.record)
         recordTimer?.cancel()
         pbRecordProgress.isVisible = false
+        btnUndoSegment.visibility = View.GONE
+        updateSegmentsBar()
+    }
+
+    private fun pauseRecording() {
+        if (!isRecording || recordLimitMs == null) return
+        videoCapture?.stopRecording()
+        isRecording = false
+        isPaused = true
+        btnUndoSegment.visibility = if (recordedSegments.isNotEmpty()) View.VISIBLE else View.GONE
+        recordTimer?.cancel()
+        // Keep progress bar visible while paused
+        pbRecordProgress.isVisible = true
+        updateSegmentsBar()
+    }
+
+    private fun updateSegmentsBar() {
+        val limit = recordLimitMs ?: run {
+            segmentsBar.removeAllViews(); return
+        }
+        val ctx = segmentsBar.context
+        val density = ctx.resources.displayMetrics.density
+        val sepWidth = (2 * density).toInt()
+        val totalElapsed = if (isRecording) {
+            val nowSeg = (System.currentTimeMillis() - currentSegmentStartMs).coerceAtLeast(0L)
+            totalRecordedMs + nowSeg
+        } else totalRecordedMs
+        segmentsBar.removeAllViews()
+        // Set weightSum to limit (ms) to proportionally size blocks
+        segmentsBar.weightSum = limit.toFloat()
+        var acc = 0L
+        // Add completed segments
+        recordedSegmentDurations.forEachIndexed { idx, dur ->
+            if (dur > 0) {
+                val v = View(ctx)
+                v.setBackgroundColor(android.graphics.Color.WHITE)
+                v.alpha = 0.8f
+                segmentsBar.addView(v, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, dur.toFloat()))
+                acc += dur
+                // separator
+                val sep = View(ctx)
+                sep.setBackgroundColor(android.graphics.Color.WHITE)
+                segmentsBar.addView(sep, LinearLayout.LayoutParams(sepWidth, LinearLayout.LayoutParams.MATCH_PARENT))
+            }
+        }
+        // Ongoing segment block (if recording or paused with current segment)
+        val ongoing = (totalElapsed - acc).coerceAtLeast(0L)
+        if (ongoing > 0) {
+            val v = View(ctx)
+            v.setBackgroundColor(android.graphics.Color.WHITE)
+            v.alpha = 1.0f
+            segmentsBar.addView(v, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, ongoing.toFloat()))
+        }
+        // Remaining space filler (transparent or dim)
+        val remain = (limit - totalElapsed).coerceAtLeast(0L)
+        if (remain > 0) {
+            val filler = View(ctx)
+            filler.setBackgroundColor(android.graphics.Color.WHITE)
+            filler.alpha = 0.25f
+            segmentsBar.addView(filler, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, remain.toFloat()))
+        }
     }
 
     private fun showTimerDialog() {
@@ -1025,9 +1162,130 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         // Proceed to next step after selection
         if (isVideoSelected || selectedUris.isEmpty()) {
             showStep(layoutDetails)
+            updatePostPreview()
         } else {
             showStep(layoutEdit)
             loadImageForEditing()
+        }
+    }
+
+    private fun updatePostPreview() {
+        try {
+            when {
+                isVideoSelected && selectedUris.isNotEmpty() -> {
+                    val uri = selectedUris.first()
+                    val retriever = android.media.MediaMetadataRetriever()
+                    retriever.setDataSource(requireContext(), uri)
+                    val bmp = retriever.getFrameAtTime(0)
+                    retriever.release()
+                    ivPostPreview.setImageBitmap(bmp)
+                }
+                editedBitmap != null -> {
+                    ivPostPreview.setImageBitmap(editedBitmap)
+                }
+                selectedUris.isNotEmpty() -> {
+                    val uri = selectedUris.first()
+                    requireContext().contentResolver.openInputStream(uri)?.use { ins ->
+                        val opts = BitmapFactory.Options().apply { inSampleSize = 2 }
+                        val bmp = BitmapFactory.decodeStream(ins, null, opts)
+                        ivPostPreview.setImageBitmap(bmp)
+                    }
+                }
+                else -> {
+                    // No media selected (text-only flow): keep existing or clear
+                    ivPostPreview.setImageDrawable(null)
+                }
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    // Merge multiple MP4 segments (same codec) into a single MP4. Returns merged file or null on failure.
+    private fun mergeSegmentsSafely(segments: List<java.io.File>): java.io.File? {
+        if (segments.isEmpty()) return null
+        try {
+            val outFile = java.io.File(requireContext().cacheDir, "MERGED_${System.currentTimeMillis()}.mp4")
+            val muxer = android.media.MediaMuxer(outFile.absolutePath, android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+
+            // Determine tracks from first segment
+            val first = segments.first()
+            val firstExtractor = android.media.MediaExtractor()
+            firstExtractor.setDataSource(first.absolutePath)
+            var vTrack = -1
+            var aTrack = -1
+            var vFormat: android.media.MediaFormat? = null
+            var aFormat: android.media.MediaFormat? = null
+            for (i in 0 until firstExtractor.trackCount) {
+                val fmt = firstExtractor.getTrackFormat(i)
+                val mime = fmt.getString(android.media.MediaFormat.KEY_MIME)
+                if (mime?.startsWith("video/") == true) { vTrack = i; vFormat = fmt }
+                if (mime?.startsWith("audio/") == true) { aTrack = i; aFormat = fmt }
+            }
+            if (vFormat == null && aFormat == null) { firstExtractor.release(); muxer.release(); return null }
+            var muxV = -1
+            var muxA = -1
+            if (vFormat != null) muxV = muxer.addTrack(vFormat!!)
+            if (aFormat != null) muxA = muxer.addTrack(aFormat!!)
+            muxer.start()
+            firstExtractor.release()
+
+            var vPtsOffset = 0L
+            var aPtsOffset = 0L
+            val buffer = java.nio.ByteBuffer.allocate(1024 * 1024)
+            val info = android.media.MediaCodec.BufferInfo()
+
+            for (file in segments) {
+                val extractor = android.media.MediaExtractor()
+                extractor.setDataSource(file.absolutePath)
+                var thisV = -1
+                var thisA = -1
+                for (i in 0 until extractor.trackCount) {
+                    val fmt = extractor.getTrackFormat(i)
+                    val mime = fmt.getString(android.media.MediaFormat.KEY_MIME)
+                    if (mime?.startsWith("video/") == true && vFormat != null) thisV = i
+                    if (mime?.startsWith("audio/") == true && aFormat != null) thisA = i
+                }
+                if (thisV >= 0) extractor.selectTrack(thisV)
+                if (thisA >= 0) extractor.selectTrack(thisA)
+
+                var lastVPts = 0L
+                var lastAPts = 0L
+                // Interleave by track: write all video then all audio per segment (simpler, acceptable for concatenation)
+                if (thisV >= 0 && muxV >= 0) {
+                    while (true) {
+                        info.offset = 0
+                        info.size = extractor.readSampleData(buffer, 0)
+                        if (info.size < 0) break
+                        info.presentationTimeUs = extractor.sampleTime + vPtsOffset
+                        info.flags = extractor.sampleFlags
+                        muxer.writeSampleData(muxV, buffer, info)
+                        lastVPts = info.presentationTimeUs
+                        extractor.advance()
+                    }
+                    vPtsOffset = lastVPts + 1000 // +1ms gap
+                }
+                if (thisA >= 0 && muxA >= 0) {
+                    extractor.unselectTrack(thisV.takeIf { it >= 0 } ?: 0)
+                    extractor.selectTrack(thisA)
+                    while (true) {
+                        info.offset = 0
+                        info.size = extractor.readSampleData(buffer, 0)
+                        if (info.size < 0) break
+                        info.presentationTimeUs = extractor.sampleTime + aPtsOffset
+                        info.flags = extractor.sampleFlags
+                        muxer.writeSampleData(muxA, buffer, info)
+                        lastAPts = info.presentationTimeUs
+                        extractor.advance()
+                    }
+                    aPtsOffset = lastAPts + 1000
+                }
+                extractor.release()
+            }
+            muxer.stop()
+            muxer.release()
+            return outFile
+        } catch (_: Exception) {
+            return null
         }
     }
 

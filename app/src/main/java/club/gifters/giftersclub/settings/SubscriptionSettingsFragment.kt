@@ -16,6 +16,7 @@ import club.gifters.giftersclub.model.SubscriptionPlan
 import club.gifters.giftersclub.network.RetrofitClient
 import android.widget.ArrayAdapter
 import android.view.LayoutInflater
+import android.widget.ImageView
 import org.json.JSONArray
 import org.json.JSONObject
 import com.google.android.material.button.MaterialButton
@@ -142,7 +143,7 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
     item.findViewById<TextView>(R.id.tvPlanName).text = plan.name
     item.findViewById<TextView>(R.id.tvPlanTokens).text = plan.tokens.toString()
     item.findViewById<TextView>(R.id.tvPlanDuration).text = plan.duration_type
-    item.findViewById<ImageButton>(R.id.btnEditPlan).setOnClickListener {
+    item.findViewById<ImageView>(R.id.btnEditPlan).setOnClickListener {
       editingPlanId = plan.id
       etName.setText(plan.name)
       // If description is JSON with features, populate UI accordingly
@@ -158,7 +159,7 @@ class SubscriptionSettingsFragment : Fragment(R.layout.fragment_subscription_set
       spinnerDuration.setSelection(idx)
       btnCancel.visibility = View.VISIBLE
     }
-    item.findViewById<ImageButton>(R.id.btnDeletePlan).setOnClickListener {
+    item.findViewById<ImageView>(R.id.btnDeletePlan).setOnClickListener {
       lifecycleScope.launch {
         val userId = AuthUtils.getCurrentUserId(requireContext()) ?: return@launch
         val ok = withContext(Dispatchers.IO) {

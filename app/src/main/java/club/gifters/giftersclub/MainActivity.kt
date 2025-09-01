@@ -433,6 +433,11 @@ class MainActivity : BaseActivity() {
         })
     }
 
+    fun setLoading(show: Boolean) {
+        val overlay = findViewById<FrameLayout>(R.id.loadingOverlay)
+        overlay?.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
     private suspend fun checkActiveHostLive() {
         try {
             val uid = AuthUtils.getCurrentUserId(this) ?: return

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Night overrides mapping light palette to darker equivalents (Tailwind-like dark: variants) -->
+    <!-- Background-like light tones → deep dark counterparts -->
+    <color name="slate_50">@color/slate_950</color>
+    <color name="slate_100">@color/slate_900</color>
+    <color name="slate_200">@color/slate_800</color>
+
+    <!-- Common text/accent grays shift a step darker for contrast on dark surfaces -->
+    <color name="gray_400">@color/gray_500</color>
+    <color name="gray_500">@color/gray_700</color>
+    <color name="gray_600">@color/gray_800</color>
+
+    <!-- Blues and Skies used in gradients/buttons: nudge to darker shades -->
+    <color name="blue_200">@color/blue_600</color>
+    <color name="blue_300">@color/blue_700</color>
+    <color name="blue_500">@color/blue_700</color>
+    <color name="blue_600">@color/blue_950</color>
+    <color name="sky_400">@color/sky_900</color>
+    <color name="sky_500">@color/sky_700</color>
+
+    <!-- Pinks and cyans accents → deeper in dark -->
+    <color name="pink_500">@color/pink_800</color>
+    <color name="cyan_500">@color/cyan_700</color>
+
+    <!-- Stone/Zinc/Neutral light backgrounds → darker for dark mode surfaces -->
+    <color name="zinc_50">@color/zinc_900</color>
+    <color name="neutral_50">@color/neutral_900</color>
+    <color name="stone_50">@color/stone_900</color>
+</resources>
+

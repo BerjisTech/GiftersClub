@@ -80,6 +80,7 @@
     <string name="filter_gray">Gray</string>
     <string name="filter_sepia">Sepia</string>
     <string name="apply_filter">Apply filter</string>
+    <string name="preview">Preview</string>
     <string name="enter_token_amount">Enter token amount</string>
     <string name="invalid_amount">Please enter a valid amount</string>
     <string name="failed_to_initiate_purchase">Failed to initiate token purchase</string>

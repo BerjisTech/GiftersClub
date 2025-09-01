@@ -101,6 +101,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        (activity as? MainActivity)?.setLoading(true)
         // If no internet redirect to NoNetworkActivity
         if (!NetworkUtils.isOnline(requireContext())) {
             startActivity(Intent(requireContext(), NoNetworkActivity::class.java))
@@ -382,6 +383,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             } finally {
                 isLoading = false
                 swipeRefresh.isRefreshing = false
+                (activity as? MainActivity)?.setLoading(false)
             }
         }
     }

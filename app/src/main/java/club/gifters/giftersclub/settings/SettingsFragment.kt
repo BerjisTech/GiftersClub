@@ -52,6 +52,16 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         fun toggleSection(header: View, caret: TextView, container: FrameLayout, fragmentFactory: () -> Fragment) {
             val expanding = !container.isVisible
+            if (expanding) {
+                // Collapse all other sections and reset their carets
+                sections.forEach { (other, _) ->
+                    val (h, c, cont) = other
+                    if (cont !== container) {
+                        cont.isVisible = false
+                        c.text = ">"
+                    }
+                }
+            }
             container.isVisible = expanding
             caret.text = if (expanding) "v" else ">"
             if (expanding && childFragmentManager.findFragmentById(container.id) == null) {
@@ -66,7 +76,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             header.setOnClickListener { toggleSection(header, caret, container, factory) }
         }
 
-        // Expand the requested initial section (to keep deeplink behavior)
+        // Expand the requested initial section (to keep deeplink behavior) and collapse others
         val idx = arguments?.getInt(ARG_INITIAL_TAB, 0) ?: 0
         val safeIdx = idx.coerceIn(0, sections.lastIndex)
         val (triple, factory) = sections[safeIdx]
