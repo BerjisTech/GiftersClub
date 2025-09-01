@@ -221,7 +221,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private fun showPreviousStepOrExit() {
         if (stepStack.size > 1) {
             // pop current and show previous without pushing again
-            stepStack.removeLast()
+            stepStack.removeAt(stepStack.lastIndex)
             when (stepStack.last()) {
                 Step.MEDIA   -> { layoutMedia?.let { v ->
                         layoutMedia.isVisible = true; layoutEdit.isVisible = false; layoutDetails.isVisible = false; layoutTextEditor.isVisible = false }
@@ -384,8 +384,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnUndoSegment.visibility = View.GONE
         btnUndoSegment.setOnClickListener {
             if (isPaused && recordedSegments.isNotEmpty()) {
-                val file = recordedSegments.removeLast()
-                val dur = recordedSegmentDurations.removeLast()
+                val file = recordedSegments.removeAt(recordedSegments.lastIndex)
+                val dur = recordedSegmentDurations.removeAt(recordedSegmentDurations.lastIndex)
                 totalRecordedMs = (totalRecordedMs - dur).coerceAtLeast(0L)
                 try { file.delete() } catch (_: Exception) {}
                 // update progress bar to reflect removal
