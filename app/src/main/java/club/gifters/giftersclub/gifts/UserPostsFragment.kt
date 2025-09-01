@@ -311,4 +311,10 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
             }
         }
     }
+
+    fun refresh() {
+        page = 0
+        isLastPage = false
+        loadPosts(clear = true)
+    }
 }

@@ -54,6 +54,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val swipe = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipeRefreshProfile)
         (activity as? club.gifters.giftersclub.MainActivity)?.setLoading(true)
         val imageAvatar = view.findViewById<ImageView>(R.id.imageAvatar)
         val textName    = view.findViewById<TextView>(R.id.textName)
@@ -191,6 +192,28 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
                 viewPager.currentItem = 0
             }
             (activity as? club.gifters.giftersclub.MainActivity)?.setLoading(false)
+        }
+
+        // Pull-to-refresh: refresh header + all tabs
+        swipe.setOnRefreshListener {
+            lifecycleScope.launch {
+                try {
+                    username?.let { uname ->
+                        val profiles = profileApi.getProfileByUsername("*", "eq.$uname")
+                        val prof = profiles.firstOrNull()
+                        if (prof != null) bindProfile(prof, imageAvatar, textName, textUser, textFollowers, textFollowing, textBio)
+                    }
+                    // Refresh visible child fragments
+                    childFragmentManager.fragments.forEach { f ->
+                        when (f) {
+                            is UserPostsFragment -> f.refresh()
+                            is UserWishlistsFragment -> f.refresh()
+                            is GiftFragment -> f.refresh()
+                        }
+                    }
+                } catch (_: Exception) { }
+                swipe.isRefreshing = false
+            }
         }
     }
 

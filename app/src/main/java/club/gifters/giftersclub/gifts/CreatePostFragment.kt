@@ -202,6 +202,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     private enum class Step { MEDIA, EDIT, DETAILS, TEXT }
     private val stepStack: MutableList<Step> = mutableListOf()
+    private var backCallback: androidx.activity.OnBackPressedCallback? = null
 
     /** Show exactly one of the steps and record navigation for back handling. */
     private fun showStep(step: View) {
@@ -238,7 +239,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 }
             }
         } else {
-            // let system handle back (pop fragment)
+            // let system handle back (pop fragment) without re-entering our callback
+            try { backCallback?.isEnabled = false } catch (_: Exception) {}
             requireActivity().onBackPressed()
         }
     }
@@ -286,11 +288,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         if (stepStack.isEmpty()) stepStack.add(Step.MEDIA)
 
         // Back press should go to previous step, not exit immediately
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner,
-            object : androidx.activity.OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() { showPreviousStepOrExit() }
-            }
-        )
+        backCallback = object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() { showPreviousStepOrExit() }
+        }
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback!!)
 
         btnEditMedia.setOnClickListener { showStep(layoutMedia) }
         btnPost.setOnClickListener {

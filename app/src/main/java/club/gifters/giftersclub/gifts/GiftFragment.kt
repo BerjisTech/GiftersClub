@@ -131,6 +131,12 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
         }
     }
 
+    fun refresh() {
+        page = 0
+        isLastPage = false
+        loadGifts(clear = true)
+    }
+
     private fun showConfirmDialog(gift: Gift) {
         // Bottom sheet Styled like Contribute
         val sheet = BottomSheetDialog(requireContext())

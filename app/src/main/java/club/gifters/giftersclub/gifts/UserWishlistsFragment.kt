@@ -82,24 +82,35 @@ class UserWishlistsFragment : Fragment(R.layout.fragment_wishlists) {
         }
         val tvEmpty = view.findViewById<LinearLayout>(R.id.tvEmptyWishlists)
 
-        lifecycleScope.launch {
-            try {
-                val joined = wishlistApi.getWishlists(
-                    select = "*,profile:profiles(id,user_id,username,name),wishlist_contributions(tokens)",
-                    userIdFilter = "eq.$userId",
-                    order = "created_at.desc",
-                    limit = Int.MAX_VALUE,
-                    offset = 0
-                )
-                val items: List<Wishlist> = joined.map { it.toWishlist() }
-                adapter.submitList(items)
-                val isListEmpty = items.isEmpty()
-                tvEmpty.visibility = if (isListEmpty) View.VISIBLE else View.GONE
-                rv.visibility = if (isListEmpty) View.GONE else View.VISIBLE
-            } catch (_: Exception) {
-                rv.visibility = View.GONE
-                tvEmpty.visibility = View.VISIBLE
+        fun load() {
+            lifecycleScope.launch {
+                try {
+                    val joined = wishlistApi.getWishlists(
+                        select = "*,profile:profiles(id,user_id,username,name),wishlist_contributions(tokens)",
+                        userIdFilter = "eq.$userId",
+                        order = "created_at.desc",
+                        limit = Int.MAX_VALUE,
+                        offset = 0
+                    )
+                    val items: List<Wishlist> = joined.map { it.toWishlist() }
+                    adapter.submitList(items)
+                    val isListEmpty = items.isEmpty()
+                    tvEmpty.visibility = if (isListEmpty) View.VISIBLE else View.GONE
+                    rv.visibility = if (isListEmpty) View.GONE else View.VISIBLE
+                } catch (_: Exception) {
+                    rv.visibility = View.GONE
+                    tvEmpty.visibility = View.VISIBLE
+                }
             }
+        }
+
+        load()
+    }
+
+    fun refresh() {
+        view?.let { _ ->
+            // reuse onViewCreated loaders
+            onViewCreated(requireView(), null)
         }
     }
 }
