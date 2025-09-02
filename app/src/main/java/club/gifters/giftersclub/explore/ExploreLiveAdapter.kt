@@ -58,6 +58,9 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
         init {
             view.setOnClickListener {
                 (getItem(bindingAdapterPosition))?.let { ls ->
+                    // Stop preview before navigating to avoid double audio
+                    // and release EGL/resources so the live room can start cleanly.
+                    stopPreview()
                     val ctx = itemView.context
                     val uri = Uri.parse("https://gifters.club/live/${ls.id}")
                     val intent = Intent(Intent.ACTION_VIEW, uri)

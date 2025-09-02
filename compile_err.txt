@@ -1,236 +1,223 @@
-WARNING: A restricted method in java.lang.System has been called
-WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/C:/Users/bokou/.gradle/wrapper/dists/gradle-8.13-bin/5xuhj0ry160q40clulazy9h7d/gradle-8.13/lib/native-platform-0.22-milestone-28.jar)
-WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
-WARNING: Restricted methods will be blocked in a future release unless native access is enabled
-
-> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
-> Task :app:preBuild UP-TO-DATE
-> Task :app:preDebugBuild UP-TO-DATE
-> Task :app:checkDebugAarMetadata UP-TO-DATE
-> Task :app:generateDebugResValues UP-TO-DATE
-> Task :app:processDebugGoogleServices UP-TO-DATE
-> Task :app:mapDebugSourceSetPaths UP-TO-DATE
-> Task :app:generateDebugResources UP-TO-DATE
-> Task :app:mergeDebugResources UP-TO-DATE
-> Task :app:packageDebugResources UP-TO-DATE
-> Task :app:parseDebugLocalResources UP-TO-DATE
-> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
-> Task :app:extractDeepLinksDebug UP-TO-DATE
-> Task :app:processDebugMainManifest UP-TO-DATE
-> Task :app:processDebugManifest UP-TO-DATE
-> Task :app:processDebugManifestForPackage UP-TO-DATE
-> Task :app:processDebugResources UP-TO-DATE
-
-> Task :app:compileDebugKotlin FAILED
-e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/CreateOrGoLiveActivity.kt:32:33 Unresolved reference 'View'.
-e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/CreateOrGoLiveActivity.kt:33:37 Unresolved reference 'View'.
-e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/CreateOrGoLiveActivity.kt:34:26 Unresolved reference 'View'.
-e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/CreateOrGoLiveActivity.kt:34:45 Unresolved reference 'visibility'.
-e: file:///E:/Berjis/Apps/Web/gifters/GiftersClub/app/src/main/java/club/gifters/giftersclub/CreateOrGoLiveActivity.kt:34:58 Unresolved reference 'View'.
-
-FAILURE: Build failed with an exception.
-
-* What went wrong:
-Execution failed for task ':app:compileDebugKotlin'.
-> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
-   > Compilation error. See log for more details
-
-* Try:
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-
-* Exception is:
-org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugKotlin'.
-	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
-	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:293)
-	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
-	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
-	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:40)
-	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
-	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
-	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
-	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
-	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
-	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
-	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
-	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
-	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
-	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
-	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
-Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
-	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:287)
-	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
-	at org.gradle.internal.Factories$1.create(Factories.java:31)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:335)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:318)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:323)
-	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
-	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
-	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
-	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
-	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:252)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
-	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
-	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
-	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
-	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
-	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
-	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
-	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
-	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
-	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
-	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
-	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
-	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
-	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
-	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
-	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
-	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
-	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
-	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
-	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
-	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
-	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
-	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
-	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
-	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
-	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:75)
-	at org.gradle.internal.Either$Right.fold(Either.java:175)
-	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
-	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
-	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
-	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
-	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
-	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
-	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
-	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
-	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
-	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
-	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
-	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
-	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
-	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
-	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
-	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
-	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
-	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:107)
-	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:56)
-	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
-	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
-	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
-	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:61)
-	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
-	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
-	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
-	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
-	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
-	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
-	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
-	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
-	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
-	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
-	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
-	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
-	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
-	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
-	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
-	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
-	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
-	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
-	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
-	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:61)
-	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
-	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
-	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:40)
-	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
-	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
-	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
-	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
-	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
-	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
-	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
-	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
-	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
-	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
-	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
-	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
-Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
-	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:21)
-	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:119)
-	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:76)
-	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
-	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
-	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
-	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
-	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
-	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
-	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
-	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
-	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
-	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
-	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
-	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
-	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
-	at org.gradle.internal.Factories$1.create(Factories.java:31)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
-	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
-	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
-	... 2 more
-
-
-BUILD FAILED in 2s
-15 actionable tasks: 1 executed, 14 up-to-date
+2025-09-02 21:31:45.833 28936-28936 VideoCaptureThr         club.gifters.giftersclub.dev         W  type=1400 audit(0.0:24671): avc:  denied  { getattr } for  name="/" dev="dmabuf" ino=1 scontext=u:r:untrusted_app:s0:c158,c257,c512,c768 tcontext=u:object_r:unlabeled:s0 tclass=filesystem permissive=0 app=club.gifters.giftersclub.dev
+2025-09-02 21:31:45.839 28936-29657 giftersclub.dev         club.gifters.giftersclub.dev         E  == MALI DEBUG ===eglp_winsys_populate_image_templates ==12288
+2025-09-02 21:31:46.301 28936-29184 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:4) Faking releaseBufferCallback from transactionCompleteCallback 21
+2025-09-02 21:31:46.301 28936-29184 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:1) ERROR: releaseBufferCallback without corresponding submitted buffer bufferId:124279173677130 framenumber:21
+2025-09-02 21:31:46.496 28936-29184 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:4) Faking releaseBufferCallback from transactionCompleteCallback 33
+2025-09-02 21:31:46.496 28936-29184 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:1) ERROR: releaseBufferCallback without corresponding submitted buffer bufferId:124279173677132 framenumber:33
+2025-09-02 21:31:46.612 28936-28950 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:4) Faking releaseBufferCallback from transactionCompleteCallback 40
+2025-09-02 21:31:46.613 28936-28950 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:1) ERROR: releaseBufferCallback without corresponding submitted buffer bufferId:124279173677132 framenumber:40
+2025-09-02 21:31:46.746 28936-28950 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:4) Faking releaseBufferCallback from transactionCompleteCallback 48
+2025-09-02 21:31:46.746 28936-28950 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:1) ERROR: releaseBufferCallback without corresponding submitted buffer bufferId:124279173677131 framenumber:48
+2025-09-02 21:31:46.846 28936-28952 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:4) Faking releaseBufferCallback from transactionCompleteCallback 54
+2025-09-02 21:31:46.846 28936-28952 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:1) ERROR: releaseBufferCallback without corresponding submitted buffer bufferId:124279173677132 framenumber:54
+2025-09-02 21:31:46.974 28936-28950 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:4) Faking releaseBufferCallback from transactionCompleteCallback 62
+2025-09-02 21:31:46.975 28936-28950 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:1) ERROR: releaseBufferCallback without corresponding submitted buffer bufferId:124279173677131 framenumber:62
+2025-09-02 21:31:49.852 28936-28936 AudioRecord             club.gifters.giftersclub.dev         D  set(): 0xb4000071f44c16f0, inputSource 7, sampleRate 48000, format 0x1, channelMask 0x10, frameCount 3840, notificationFrames 0, sessionId 0, transferType 0, flags 0, attributionSource AttributionSourceState{pid: 28936, uid: 10414, packageName: club.gifters.giftersclub.dev, attributionTag: (null), token: binder:0xb4000071c4441ed0, renouncedPermissions: [], next: []} uid -1, pid -1
+2025-09-02 21:31:49.854 28936-28936 AudioRecord             club.gifters.giftersclub.dev         W  Get process name fail
+2025-09-02 21:31:49.854 28936-28936 AudioRecord             club.gifters.giftersclub.dev         D   mClientAttributionSource.packageName->c_str() = club.gifters.giftersclub.dev
+2025-09-02 21:31:49.854 28936-28936 AudioRecord             club.gifters.giftersclub.dev         D   voippackageName = club.gifters.giftersclub.dev
+2025-09-02 21:31:49.879 28936-28936 AudioRecord             club.gifters.giftersclub.dev         D  openRecord_l: 0xb4000071f44c16f0, mCblk = 0x7297277000
+2025-09-02 21:31:49.879 28936-28936 TranMagiqueSon          club.gifters.giftersclub.dev         D  TranMagiqueSon+ OpPackageName = club.gifters.giftersclub.dev
+2025-09-02 21:31:49.879 28936-28936 TranMagiqueSon          club.gifters.giftersclub.dev         D  magiqueSonInit mMagiueSonModeParam[0].mModeType = 1,mMagiueSonModeParam[0].mModeTempo 100,            mMagiueSonModeParam[0].mModePitch = -25,mMagiueSonModeParam[0].mModeRate = 100
+2025-09-02 21:31:49.879 28936-28936 TranMagiqueSon          club.gifters.giftersclub.dev         D  magiqueSonInit mMagiueSonModeParam[1].mModeType = 2,mMagiueSonModeParam[1].mModeTempo 100,            mMagiueSonModeParam[1].mModePitch = -70,mMagiueSonModeParam[1].mModeRate = 100
+2025-09-02 21:31:49.879 28936-28936 TranMagiqueSon          club.gifters.giftersclub.dev         D  magiqueSonInit mMagiueSonModeParam[2].mModeType = 3,mMagiueSonModeParam[2].mModeTempo 100,            mMagiueSonModeParam[2].mModePitch = 60,mMagiueSonModeParam[2].mModeRate = 100
+2025-09-02 21:31:49.879 28936-28936 TranMagiqueSon          club.gifters.giftersclub.dev         D  magiqueSonInit mMagiueSonModeParam[3].mModeType = 4,mMagiueSonModeParam[3].mModeTempo 100,            mMagiueSonModeParam[3].mModePitch = 100,mMagiueSonModeParam[3].mModeRate = 100
+2025-09-02 21:31:49.879 28936-28936 TranMagiqueSon          club.gifters.giftersclub.dev         D  magiqueSonInit- mModeSize = 4
+2025-09-02 21:31:49.880 28936-28936 AudioEffect             club.gifters.giftersclub.dev         I  set 0xb40000719454c550 uuid: 0x7fe5295a20 timeLow 7b491460
+2025-09-02 21:31:49.883 28936-28936 AudioEffect             club.gifters.giftersclub.dev         E  set(): AudioFlinger could not create effect 7b491460-8d4d-11e0-bd61-0002a5d5c51b / ec7178ec-e5e1-4432-a3f4-4657e6795210, status: -19
+2025-09-02 21:31:49.883 28936-28936 AudioEffects-JNI        club.gifters.giftersclub.dev         E  AudioEffect initCheck failed -3
+2025-09-02 21:31:49.883 28936-28936 AudioEffect             club.gifters.giftersclub.dev         I  Destructor 0xb40000719454c550
+2025-09-02 21:31:49.883 28936-28936 AudioEffect-JAVA        club.gifters.giftersclub.dev         E  Error code -3 when initializing AudioEffect.
+2025-09-02 21:31:49.883 28936-28936 AcousticEchoCanceler    club.gifters.giftersclub.dev         W  not enough memory
+2025-09-02 21:31:49.883 28936-28936 AudioEffect             club.gifters.giftersclub.dev         I  set 0xb40000719454c550 uuid: 0x7fe5295a20 timeLow 58b4b260
+2025-09-02 21:31:49.887 28936-28936 AudioEffect             club.gifters.giftersclub.dev         E  set(): AudioFlinger could not create effect 58b4b260-8e06-11e0-aa8e-0002a5d5c51b / ec7178ec-e5e1-4432-a3f4-4657e6795210, status: -19
+2025-09-02 21:31:49.887 28936-28936 AudioEffects-JNI        club.gifters.giftersclub.dev         E  AudioEffect initCheck failed -3
+2025-09-02 21:31:49.887 28936-28936 AudioEffect             club.gifters.giftersclub.dev         I  Destructor 0xb40000719454c550
+2025-09-02 21:31:49.887 28936-28936 AudioEffect-JAVA        club.gifters.giftersclub.dev         E  Error code -3 when initializing AudioEffect.
+2025-09-02 21:31:49.888 28936-28936 NoiseSuppressor         club.gifters.giftersclub.dev         W  not enough memory
+2025-09-02 21:31:49.889 28936-28936 AudioRecord             club.gifters.giftersclub.dev         D  start(1827): 0xb4000071f44c16f0, sync event 0 trigger session 0
+2025-09-02 21:31:49.918 28936-28936 AudioRecord             club.gifters.giftersclub.dev         D  start(1827): return status 0
+2025-09-02 21:31:49.938 28936-29184 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:4) Faking releaseBufferCallback from transactionCompleteCallback 72
+2025-09-02 21:31:49.939 28936-29184 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:1) ERROR: releaseBufferCallback without corresponding submitted buffer bufferId:124279173677135 framenumber:72
+2025-09-02 21:31:49.994 28936-28936 AndroidRuntime          club.gifters.giftersclub.dev         E  FATAL EXCEPTION: main
+                                                                                                    Process: club.gifters.giftersclub.dev, PID: 28936
+                                                                                                    io.livekit.android.room.track.TrackException$PublishException: Failed to publish track, insufficient permissions
+                                                                                                    	at io.livekit.android.room.participant.LocalParticipant.publishTrackImpl(LocalParticipant.kt:604)
+                                                                                                    	at io.livekit.android.room.participant.LocalParticipant.publishAudioTrack(LocalParticipant.kt:451)
+                                                                                                    	at io.livekit.android.room.participant.LocalParticipant.publishAudioTrack$default(LocalParticipant.kt:436)
+                                                                                                    	at io.livekit.android.room.participant.LocalParticipant.setTrackEnabled(LocalParticipant.kt:372)
+                                                                                                    	at io.livekit.android.room.participant.LocalParticipant.setTrackEnabled$default(LocalParticipant.kt:336)
+                                                                                                    	at io.livekit.android.room.participant.LocalParticipant.setMicrophoneEnabled(LocalParticipant.kt:307)
+                                                                                                    	at club.gifters.giftersclub.live.LiveStreamActivity$resumeHostSession$5$1.invokeSuspend(LiveStreamActivity.kt:1400)
+                                                                                                    	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+                                                                                                    	at kotlinx.coroutines.internal.DispatchedContinuationKt.resumeCancellableWith(DispatchedContinuation.kt:367)
+                                                                                                    	at kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable(Cancellable.kt:30)
+                                                                                                    	at kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable$default(Cancellable.kt:25)
+                                                                                                    	at kotlinx.coroutines.CoroutineStart.invoke(CoroutineStart.kt:110)
+                                                                                                    	at kotlinx.coroutines.AbstractCoroutine.start(AbstractCoroutine.kt:126)
+                                                                                                    	at kotlinx.coroutines.BuildersKt__Builders_commonKt.launch(Builders.common.kt:56)
+                                                                                                    	at kotlinx.coroutines.BuildersKt.launch(Unknown Source:1)
+                                                                                                    	at kotlinx.coroutines.BuildersKt__Builders_commonKt.launch$default(Builders.common.kt:47)
+                                                                                                    	at kotlinx.coroutines.BuildersKt.launch$default(Unknown Source:1)
+                                                                                                    	at club.gifters.giftersclub.live.LiveStreamActivity.resumeHostSession$lambda$53(LiveStreamActivity.kt:1399)
+                                                                                                    	at club.gifters.giftersclub.live.LiveStreamActivity.$r8$lambda$PDNmZcIDGdDwcSNnI9SsteXaY5A(Unknown Source:0)
+                                                                                                    	at club.gifters.giftersclub.live.LiveStreamActivity$$ExternalSyntheticLambda19.onClick(D8$$SyntheticClass:0)
+                                                                                                    	at android.view.View.performClick(View.java:7686)
+                                                                                                    	at android.view.View.performClickInternal(View.java:7659)
+                                                                                                    	at android.view.View.-$$Nest$mperformClickInternal(Unknown Source:0)
+                                                                                                    	at android.view.View$PerformClick.run(View.java:30462)
+                                                                                                    	at android.os.Handler.handleCallback(Handler.java:958)
+                                                                                                    	at android.os.Handler.dispatchMessage(Handler.java:99)
+                                                                                                    	at android.os.Looper.loopOnce(Looper.java:243)
+                                                                                                    	at android.os.Looper.loop(Looper.java:338)
+                                                                                                    	at android.app.ActivityThread.main(ActivityThread.java:8524)
+                                                                                                    	at java.lang.reflect.Method.invoke(Native Method)
+                                                                                                    	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:602)
+                                                                                                    	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1064)
+                                                                                                    	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [StandaloneCoroutine{Cancelling}@b2f6d83, Dispatchers.Main.immediate]
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at io.livekit.android.room.participant.LocalParticipant.publishTrackImpl(LocalParticipant.kt:604)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at io.livekit.android.room.participant.LocalParticipant.publishAudioTrack(LocalParticipant.kt:451)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at io.livekit.android.room.participant.LocalParticipant.publishAudioTrack$default(LocalParticipant.kt:436)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at io.livekit.android.room.participant.LocalParticipant.setTrackEnabled(LocalParticipant.kt:372)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at io.livekit.android.room.participant.LocalParticipant.setTrackEnabled$default(LocalParticipant.kt:336)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at io.livekit.android.room.participant.LocalParticipant.setMicrophoneEnabled(LocalParticipant.kt:307)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at club.gifters.giftersclub.live.LiveStreamActivity$resumeHostSession$5$1.invokeSuspend(LiveStreamActivity.kt:1400)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at kotlinx.coroutines.internal.DispatchedContinuationKt.resumeCancellableWith(DispatchedContinuation.kt:367)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable(Cancellable.kt:30)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable$default(Cancellable.kt:25)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at kotlinx.coroutines.CoroutineStart.invoke(CoroutineStart.kt:110)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at kotlinx.coroutines.AbstractCoroutine.start(AbstractCoroutine.kt:126)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at kotlinx.coroutines.BuildersKt__Builders_commonKt.launch(Builders.common.kt:56)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at kotlinx.coroutines.BuildersKt.launch(Unknown Source:1)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at kotlinx.coroutines.BuildersKt__Builders_commonKt.launch$default(Builders.common.kt:47)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at kotlinx.coroutines.BuildersKt.launch$default(Unknown Source:1)
+2025-09-02 21:31:49.994 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at club.gifters.giftersclub.live.LiveStreamActivity.resumeHostSession$lambda$53(LiveStreamActivity.kt:1399)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at club.gifters.giftersclub.live.LiveStreamActivity.$r8$lambda$PDNmZcIDGdDwcSNnI9SsteXaY5A(Unknown Source:0)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at club.gifters.giftersclub.live.LiveStreamActivity$$ExternalSyntheticLambda19.onClick(D8$$SyntheticClass:0)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at android.view.View.performClick(View.java:7686)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at android.view.View.performClickInternal(View.java:7659)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at android.view.View.-$$Nest$mperformClickInternal(Unknown Source:0)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at android.view.View$PerformClick.run(View.java:30462)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at android.os.Handler.handleCallback(Handler.java:958)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at android.os.Handler.dispatchMessage(Handler.java:99)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at android.os.Looper.loopOnce(Looper.java:243)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at android.os.Looper.loop(Looper.java:338)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at android.app.ActivityThread.main(ActivityThread.java:8524)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at java.lang.reflect.Method.invoke(Native Method)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:602)
+2025-09-02 21:31:49.995 28936-28936 ExceptionHandle         club.gifters.giftersclub.dev         I  at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1064)
+2025-09-02 21:31:50.036 28936-29184 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:4) Faking releaseBufferCallback from transactionCompleteCallback 78
+2025-09-02 21:31:50.036 28936-29184 BLASTBufferQueue        club.gifters.giftersclub.dev         E  [VRI[LiveStreamActivity]#9](f:0,a:1) ERROR: releaseBufferCallback without corresponding submitted buffer bufferId:124279173677136 framenumber:78
+2025-09-02 21:31:50.046 28936-28936 Process                 club.gifters.giftersclub.dev         I  Sending signal. PID: 28936 SIG: 9
+---------------------------- PROCESS ENDED (28936) for package club.gifters.giftersclub.dev ----------------------------
+2025-09-02 21:31:50.226  1620-1702  debug_Tran...Controller system_server                        E  this is ActivityRecord{a8d2a16 u0 club.gifters.giftersclub.dev/club.gifters.giftersclub.live.LiveStreamActivity t8985 f}} isVisibleRequested false
+2025-09-02 21:31:50.226  1620-1702  debug_Transition        system_server                        E  mParticipants is contains ActivityRecord{a8d2a16 u0 club.gifters.giftersclub.dev/club.gifters.giftersclub.live.LiveStreamActivity t8985 f}} so return
+2025-09-02 21:31:50.231  1620-1702  debug_Transition        system_server                        E  mParticipants is contains ActivityRecord{ef886cf u0 club.gifters.giftersclub.dev/club.gifters.giftersclub.MainActivity t8985} so return
+2025-09-02 21:31:50.252   889-970   BufferQueueDebug        surfaceflinger                       E  [2fd10ee Splash Screen club.gifters.giftersclub.dev#14513](this:0xb400007d2728ec00,id:-1,api:0,p:-1,c:-1) id info cannot be read from '2fd10ee Splash Screen club.gifters.giftersclub.dev#14513'
+2025-09-02 21:31:50.262   889-1989  BufferQueueDebug        surfaceflinger                       E  [Splash Screen club.gifters.giftersclub.dev#14514](this:0xb400007d2727ad10,id:-1,api:0,p:-1,c:-1) id info cannot be read from 'Splash Screen club.gifters.giftersclub.dev#14514'
+2025-09-02 21:31:50.277  1620-2010  AppOps                  system_server                        E  Operation not started: uid=10414 pkg=club.gifters.giftersclub.dev(null) op=RECORD_AUDIO
+2025-09-02 21:31:50.432   889-969   BufferQueueDebug        surfaceflinger                       E  [Transition Root: ActivityRecord{a8d2a16 u0 club.gifters.giftersclub.dev/club.gifters.giftersclub.live.LiveStreamActivity t8985 f} isExiting}#14515](this:0xb400007d272890e0,id:-1,api:0,p:-1,c:-1) id info cannot be read from 'Transition Root: ActivityRecord{a8d2a16 u0 club.gifters.giftersclub.dev/club.gifters.giftersclub.live.LiveStreamActivity t8985 f} isExiting}#14515'
+2025-09-02 21:31:50.444   889-2118  BufferQueueDebug        surfaceflinger                       E  [5dbdb2e ActivityRecordInputSink club.gifters.giftersclub.dev/club.gifters.giftersclub.MainActivity#14516](this:0xb400007d273c24c0,id:-1,api:0,p:-1,c:-1) id info cannot be read from '5dbdb2e ActivityRecordInputSink club.gifters.giftersclub.dev/club.gifters.giftersclub.MainActivity#14516'
+2025-09-02 21:31:50.701  1620-4878  AppOps                  system_server                        E  Operation not started: uid=10414 pkg=club.gifters.giftersclub.dev(null) op=RECORD_AUDIO
+---------------------------- PROCESS STARTED (29935) for package club.gifters.giftersclub.dev ----------------------------
+2025-09-02 21:31:51.221 29935-29935 giftersclub.dev         club.gifters.giftersclub.dev         W  Failed to find entry 'classes.dex': Entry not found
+2025-09-02 21:31:51.221 29935-29935 giftersclub.dev         club.gifters.giftersclub.dev         W  Failed to find entry 'classes.dex': Entry not found
+2025-09-02 21:31:51.222 29935-29935 giftersclub.dev         club.gifters.giftersclub.dev         W  Failed to find entry 'classes.dex': Entry not found
+2025-09-02 21:31:51.225 29935-29935 nativeloader            club.gifters.giftersclub.dev         D  Configuring clns-4 for other apk /data/app/~~9eNfgOQTIlexf2ETwEPqSQ==/club.gifters.giftersclub.dev--JosMEEkITGmj_2ComYSfA==/base.apk:/data/app/~~9eNfgOQTIlexf2ETwEPqSQ==/club.gifters.giftersclub.dev--JosMEEkITGmj_2ComYSfA==/split_config.arm64_v8a.apk:/data/app/~~9eNfgOQTIlexf2ETwEPqSQ==/club.gifters.giftersclub.dev--JosMEEkITGmj_2ComYSfA==/split_config.en.apk:/data/app/~~9eNfgOQTIlexf2ETwEPqSQ==/club.gifters.giftersclub.dev--JosMEEkITGmj_2ComYSfA==/split_config.xhdpi.apk. target_sdk_version=35, uses_libraries=, library_path=/data/app/~~9eNfgOQTIlexf2ETwEPqSQ==/club.gifters.giftersclub.dev--JosMEEkITGmj_2ComYSfA==/lib/arm64:/data/app/~~9eNfgOQTIlexf2ETwEPqSQ==/club.gifters.giftersclub.dev--JosMEEkITGmj_2ComYSfA==/base.apk!/lib/arm64-v8a:/data/app/~~9eNfgOQTIlexf2ETwEPqSQ==/club.gifters.giftersclub.dev--JosMEEkITGmj_2ComYSfA==/split_config.arm64_v8a.apk!/lib/arm64-v8a:/data/app/~~9eNfgOQTIlexf2ETwEPqSQ==/club.gifters.giftersclub.dev--JosMEEkITGmj_2ComYSfA==/split_config.en.apk!/lib/arm64-v8a:/data/app/~~9eNfgO
+2025-09-02 21:31:51.241 29935-29935 nativeloader            club.gifters.giftersclub.dev         D  Load libframework-connectivity-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity.jar: ok
+2025-09-02 21:31:51.246 29935-29935 GraphicsEnvironment     club.gifters.giftersclub.dev         V  Currently set values for:
+2025-09-02 21:31:51.246 29935-29935 GraphicsEnvironment     club.gifters.giftersclub.dev         V    angle_gl_driver_selection_pkgs=[]
+2025-09-02 21:31:51.246 29935-29935 GraphicsEnvironment     club.gifters.giftersclub.dev         V    angle_gl_driver_selection_values=[]
+2025-09-02 21:31:51.247 29935-29935 GraphicsEnvironment     club.gifters.giftersclub.dev         V  ANGLE GameManagerService for club.gifters.giftersclub.dev: false
+2025-09-02 21:31:51.247 29935-29935 GraphicsEnvironment     club.gifters.giftersclub.dev         V  club.gifters.giftersclub.dev is not listed in per-application setting
+2025-09-02 21:31:51.248 29935-29935 GraphicsEnvironment     club.gifters.giftersclub.dev         V  Neither updatable production driver nor prerelease driver is supported.
+2025-09-02 21:31:51.255 29935-29935 LoadedApk               club.gifters.giftersclub.dev         I  No resource references to update in package com.transsion.theme.icon
+2025-09-02 21:31:51.261 29935-29935 Compatibil...geReporter club.gifters.giftersclub.dev         D  Compat change id reported: 183155436; UID 10414; state: ENABLED
+2025-09-02 21:31:51.286 29935-29935 os.SingleLiceFactory    club.gifters.giftersclub.dev         D  using android.app.IActivityThreadLice$DefaultImpl@78a5d88 instead of com.transsion.activityembedding.ActivityEmbeddingLiceFactory  from android.app.IActivityThreadLice
+2025-09-02 21:31:51.378 29935-29935 FirebaseApp             club.gifters.giftersclub.dev         I  Device unlocked: initializing all Firebase APIs for app [DEFAULT]
+2025-09-02 21:31:51.427 29935-29935 FirebaseInitProvider    club.gifters.giftersclub.dev         I  FirebaseApp initialization successful
+2025-09-02 21:31:51.443 29935-29935 WM-WrkMgrInitializer    club.gifters.giftersclub.dev         D  Initializing WorkManager with default configuration.
+2025-09-02 21:31:51.504 29935-30009 giftersclub.dev         club.gifters.giftersclub.dev         W  ClassLoaderContext classpath size mismatch. expected=1, found=0 (DLC[];PCL[base.apk*549733019]{PCL[/system/framework/org.apache.http.legacy.jar*365604909]#PCL[/system/framework/com.android.media.remotedisplay.jar*2114713712]#PCL[/system/framework/com.android.location.provider.jar*3994156537]#PCL[/system/framework/org.apache.http.legacy.jar*365604909]} | DLC[];PCL[])
+2025-09-02 21:31:51.508 29935-30009 DynamiteModule          club.gifters.giftersclub.dev         I  Considering local module com.google.android.gms.measurement.dynamite:152 and remote module com.google.android.gms.measurement.dynamite:158
+2025-09-02 21:31:51.508 29935-30009 DynamiteModule          club.gifters.giftersclub.dev         I  Selected remote version of com.google.android.gms.measurement.dynamite, version >= 158
+2025-09-02 21:31:51.508 29935-30009 DynamiteModule          club.gifters.giftersclub.dev         V  Dynamite loader version >= 2, using loadModule2NoCrashUtils
+2025-09-02 21:31:51.518 29935-29935 WM-PackageManagerHelper club.gifters.giftersclub.dev         D  Skipping component enablement for androidx.work.impl.background.systemjob.SystemJobService
+2025-09-02 21:31:51.518 29935-29935 WM-Schedulers           club.gifters.giftersclub.dev         D  Created SystemJobScheduler and enabled SystemJobService
+2025-09-02 21:31:51.528 29935-29935 MbrainDebugManagerImpl  club.gifters.giftersclub.dev         D  getService failed
+2025-09-02 21:31:51.536 29935-30009 System                  club.gifters.giftersclub.dev         W  ClassLoader referenced unknown path: 
+2025-09-02 21:31:51.538 29935-30009 nativeloader            club.gifters.giftersclub.dev         D  Configuring clns-5 for other apk . target_sdk_version=36, uses_libraries=, library_path=/data/app/~~XwosEsi5FwRpVsZqOaXCAQ==/com.google.android.gms-OcZC-PRZ5akB_3muRFr2PA==/lib/arm64:/data/app/~~XwosEsi5FwRpVsZqOaXCAQ==/com.google.android.gms-OcZC-PRZ5akB_3muRFr2PA==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+2025-09-02 21:31:51.558 29935-30019 TranClassInfo           club.gifters.giftersclub.dev         D  instance successfully. com.transsion.hubcore.database.sqlite.TranSQLiteDatabaseImpl@9c4d1ad from com.transsion.hubcore.database.sqlite.ITranSQLiteDatabase
+2025-09-02 21:31:51.568 29935-30019 TranClassInfo           club.gifters.giftersclub.dev         D  instance successfully. com.transsion.hubcore.spdopts.others.implement.TranSQLiteDatabaseComponentImpl@956352e from com.transsion.hubcore.spdcomponent.ITranSQLiteDatabaseComponent
+2025-09-02 21:31:51.592 29935-30019 Compatibil...geReporter club.gifters.giftersclub.dev         D  Compat change id reported: 160794467; UID 10414; state: ENABLED
+2025-09-02 21:31:51.594 29935-30009 giftersclub.dev         club.gifters.giftersclub.dev         W  ClassLoaderContext classpath size mismatch. expected=1, found=3 (DLC[];PCL[base.apk*549733019]{PCL[/system/framework/org.apache.http.legacy.jar*365604909]#PCL[/system/framework/com.android.media.remotedisplay.jar*2114713712]#PCL[/system/framework/com.android.location.provider.jar*3994156537]#PCL[/system/framework/org.apache.http.legacy.jar*365604909]} | DLC[];PCL[/data/data/club.gifters.giftersclub.dev/code_cache/.overlay/base.apk/classes9.dex*2012656354:/data/data/club.gifters.giftersclub.dev/code_cache/.overlay/base.apk/classes8.dex*3266650812:/data/app/~~9eNfgOQTIlexf2ETwEPqSQ==/club.gifters.giftersclub.dev--JosMEEkITGmj_2ComYSfA==/base.apk*3331424570])
+2025-09-02 21:31:51.662 29935-30035 giftersclub.dev         club.gifters.giftersclub.dev         I  hiddenapi: Accessing hidden method Ldalvik/system/VMStack;->getStackClass2()Ljava/lang/Class; (runtime_flags=0, domain=core-platform, api=unsupported) from Lm7/aop; (domain=app) using reflection: allowed
+2025-09-02 21:31:51.709 29935-30033 giftersclub.dev         club.gifters.giftersclub.dev         E  No package ID 6a found for resource ID 0x6a0b000f.
+2025-09-02 21:31:51.711 29935-30033 FA                      club.gifters.giftersclub.dev         I  App measurement initialized, version: 136000
+2025-09-02 21:31:51.711 29935-30033 FA                      club.gifters.giftersclub.dev         I  To enable debug logging run: adb shell setprop log.tag.FA VERBOSE
+2025-09-02 21:31:51.712 29935-30033 FA                      club.gifters.giftersclub.dev         I  To enable faster debug mode event logging run:
+                                                                                                      adb shell setprop debug.firebase.analytics.app club.gifters.giftersclub.dev
+2025-09-02 21:31:51.731 29935-29935 System.err              club.gifters.giftersclub.dev         W  SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+2025-09-02 21:31:51.731 29935-29935 System.err              club.gifters.giftersclub.dev         W  SLF4J: Defaulting to no-operation (NOP) logger implementation
+2025-09-02 21:31:51.732 29935-29935 System.err              club.gifters.giftersclub.dev         W  SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+2025-09-02 21:31:51.765 29935-29935 M-ProMotion             club.gifters.giftersclub.dev         I  M-ProMotion is disabled
+2025-09-02 21:31:51.775 29935-30048 libMEOW                 club.gifters.giftersclub.dev         D  meow new tls: 0xb4000070645050e0
+2025-09-02 21:31:51.776 29935-30048 libMEOW                 club.gifters.giftersclub.dev         D  meow reload base cfg path: na
+2025-09-02 21:31:51.776 29935-30048 libMEOW                 club.gifters.giftersclub.dev         D  meow reload overlay cfg path: na
+2025-09-02 21:31:51.779 29935-30048 libMEOW_gift            club.gifters.giftersclub.dev         I  open /data/performance/gift/arc.ini
+2025-09-02 21:31:51.779 29935-30048 QT                      club.gifters.giftersclub.dev         E  [QT]file does not exist
+2025-09-02 21:31:51.780 29935-30048 libMEOW                 club.gifters.giftersclub.dev         D  applied 1 plugins for [club.gifters.giftersclub.dev]:
+2025-09-02 21:31:51.780 29935-30048 libMEOW                 club.gifters.giftersclub.dev         D    plugin 1: [libMEOW_gift.so]: 0xb40000711443b030
+2025-09-02 21:31:51.780 29935-30048 libMEOW                 club.gifters.giftersclub.dev         D  rebuild call chain: 0xb400007064525100
+2025-09-02 21:31:51.780 29935-30048 libMEOW                 club.gifters.giftersclub.dev         D  meow delete tls: 0xb4000070645050e0
+2025-09-02 21:31:51.809 29935-29935 ActivityThread          club.gifters.giftersclub.dev         D  ++ activityComponent:club.gifters.giftersclub.dev/club.gifters.giftersclub.MainActivity counts:1 ALEAK_CLEAR_SUPPORT:true
+2025-09-02 21:31:51.821 29935-29935 AppCompatDelegate       club.gifters.giftersclub.dev         D  Checking for metadata for AppLocalesMetadataHolderService : Service not found
+2025-09-02 21:31:51.829 29935-29935 TranClassInfo           club.gifters.giftersclub.dev         D  instance successfully. com.transsion.hubcore.app.TranActivityImpl@dc3147b from com.transsion.hubcore.app.ITranActivity
+2025-09-02 21:31:51.829 29935-29935 TranVersion             club.gifters.giftersclub.dev         I  TranVersion static initializer: default = 34.3.1.1
+                                                                                                     debug = false, debug_version = 34.3.1.1
+2025-09-02 21:31:51.830 29935-29935 TranClassInfo           club.gifters.giftersclub.dev         D  instance successfully. com.transsion.hubcore.spdopts.magellan.implement.TranMagellanActivityComponentImpl@e6f6298 from com.transsion.hubcore.magellan.ITranMagellanActivityComponent
+2025-09-02 21:31:51.831 29935-29935 System                  club.gifters.giftersclub.dev         W  ClassLoader referenced unknown path: /system_ext/framework/multidisplay.jar
+2025-09-02 21:31:51.833 29935-29935 TranClassInfo           club.gifters.giftersclub.dev         W  instance failed. com.transsion.display.multidisplay.core.MultiDisplayCoreComponentImpl from com.transsion.hubcore.multidisplay.ITranMultiDisplayCoreComponent
+                                                                                                    java.lang.ClassNotFoundException: com.transsion.display.multidisplay.core.MultiDisplayCoreComponentImpl
+                                                                                                    	at java.lang.Class.classForName(Native Method)
+                                                                                                    	at java.lang.Class.forName(Class.java:597)
+                                                                                                    	at com.transsion.hubcore.utils.TranClassInfo.getImpl(TranClassInfo.java:124)
+                                                                                                    	at com.transsion.hubcore.multidisplay.ITranMultiDisplayCoreComponent.Instance(ITranMultiDisplayCoreComponent.java:32)
+                                                                                                    	at com.transsion.hubcore.app.TranActivityImpl.attach(TranActivityImpl.java:44)
+                                                                                                    	at android.app.Activity.attach(Activity.java:8562)
+                                                                                                    	at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:3893)
+                                                                                                    	at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4087)
+                                                                                                    	at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:114)
+                                                                                                    	at android.app.servertransaction.TransactionExecutor.executeCallbacks(TransactionExecutor.java:139)
+                                                                                                    	at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:96)
+                                                                                                    	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2560)
+                                                                                                    	at android.os.Handler.dispatchMessage(Handler.java:106)
+                                                                                                    	at android.os.Looper.loopOnce(Looper.java:243)
+                                                                                                    	at android.os.Looper.loop(Looper.java:338)
+                                                                                                    	at android.app.ActivityThread.main(ActivityThread.java:8524)
+                                                                                                    	at java.lang.reflect.Method.invoke(Native Method)
+                                                                                                    	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:602)
+                                                                                                    	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1064)
+                                                                                                    Caused by: java.lang.ClassNotFoundException: Didn't find class "com.transsion.display.multidisplay.core.MultiDisplayCoreComponentImpl" on path: DexPathList[[],nativeLibraryDirectories=[/system/lib64, /system_ext/lib64]]
+                                                                                                    	at dalvik.system.BaseDexClassLoader.findClass(BaseDexClassLoader.java:259)
+                                                                                                    	at java.lang.ClassLoader.loadClass(ClassLoader.java:637)
+                                                                                                    	at java.lang.ClassLoader.loadClass(ClassLoader.java:573)
+                                                                                                    	at java.lang.Class.classForName(Native Method) 
+                                                                                                    	at java.lang.Class.forName(Class.java:597) 
+                                                                                                    	at com.transsion.hubcore.utils.TranClassInfo.getImpl(TranClassInfo.java:124) 
+                                                                                                    	at com.transsion.hubcore.multidisplay.ITranMultiDisplayCoreComponent.Instance(ITranMultiDisplayCoreComponent.java:32) 
+                                                                                                    	at com.transsion.hubcore.app.TranActivityImpl.attach(TranActivityImpl.java:44) 
+                                                                                                    	at android.app.Activity.attach(Activity.java:8562) 
+                                                                                                    	at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:3893) 
+                                                                                                    	at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4087) 
+                                                                                                    	at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:114) 
+                                                                                                    	at android.app.servertransaction.TransactionExecutor.executeCallbacks(TransactionExecutor.java:139) 
+                                                                                                    	at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:96) 
+                                                                                                    	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2560) 
+                                                                                                    	at android.os.Handler.dispatchMessage(Handler.java:106) 
+                                                                                                    	at android.os.Looper.loopOnce(Looper.java:243) 
+                                                                                                    	at android.os.Looper.loop(Looper.java:338) 
+                                                                                                    	at android.app.ActivityThread.main(ActivityThread.java:8524) 
+                                                                                                    	at java.lang.reflect.Method.invoke(Native Method) 
+                                                                                                    	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:602) 
+                                                                                                    	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1064) 

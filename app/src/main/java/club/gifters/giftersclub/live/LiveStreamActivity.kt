@@ -1359,6 +1359,64 @@ class LiveStreamActivity : BaseActivity() {
         container.addView(preview)
         previewView = preview
 
+        // Re-wire host control buttons on resume
+        if (USE_LIVEKIT_CAMERA_PREVIEW) {
+            btnSwitchCamera.visibility = View.VISIBLE
+            btnSwitchCamera.setOnClickListener {
+                try {
+                    val localPubPair = liveKitRoom?.localParticipant?.videoTrackPublications?.firstOrNull()
+                    val localTrack2 = localPubPair?.second as? LocalVideoTrack
+                    localTrack2?.switchCamera()
+                    isFrontFacing = !isFrontFacing
+                    previewView?.setMirror(isFrontFacing)
+                } catch (_: Exception) { }
+            }
+
+            btnToggleCamera.visibility = View.VISIBLE
+            var isVideoEnabled = true
+            btnToggleCamera.setOnClickListener {
+                isVideoEnabled = !isVideoEnabled
+                lifecycleScope.launch {
+                    try {
+                        liveKitRoom?.localParticipant?.setCameraEnabled(isVideoEnabled)
+                    } catch (_: Exception) {
+                        // Revert state if publish not permitted
+                        isVideoEnabled = !isVideoEnabled
+                        Toast.makeText(this@LiveStreamActivity, R.string.permission_denied, Toast.LENGTH_SHORT).show()
+                    }
+                }
+                btnToggleCamera.setImageResource(
+                    if (isVideoEnabled) android.R.drawable.ic_menu_view
+                    else android.R.drawable.ic_menu_close_clear_cancel
+                )
+            }
+        } else {
+            btnSwitchCamera.visibility = View.VISIBLE
+            btnToggleCamera.visibility = View.GONE
+            btnSwitchCamera.setOnClickListener {
+                currentLensFacing = if (currentLensFacing == CameraSelector.LENS_FACING_FRONT)
+                    CameraSelector.LENS_FACING_BACK else CameraSelector.LENS_FACING_FRONT
+                startCamera(currentLensFacing)
+            }
+        }
+
+        btnToggleMic.setOnClickListener {
+            isMicEnabled = !isMicEnabled
+            lifecycleScope.launch {
+                try {
+                    liveKitRoom?.localParticipant?.setMicrophoneEnabled(isMicEnabled)
+                } catch (_: Exception) {
+                    // Revert toggle on failure and notify user
+                    isMicEnabled = !isMicEnabled
+                    Toast.makeText(this@LiveStreamActivity, R.string.permission_denied, Toast.LENGTH_SHORT).show()
+                }
+            }
+            btnToggleMic.setImageResource(
+                if (isMicEnabled) android.R.drawable.ic_lock_silent_mode_off
+                else android.R.drawable.ic_lock_silent_mode
+            )
+        }
+
         // connect to LiveKit as host and (re)publish
         live.token?.takeIf { it.isNotBlank() }?.let { lkToken ->
             val roomOptions = RoomOptions(
@@ -1376,8 +1434,8 @@ class LiveStreamActivity : BaseActivity() {
                 try {
                     room.connect(LiveKitConfig.WS_URL, lkToken, ConnectOptions())
                     // enable camera/mic and attach local preview
-                    room.localParticipant.setCameraEnabled(true)
-                    room.localParticipant.setMicrophoneEnabled(true)
+                    try { room.localParticipant.setCameraEnabled(true) } catch (_: Exception) {}
+                    try { room.localParticipant.setMicrophoneEnabled(true) } catch (_: Exception) {}
                     room.initVideoRenderer(preview)
                     val localPubPair = room.localParticipant.videoTrackPublications.firstOrNull()
                     val localTrack = localPubPair?.second as? LocalVideoTrack
@@ -1893,8 +1951,8 @@ class LiveStreamActivity : BaseActivity() {
                             // keep reference for host mic controls
                             liveKitRoom = room
                             // enable camera and microphone publishing (LiveKit manages camera capture)
-                            room.localParticipant.setCameraEnabled(true)
-                            room.localParticipant.setMicrophoneEnabled(true)
+                            try { room.localParticipant.setCameraEnabled(true) } catch (_: Exception) {}
+                            try { room.localParticipant.setMicrophoneEnabled(true) } catch (_: Exception) {}
 
                             // Attach local preview to container using SurfaceViewRenderer
                             val container = findViewById<FrameLayout>(R.id.flLiveStream)
