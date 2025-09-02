@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -12,14 +13,15 @@
         android:layout_gravity="center"
         android:contentDescription="@string/post_image" />
 
-    <VideoView
-        android:id="@+id/mediaVideoView"
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/mediaPlayerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="center"
-        android:scaleType="centerInside"
         android:visibility="gone"
-        android:contentDescription="@string/post_video" />
+        android:contentDescription="@string/post_video"
+        android:keepScreenOn="true"
+        app:use_controller="false" />
 
     <ProgressBar
         android:id="@+id/mediaLoadingSpinner"
