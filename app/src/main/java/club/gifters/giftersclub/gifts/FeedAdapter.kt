@@ -206,8 +206,24 @@ class FeedAdapter(
                 false
             }
             mediaPager.post {
-                (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { _, ev ->
+                var startX = 0f
+                var startY = 0f
+                (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { v, ev ->
                     doubleTap.onTouchEvent(ev)
+                    when (ev.actionMasked) {
+                        MotionEvent.ACTION_DOWN -> {
+                            startX = ev.x; startY = ev.y
+                            v.parent?.requestDisallowInterceptTouchEvent(false)
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            val dx = kotlin.math.abs(ev.x - startX)
+                            val dy = kotlin.math.abs(ev.y - startY)
+                            v.parent?.requestDisallowInterceptTouchEvent(dx > dy)
+                        }
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            v.parent?.requestDisallowInterceptTouchEvent(false)
+                        }
+                    }
                     false
                 }
             }
@@ -262,6 +278,7 @@ class FeedAdapter(
                 mediaList = mediaList,
                 playOnHover = false
             )
+            // Touch handling is done in init with directional logic to avoid blocking vertical feed scroll
             indicatorLayout.removeAllViews()
             if (mediaList.size <= 1) {
                 indicatorLayout.visibility = View.GONE

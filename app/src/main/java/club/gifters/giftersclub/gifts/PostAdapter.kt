@@ -91,8 +91,24 @@ class PostAdapter(
             }
             // Also intercept touches on the mediaPager (video/image area) for double-tap
             mediaPager.post {
-                (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { _, ev ->
+                var startX = 0f
+                var startY = 0f
+                (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { v, ev ->
                     doubleTap.onTouchEvent(ev)
+                    when (ev.actionMasked) {
+                        MotionEvent.ACTION_DOWN -> {
+                            startX = ev.x; startY = ev.y
+                            v.parent?.requestDisallowInterceptTouchEvent(false)
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            val dx = kotlin.math.abs(ev.x - startX)
+                            val dy = kotlin.math.abs(ev.y - startY)
+                            v.parent?.requestDisallowInterceptTouchEvent(dx > dy)
+                        }
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            v.parent?.requestDisallowInterceptTouchEvent(false)
+                        }
+                    }
                     false
                 }
             }
@@ -144,6 +160,9 @@ class PostAdapter(
                     mediaPager.visibility = View.VISIBLE
                     postDetails.visibility = View.VISIBLE
                     overlay.visibility = View.GONE
+                    if ((post.media ?: emptyList()).size > 1) {
+                        indicatorLayout.visibility = View.VISIBLE
+                    }
                 }
             }
             // Setup media carousel (images/videos)
@@ -152,12 +171,13 @@ class PostAdapter(
                 mediaList = mediaList,
                 playOnHover = false
             )
+            // Remove any extra onTouch overrides here; handled in init with directional logic
 //            val indicatorLayout = itemView.findViewById<LinearLayout>(R.id.mediaIndicatorLayout)
             indicatorLayout.removeAllViews()
             if (mediaList.size <= 1) {
                 indicatorLayout.visibility = View.GONE
             } else {
-                indicatorLayout.visibility = View.VISIBLE
+                // Defer visibility until post details are visible
                 pageChangeCallback?.let { mediaPager.unregisterOnPageChangeCallback(it) }
                 mediaList.forEachIndexed { idx, _ ->
                     val dot = ImageView(itemView.context).apply {

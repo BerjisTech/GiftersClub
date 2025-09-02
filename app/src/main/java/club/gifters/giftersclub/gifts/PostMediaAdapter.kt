@@ -68,6 +68,7 @@ class PostMediaAdapter(
                 imageView.visibility = View.VISIBLE
                 playerView.visibility = View.GONE
                 imageView.load(media.url) {
+                    crossfade(true)
                     placeholder(android.R.color.darker_gray)
                     error(android.R.color.darker_gray)
                     videoFrameMillis(100) // grab an early frame
@@ -77,6 +78,9 @@ class PostMediaAdapter(
                         onError = { _, _ -> spinner.visibility = View.GONE }
                     )
                 }
+
+                // Warm the cache to reduce startup delay
+                try { club.gifters.giftersclub.media.MediaCache.prefetch(itemView.context, media.url, 1_500_000L) } catch (_: Exception) {}
 
                 // Prepare ExoPlayer with cached data source
                 player?.release()
@@ -125,6 +129,7 @@ class PostMediaAdapter(
                 imageView.visibility = View.VISIBLE
                 spinner.visibility = View.VISIBLE
                 imageView.load(media.url) {
+                    crossfade(true)
                     placeholder(android.R.color.darker_gray)
                     error(android.R.color.darker_gray)
                     listener(
@@ -134,10 +139,9 @@ class PostMediaAdapter(
                     )
                 }
             }
-            // allow tap to toggle play/pause
-            playerView.setOnClickListener {
-                player?.let { p -> if (p.isPlaying) p.pause() else p.play() }
-            }
+            // Do not consume taps here so double‑tap like works on videos
+            playerView.isClickable = false
+            playerView.isFocusable = false
         }
 
         /**

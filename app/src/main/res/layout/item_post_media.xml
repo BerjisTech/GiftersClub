@@ -7,10 +7,11 @@
     <ImageView
         android:id="@+id/mediaImageView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:adjustViewBounds="true"
-        android:scaleType="centerInside"
+        android:layout_height="match_parent"
+        android:adjustViewBounds="false"
+        android:scaleType="fitCenter"
         android:layout_gravity="center"
+        android:background="@color/black"
         android:contentDescription="@string/post_image" />
 
     <androidx.media3.ui.PlayerView

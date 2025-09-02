@@ -11,6 +11,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -37,6 +38,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     private lateinit var pager: ViewPager2
     private var lastViewedPostId: String? = null
     private var lastViewStart: Long = 0L
+    private var lastSelectedPosition: Int = 0
     companion object {
         private const val TAG = "PostsFragment"
         private const val ARG_POST_ID = "post_id"
@@ -214,6 +216,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         lastViewStart = System.currentTimeMillis()
 
         // Listen for scroll to end to load more
+        lastSelectedPosition = pager.currentItem
         pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 // log duration for previous post view
@@ -224,6 +227,9 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                         PostViewApiHolder.logPostView(prevId, durationSec)
                     }
                 }
+                // Pause any playing videos in the previously visible post
+                pauseVideosInItem(lastSelectedPosition)
+                lastSelectedPosition = position
                 // start timing new post view
                 lastViewedPostId = (adapter.currentList.getOrNull(position) as? FeedItem.PostItem)
                     ?.post
@@ -238,6 +244,18 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
             override fun onPageScrollStateChanged(state: Int) {}
         })
+    }
+
+    private fun pauseVideosInItem(position: Int) {
+        val rv = (pager.getChildAt(0) as? RecyclerView) ?: return
+        val vh = rv.findViewHolderForAdapterPosition(position) ?: return
+        val innerPager = vh.itemView.findViewById<ViewPager2>(R.id.mediaPager) ?: return
+        val innerRv = innerPager.getChildAt(0) as? RecyclerView ?: return
+        for (i in 0 until innerRv.childCount) {
+            val child = innerRv.getChildAt(i)
+            val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
+            pv?.player?.pause()
+        }
     }
 
     private fun onLocked(post: Post) {
