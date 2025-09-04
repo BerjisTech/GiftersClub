@@ -66,27 +66,7 @@ android {
     }
 }
 
-android {
-    // Create flavors so dev builds can include x86_64 for emulator,
-    // while prod builds ship arm64-v8a only.
-    flavorDimensions += listOf("dist")
-    productFlavors {
-        create("dev") {
-            dimension = "dist"
-            applicationIdSuffix = ".dev"
-            versionNameSuffix = "-dev"
-            ndk {
-                abiFilters += listOf("arm64-v8a", "x86_64")
-            }
-        }
-        create("prod") {
-            dimension = "dist"
-            ndk {
-                abiFilters += listOf("arm64-v8a")
-            }
-        }
-    }
-}
+// Flavors removed: use a single applicationId for all builds
 
 dependencies {
 

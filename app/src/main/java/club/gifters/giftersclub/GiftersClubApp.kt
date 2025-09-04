@@ -29,6 +29,8 @@ class GiftersClubApp : Application() {
         // Manifest-based initialization as per Rollbar docs
         // Requires <meta-data android:name="com.rollbar.android.ACCESS_TOKEN" android:value="${ROLLBAR_ACCESS_TOKEN}" /> in AndroidManifest
         AppServices.init(this)
+        // Initialize Google Play Billing manager
+        try { club.gifters.giftersclub.payments.BillingManager.init(this) } catch (_: Throwable) {}
         // Initialize Rollbar crash/error reporting if token is provided
         try {
             Rollbar.init(this)

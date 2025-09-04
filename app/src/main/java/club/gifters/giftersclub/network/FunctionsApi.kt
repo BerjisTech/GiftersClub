@@ -35,6 +35,14 @@ interface FunctionsApi {
     ): Response<Unit>
 
     /**
+     * Process Google Play purchase of tokens via Edge Function (server verification).
+     */
+    @POST("google-purchase-tokens")
+    suspend fun processGooglePurchaseTokensRpc(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /**
      * Subscribe to a creator by purchasing a subscription via Edge Function.
      */
     @POST("subscribe-creator")

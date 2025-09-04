@@ -45,7 +45,7 @@ import club.gifters.giftersclub.model.LiveStream
 import club.gifters.giftersclub.model.LiveStreamCommentRequest
 import club.gifters.giftersclub.model.LiveStreamViewerRequest
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.payments.PaymentWebViewActivity
+import club.gifters.giftersclub.payments.BillingManager
 import coil.load
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.button.MaterialButton
@@ -2153,37 +2153,7 @@ class LiveStreamActivity : BaseActivity() {
     }
 
     private fun initiateTopup(userId: String, amount: Int) {
-        lifecycleScope.launch {
-            // Fetch user's email for Flutterwave (customer_email is required)
-            val email: String = try {
-                val profs = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$userId")
-                profs.firstOrNull()?.email?.takeIf { it.isNotBlank() } ?: "${userId}@gifters.club"
-            } catch (_: Exception) { "${userId}@gifters.club" }
-            var lastTxId: String? = null
-            try {
-                val resp = RetrofitClient.tokenApi.recordTokenTransaction(
-                    mapOf(
-                        "user_id" to userId,
-                        "transaction_type" to "purchase",
-                        "tokens" to amount,
-                        "kes_amount" to amount,
-                        "flutterwave_transaction_id" to "topup_${userId}_${System.currentTimeMillis()}",
-                        "flutterwave_transaction_status" to "initiated"
-                    )
-                )
-                if (resp.isSuccessful) {
-                    lastTxId = resp.body()?.firstOrNull()?.id
-                }
-            } catch (_: Exception) {
-            }
-            if (!lastTxId.isNullOrBlank()) {
-                PaymentWebViewActivity.start(this@LiveStreamActivity, userId, email, amount,
-                    "topup_${userId}_${System.currentTimeMillis()}", lastTxId!!)
-            } else {
-                Toast.makeText(this@LiveStreamActivity, R.string.failed_to_initiate_purchase,
-                    Toast.LENGTH_SHORT).show()
-            }
-        }
+        BillingManager.launchPurchase(this@LiveStreamActivity, amount)
     }
 
     /**

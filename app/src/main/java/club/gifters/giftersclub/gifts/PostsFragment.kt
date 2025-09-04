@@ -21,7 +21,7 @@ import club.gifters.giftersclub.NoNetworkActivity
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.payments.PaymentWebViewActivity
+import club.gifters.giftersclub.payments.BillingManager
 import club.gifters.giftersclub.social.SubscriptionApiHolder
 import club.gifters.giftersclub.social.PostViewApiHolder
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -306,10 +306,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                     val price = post.price ?: 0
                     if (balance < price) {
                         val needed = price - balance
-                        val topupRef = "topup_${userId}_${System.currentTimeMillis()}"
-                        PaymentWebViewActivity.start(
-                            requireContext(), userId, prof?.email.orEmpty(), needed, topupRef, ""
-                        )
+                        BillingManager.launchPurchase(requireActivity(), needed)
                         return@launch
                     }
                     val txRef = "post_${userId}_${post.id}_${System.currentTimeMillis()}"
