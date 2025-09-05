@@ -230,6 +230,8 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 // Pause any playing videos in the previously visible post
                 pauseVideosInItem(lastSelectedPosition)
                 lastSelectedPosition = position
+                // Start playback for first video in the newly visible item (if any)
+                playFirstVideoInItem(position)
                 // start timing new post view
                 lastViewedPostId = (adapter.currentList.getOrNull(position) as? FeedItem.PostItem)
                     ?.post
@@ -246,6 +248,20 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         })
     }
 
+    override fun onPause() {
+        super.onPause()
+        // Pause videos in the current and adjacent items to prevent audio bleed
+        pauseVideosInItem(pager.currentItem)
+        pauseVideosInItem(pager.currentItem - 1)
+        pauseVideosInItem(pager.currentItem + 1)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Ensure all visible players are paused when fragment is not in foreground
+        pauseVideosInItem(pager.currentItem)
+    }
+
     private fun pauseVideosInItem(position: Int) {
         val rv = (pager.getChildAt(0) as? RecyclerView) ?: return
         val vh = rv.findViewHolderForAdapterPosition(position) ?: return
@@ -254,8 +270,19 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         for (i in 0 until innerRv.childCount) {
             val child = innerRv.getChildAt(i)
             val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
+            pv?.player?.playWhenReady = false
             pv?.player?.pause()
         }
+    }
+
+    private fun playFirstVideoInItem(position: Int) {
+        val rv = (pager.getChildAt(0) as? RecyclerView) ?: return
+        val vh = rv.findViewHolderForAdapterPosition(position) ?: return
+        val innerPager = vh.itemView.findViewById<ViewPager2>(R.id.mediaPager) ?: return
+        val innerRv = innerPager.getChildAt(0) as? RecyclerView ?: return
+        val child = innerRv.getChildAt(0) ?: return
+        val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
+        pv?.player?.playWhenReady = true
     }
 
     private fun onLocked(post: Post) {

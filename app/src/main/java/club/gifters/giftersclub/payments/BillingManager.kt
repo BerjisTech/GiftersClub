@@ -28,11 +28,21 @@ object BillingManager : PurchasesUpdatedListener {
     // Cache of ProductDetails by productId
     private val productDetails = mutableMapOf<String, ProductDetails>()
 
-    // Mapping productId -> token credits
+    // Mapping productId -> token credits (must match Play Console product IDs)
     private val tokenPacks = linkedMapOf(
-        "tokens_100" to 100,
-        "tokens_500" to 500,
-        "tokens_1000" to 1000,
+        // Smaller packs first so chooseProductId can pick the next >= desired
+        "gift_50" to 50,
+        "gift_100" to 100,
+        "gift_250" to 250,
+        "gift_500" to 500,
+        "gift_1000" to 1000,
+        "gift_1500" to 1500,
+        "gift_2500" to 2500,
+        "gift_5000" to 5000,
+        "gift_15000" to 15000,
+        "gift_40000" to 40000,
+        // Optional: single-token product (very small top-up)
+        "gift_tokens" to 1,
     )
 
     // Callback for the current purchase attempt
@@ -216,6 +226,48 @@ object BillingManager : PurchasesUpdatedListener {
                 .build()
             client.launchBillingFlow(activity, flowParams)
         }
+    }
+
+    /**
+     * Plan a combination of packs to reach at least the desired number of tokens.
+     * Greedy from largest to smallest.
+     */
+    private fun planPacks(desired: Int): List<Int> {
+        val packs = tokenPacks.values.distinct().sortedDescending()
+        var remaining = desired
+        val result = mutableListOf<Int>()
+        for (p in packs) {
+            if (p <= 0) continue
+            val count = remaining / p
+            repeat(count) { result += p }
+            remaining %= p
+            if (remaining == 0) break
+        }
+        // If remainder remains and we didn't exactly match, take one smallest pack to cover it
+        if (remaining > 0) {
+            val smallest = packs.lastOrNull() ?: 0
+            if (smallest > 0) result += smallest
+        }
+        return result
+    }
+
+    /**
+     * Sequentially launch multiple purchases to meet a large desired amount (e.g., > 40k).
+     * Each flow is user-confirmed; aborts if any step fails or is canceled.
+     */
+    fun launchTopUp(activity: Activity, desiredTokens: Int, onFinished: ((Boolean) -> Unit)? = null) {
+        val plan = planPacks(desiredTokens)
+        if (plan.isEmpty()) { onFinished?.invoke(false); return }
+        try { Rollbar.instance().log("launchTopUp: desired=$desiredTokens plan=$plan") } catch (_: Throwable) {}
+
+        var index = 0
+        fun next(successSoFar: Boolean) {
+            if (!successSoFar) { onFinished?.invoke(false); return }
+            if (index >= plan.size) { onFinished?.invoke(true); return }
+            val pack = plan[index++]
+            launchPurchase(activity, desiredTokens = pack) { ok -> next(ok) }
+        }
+        next(true)
     }
 
     private fun chooseProductId(desired: Int?): String {

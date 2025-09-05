@@ -89,6 +89,15 @@ class FeedAdapter(
         }
     }
 
+    override fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder) {
+        super.onViewDetachedFromWindow(holder)
+        if (holder is PostVH) {
+            holder.pauseAllVideos()
+        } else if (holder is LiveVH) {
+            holder.stopPreview()
+        }
+    }
+
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
         if (holder is LiveVH) {
@@ -239,8 +248,14 @@ class FeedAdapter(
             current = post
             post.profile?.let { p ->
                 username.text = p.username
-                avatar.setOnClickListener { onProfileClick(p.username) }
-                username.setOnClickListener { onProfileClick(p.username) }
+                avatar.setOnClickListener {
+                    pauseAllVideos()
+                    onProfileClick(p.username)
+                }
+                username.setOnClickListener {
+                    pauseAllVideos()
+                    onProfileClick(p.username)
+                }
                 if (p.image.isNotBlank()) avatar.load(p.image) else avatar.setImageResource(android.R.color.darker_gray)
             }
             timestamp.text = formatRelativeTime(post.createdAt)
@@ -278,6 +293,18 @@ class FeedAdapter(
                 mediaList = mediaList,
                 playOnHover = false
             )
+            // Auto-control video playback based on inner page visibility
+            pageChangeCallback?.let { mediaPager.unregisterOnPageChangeCallback(it) }
+            val callback = object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    pauseAllVideos()
+                    playVideoAt(position)
+                }
+            }
+            mediaPager.registerOnPageChangeCallback(callback)
+            pageChangeCallback = callback
+            // Ensure only the first page’s video (if any) plays
+            itemView.post { playVideoAt(0) }
             // Touch handling is done in init with directional logic to avoid blocking vertical feed scroll
             indicatorLayout.removeAllViews()
             if (mediaList.size <= 1) {
@@ -364,6 +391,24 @@ class FeedAdapter(
                     } catch (_: Exception) {}
                 }
             }
+        }
+
+        fun pauseAllVideos() {
+            val innerRv = mediaPager.getChildAt(0) as? RecyclerView ?: return
+            for (i in 0 until innerRv.childCount) {
+                val child = innerRv.getChildAt(i)
+                val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
+                pv?.player?.playWhenReady = false
+                pv?.player?.pause()
+            }
+        }
+
+        private fun playVideoAt(index: Int) {
+            val innerRv = mediaPager.getChildAt(0) as? RecyclerView ?: return
+            // Play only if the specified child is laid out
+            val child = innerRv.getChildAt(index) ?: return
+            val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
+            pv?.player?.playWhenReady = true
         }
     }
 

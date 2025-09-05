@@ -66,7 +66,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     private var pollingJob: Job? = null
     private var convsPollingJob: Job? = null
     private lateinit var notificationApi: NotificationApi
-    private lateinit var chatListAdapter: ChatListAdapter
+    private var chatListAdapter: ChatListAdapter? = null
     private var currentPartnerId: String? = null
 
 
@@ -184,7 +184,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         )
         rvConvs.adapter = chatListAdapter
         // initial placeholder
-        chatListAdapter.submitList(listOf(ChatListItem.Empty))
+        chatListAdapter?.submitList(listOf(ChatListItem.Empty))
         loadChatList()
 
         // Poll every few seconds to refresh chats and notifications
@@ -345,7 +345,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             // Only conversations in the list now
             val items = if (sortedConvs.isEmpty()) listOf(ChatListItem.Empty)
             else sortedConvs.map { ChatListItem.Conversation(it) }
-            chatListAdapter.submitList(items)
+            chatListAdapter?.submitList(items)
             done?.invoke()
         }
     }
@@ -483,7 +483,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     }
 
     private fun clearUnreadBadgeLocal(partnerId: String) {
-        val current = chatListAdapter.currentList
+        val current = chatListAdapter?.currentList
         if (current.isNullOrEmpty()) return
         val updated = current.map { item ->
             if (item is ChatListItem.Conversation && item.ui.partner.userId == partnerId) {
@@ -493,7 +493,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 )
             } else item
         }
-        chatListAdapter.submitList(updated)
+        chatListAdapter?.submitList(updated)
     }
 
     private fun setAttachmentPreview(uri: Uri) {

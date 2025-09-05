@@ -169,11 +169,12 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
     }
 
     private fun updateEmptyState() {
+        val ctx = context ?: return
         val isEmpty = adapter.currentList.isEmpty()
         swipeRefreshLayout?.isVisible = !isEmpty
         emptyTextView?.isVisible = isEmpty
         if (isEmpty) {
-            emptyTextView?.text = if (AuthUtils.getCurrentUserId(requireContext()) == userId) {
+            emptyTextView?.text = if (AuthUtils.getCurrentUserId(ctx) == userId) {
                 val text = "You haven't uploaded any posts, get started by creating a new post"
                 val spannable = SpannableString(text)
                 val clickable = "create a new post"
@@ -181,6 +182,7 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
                 if (start >= 0) {
                     spannable.setSpan(object : ClickableSpan() {
                         override fun onClick(widget: View) {
+                            if (!isAdded) return
                             requireActivity().supportFragmentManager.beginTransaction()
                                 .replace(R.id.mainContentContainer, CreatePostFragment())
                                 .addToBackStack(null)
@@ -197,7 +199,7 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
     }
 
     private fun updatePendingBanner() {
-        val ctx = requireContext()
+        val ctx = context ?: return
         val pending = UploadTracker.hasPending(ctx, userId)
         val isVideo = UploadTracker.isPendingVideo(ctx, userId)
         tvPendingUpload?.text = if (isVideo) "Uploading video…" else "Posting… your new post is uploading"
@@ -207,7 +209,8 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
     private fun observeUploadWork() {
         if (workObserverRegistered || userId.isNullOrBlank()) return
         val tag = "post-upload-${userId}"
-        androidx.work.WorkManager.getInstance(requireContext())
+        val ctx = context ?: return
+        androidx.work.WorkManager.getInstance(ctx)
             .getWorkInfosByTagLiveData(tag)
             .observe(viewLifecycleOwner) { infos ->
                 val running = infos.any { it.state == androidx.work.WorkInfo.State.ENQUEUED || it.state == androidx.work.WorkInfo.State.RUNNING }
@@ -259,14 +262,14 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
                 // Optimistically remove deleted posts from UI before reloading
                 val remaining = adapter.currentList.filterNot { selectedPosts.contains(it) }
                 adapter.submitList(remaining)
-                Toast.makeText(requireContext(), "Selected posts deleted", Toast.LENGTH_SHORT).show()
+                context?.let { Toast.makeText(it, "Selected posts deleted", Toast.LENGTH_SHORT).show() }
                 selectedPosts.clear()
                 isSelectionMode = false
                 selectionModeChangeListener?.onSelectionModeChanged(false)
                 adapter.notifyDataSetChanged()
                 loadPosts(clear = true) // Reload posts after deletion
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Failed to delete posts", Toast.LENGTH_SHORT).show()
+                context?.let { Toast.makeText(it, "Failed to delete posts", Toast.LENGTH_SHORT).show() }
             }
         }
     }
@@ -275,6 +278,7 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
         if (isLoading || isLastPage) return
         isLoading = true
         lifecycleScope.launch {
+            val ctx = context ?: return@launch
             try {
                 val items: List<Post> = if (userId.isNullOrBlank()) {
                     api.getPosts(order = "created_at.desc", limit = limit, offset = page * limit)
@@ -285,12 +289,12 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
                     )
                 }
                 // filter posts the user cannot access
-                val visible = filterAccessible(items)
+                val visible = filterAccessible(items, ctx)
                 if (clear) adapter.submitList(visible) else adapter.submitList(adapter.currentList + visible)
-                updateEmptyState()
+                if (isAdded) updateEmptyState()
                 if (items.size < limit) isLastPage = true else page++
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
+                context?.let { Toast.makeText(it, "Failed to load posts", Toast.LENGTH_SHORT).show() }
             } finally {
                 isLoading = false
             }
@@ -300,8 +304,8 @@ class UserPostsFragment : Fragment(R.layout.fragment_user_posts) {
     /**
      * Remove posts the current user cannot access (subscription or paywalled).
      */
-    private suspend fun filterAccessible(posts: List<Post>): List<Post> {
-        val userId = AuthUtils.getCurrentUserId(requireContext())
+    private suspend fun filterAccessible(posts: List<Post>, ctx: android.content.Context): List<Post> {
+        val userId = AuthUtils.getCurrentUserId(ctx)
         return posts.filter { post ->
             when {
                 post.accessType == "free" || post.userId == userId -> true

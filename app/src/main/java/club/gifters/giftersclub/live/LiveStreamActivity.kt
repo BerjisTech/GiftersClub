@@ -125,6 +125,7 @@ class LiveStreamActivity : BaseActivity() {
     private var paywallPlanTokens: Int = 0
     // Multi-host: map participant/track to its renderer for tiling
     private val videoViews: MutableMap<String, SurfaceViewRenderer> = mutableMapOf()
+    private val tileViews: MutableMap<String, View> = mutableMapOf()
     // Whether the video container is in grid mode (local + remotes as tiles)
     private var isGridMode: Boolean = false
 
@@ -607,7 +608,11 @@ class LiveStreamActivity : BaseActivity() {
             )
             lifecycleScope.launch {
                 try {
-                    room.connect(LiveKitConfig.WS_URL, lkToken, ConnectOptions())
+                    room.connect(
+                        LiveKitConfig.WS_URL,
+                        lkToken,
+                        ConnectOptions()
+                    )
                     liveKitRoom = room
                     // Listen for data messages for realtime tallies
                     launch {
@@ -827,6 +832,7 @@ class LiveStreamActivity : BaseActivity() {
         container.addView(tile)
         layoutTiles(container)
         videoViews[key] = v
+        tileViews[key] = tile
         track.addRenderer(v)
     }
 
@@ -884,6 +890,7 @@ class LiveStreamActivity : BaseActivity() {
         container.addView(tile)
         layoutTiles(container)
         videoViews[key] = v
+        tileViews[key] = tile
         localTrack.addRenderer(v)
     }
 
@@ -910,9 +917,11 @@ class LiveStreamActivity : BaseActivity() {
     }
 
     private fun removeVideoTile(container: FrameLayout, key: String) {
-        val v = videoViews.remove(key) ?: return
-        try { v.release() } catch (_: Exception) {}
-        container.removeView(v)
+        val v = videoViews.remove(key)
+        val tile = tileViews.remove(key)
+        if (v == null && tile == null) return
+        try { v?.release() } catch (_: Exception) {}
+        if (tile != null) container.removeView(tile) else container.removeView(v)
         layoutTiles(container)
     }
 
@@ -1432,7 +1441,11 @@ class LiveStreamActivity : BaseActivity() {
             liveKitRoom = room
             lifecycleScope.launch {
                 try {
-                    room.connect(LiveKitConfig.WS_URL, lkToken, ConnectOptions())
+                    room.connect(
+                        LiveKitConfig.WS_URL,
+                        lkToken,
+                        ConnectOptions()
+                    )
                     // enable camera/mic and attach local preview
                     try { room.localParticipant.setCameraEnabled(true) } catch (_: Exception) {}
                     try { room.localParticipant.setMicrophoneEnabled(true) } catch (_: Exception) {}

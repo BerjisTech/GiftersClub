@@ -31,4 +31,39 @@
         android:layout_gravity="center"
         android:indeterminate="true" />
 
+    <!-- Minimal controls overlay: seek bar + speed toggle -->
+    <LinearLayout
+        android:id="@+id/mediaControls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#66000000"
+        android:visibility="gone">
+
+        <androidx.media3.ui.DefaultTimeBar
+            android:id="@+id/timeBar"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            app:bar_height="2dp"
+            app:played_color="@android:color/white"
+            app:buffered_color="@android:color/darker_gray"
+            app:unplayed_color="#66FFFFFF"
+            app:ad_marker_color="@android:color/holo_red_light"
+            app:played_ad_marker_color="@android:color/holo_red_dark" />
+
+        <TextView
+            android:id="@+id/speedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text="x1"
+            android:textColor="@android:color/white"
+            android:background="@drawable/bg_round_button" />
+    </LinearLayout>
+
 </FrameLayout>
