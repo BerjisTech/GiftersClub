@@ -116,26 +116,64 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             onLike = { post ->
                 lifecycleScope.launch {
                     val userId = AuthUtils.getCurrentUserId(requireContext()) ?: return@launch
-                    val likedBefore = CommentApiHolder.isPostLikedByUser(post.id)
-                    // show like/unlike Lottie animation
+                    // Determine current liked state and visible holder to update in-place
+                    val likedBefore = try { CommentApiHolder.isPostLikedByUser(post.id) } catch (_: Exception) { false }
+                    // show like/unlike Lottie animation immediately
                     (activity as? MainActivity)?.showLottieAnimation(
                         if (!likedBefore) LIKE_LOTTIE_URL else UNLIKE_LOTTIE_URL
                     )
-                    val body = mapOf(
-                        "post_id" to post.id,
-                        "user_id" to userId,
-                        "type" to "like"
-                    )
-                    if (!likedBefore) CommentApiHolder.reactToPost(body)
-                    else CommentApiHolder.unreactToPost(
-                        postIdFilter = "eq.${post.id}",
-                        userIdFilter = "eq.$userId",
-                        typeFilter = "eq.like"
-                    )
-                    adapter.currentList
+
+                    // Find the visible ViewHolder for this post and optimistically update UI
+                    val idx = adapter.currentList
                         .indexOfFirst { it is FeedItem.PostItem && it.post.id == post.id }
-                        .takeIf { it >= 0 }
-                        ?.let { idx -> adapter.notifyItemChanged(idx) }
+                    if (idx >= 0) {
+                        val rv = (pager.getChildAt(0) as? RecyclerView)
+                        val vh = rv?.findViewHolderForAdapterPosition(idx)
+                        val itemView = vh?.itemView
+                        val btnLike = itemView?.findViewById<TextView>(R.id.btnLike)
+                        val tvLikeCount = itemView?.findViewById<TextView>(R.id.tvLikeCount)
+
+                        // Snapshot UI state
+                        val prevIcon = btnLike?.text?.toString()
+                        val prevCount = tvLikeCount?.text?.toString()?.toIntOrNull() ?: 0
+                        val newCount = if (!likedBefore) prevCount + 1 else (prevCount - 1).coerceAtLeast(0)
+
+                        // Optimistic UI update
+                        btnLike?.text = getString(if (!likedBefore) R.string._like_emoji_filled else R.string._like_emoji)
+                        tvLikeCount?.text = newCount.toString()
+
+                        try {
+                            val body = mapOf(
+                                "post_id" to post.id,
+                                "user_id" to userId,
+                                "type" to "like"
+                            )
+                            if (!likedBefore) CommentApiHolder.reactToPost(body)
+                            else CommentApiHolder.unreactToPost(
+                                postIdFilter = "eq.${post.id}",
+                                userIdFilter = "eq.$userId",
+                                typeFilter = "eq.like"
+                            )
+                        } catch (_: Exception) {
+                            // Revert UI on failure
+                            btnLike?.text = prevIcon
+                            tvLikeCount?.text = prevCount.toString()
+                        }
+                    } else {
+                        // If VH not found, just perform network without forcing a rebind
+                        try {
+                            val body = mapOf(
+                                "post_id" to post.id,
+                                "user_id" to userId,
+                                "type" to "like"
+                            )
+                            if (!likedBefore) CommentApiHolder.reactToPost(body) else CommentApiHolder.unreactToPost(
+                                postIdFilter = "eq.${post.id}",
+                                userIdFilter = "eq.$userId",
+                                typeFilter = "eq.like"
+                            )
+                        } catch (_: Exception) { }
+                    }
                 }
             },
             onComment = { post ->
