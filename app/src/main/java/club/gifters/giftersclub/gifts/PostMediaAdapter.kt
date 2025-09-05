@@ -204,9 +204,9 @@ class PostMediaAdapter(
                 }
             })
             itemView.setOnTouchListener { _, ev ->
+                // Handle single‑tap locally; do NOT re-dispatch to parent to avoid recursion.
+                // Returning false allows the event to bubble so parent can still detect double‑tap.
                 gd.onTouchEvent(ev)
-                // Also let parent detect double-tap like
-                (itemView.parent as? View)?.dispatchTouchEvent(ev)
                 false
             }
         }
