@@ -72,7 +72,6 @@
                         android:id="@+id/tvStreamerName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/streamer_name"
                         android:textColor="@android:color/white" />
 
                     <LinearLayout
@@ -85,7 +84,6 @@
                             android:id="@+id/tvFollowerCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/_0_followers"
                             android:textColor="@android:color/white"
                             android:textSize="12sp" />
 
