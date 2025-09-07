@@ -41,8 +41,8 @@ object BillingManager : PurchasesUpdatedListener {
         "gift_5000" to 5000,
         "gift_15000" to 15000,
         "gift_40000" to 40000,
-        // Optional: single-token product (very small top-up)
-        "gift_tokens" to 1,
+        // Smallest top-up pack sold as Gift Tokens
+        "gift_tokens" to 10,
     )
 
     // Callback for the current purchase attempt
@@ -115,6 +115,8 @@ object BillingManager : PurchasesUpdatedListener {
                         if (productDetails.isEmpty()) {
                             queryProductsRetry()
                         }
+                        // Reconcile any unconsumed purchases to unblock future buys
+                        reconcileUnconsumed()
                     }
                     onReady?.invoke()
                 }
@@ -159,6 +161,32 @@ object BillingManager : PurchasesUpdatedListener {
             try { Rollbar.instance().log("queryProductDetails retry attempt=${attempt + 1}") } catch (_: Throwable) {}
             kotlinx.coroutines.delay(delayMs)
             queryProducts()
+        }
+    }
+
+    /**
+     * Query owned INAPP purchases, re-verify/credit on backend, then consume to unblock.
+     * Safe to run at startup or when encountering ITEM_ALREADY_OWNED.
+     */
+    private fun reconcileUnconsumed() {
+        val client = billingClient ?: return
+        val params = QueryPurchasesParams.newBuilder()
+            .setProductType(BillingClient.ProductType.INAPP)
+            .build()
+
+        client.queryPurchasesAsync(params) { result, purchaseList ->
+            if (result.responseCode != BillingClient.BillingResponseCode.OK || purchaseList.isNullOrEmpty()) return@queryPurchasesAsync
+
+            CoroutineScope(Dispatchers.IO).launch {
+                for (purchase in purchaseList) {
+                    try {
+                        // verifyOnServerAndConsume will consume after successful credit
+                        verifyOnServerAndConsume(purchase)
+                    } catch (t: Throwable) {
+                        try { Rollbar.instance().error(t) } catch (_: Throwable) {}
+                    }
+                }
+            }
         }
     }
 
@@ -280,6 +308,10 @@ object BillingManager : PurchasesUpdatedListener {
         try { Rollbar.instance().log("onPurchasesUpdated: code=${result.responseCode} count=${purchases?.size ?: 0}") } catch (_: Throwable) {}
         if (result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
             purchases.forEach { handlePurchase(it) }
+        } else if (result.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
+            // User has an unconsumed purchase; reconcile and ask UI to retry if needed
+            reconcileUnconsumed()
+            onResult?.invoke(false)
         } else if (result.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
             onResult?.invoke(false)
         } else {

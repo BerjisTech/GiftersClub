@@ -16,8 +16,8 @@ android {
         applicationId = "club.gifters.giftersclub"
         minSdk = 24
         targetSdk = 35
-        versionCode = 33
-        versionName = "1.0.33"
+        versionCode = 34
+        versionName = "1.0.34"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -27,17 +27,17 @@ android {
             if (f.exists()) f.inputStream().use { load(it) }
         }
         val rollbarClientToken: String = (
-            props.getProperty("ROLLBAR_CLIENT_TOKEN")
-                ?: (project.findProperty("ROLLBAR_CLIENT_TOKEN") as String?)
-                ?: System.getenv("ROLLBAR_CLIENT_TOKEN")
-                ?: ""
-            )
+                props.getProperty("ROLLBAR_CLIENT_TOKEN")
+                    ?: (project.findProperty("ROLLBAR_CLIENT_TOKEN") as String?)
+                    ?: System.getenv("ROLLBAR_CLIENT_TOKEN")
+                    ?: ""
+                )
         val rollbarEnv: String = (
-            props.getProperty("ROLLBAR_ENV")
-                ?: (project.findProperty("ROLLBAR_ENV") as String?)
-                ?: System.getenv("ROLLBAR_ENV")
-                ?: "production"
-            )
+                props.getProperty("ROLLBAR_ENV")
+                    ?: (project.findProperty("ROLLBAR_ENV") as String?)
+                    ?: System.getenv("ROLLBAR_ENV")
+                    ?: "production"
+                )
         buildConfigField("String", "ROLLBAR_CLIENT_TOKEN", "\"$rollbarClientToken\"")
         buildConfigField("String", "ROLLBAR_ENV", "\"$rollbarEnv\"")
         // Expose token to manifest as a placeholder so you can use docs' manifest-based init
