@@ -7,18 +7,16 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.InputType
 import android.util.Base64
-import kotlinx.coroutines.withContext
 import android.view.KeyEvent
 import android.view.View
-import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
-import android.widget.EditText
 import android.widget.Button
-import android.widget.ProgressBar
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -48,7 +46,6 @@ import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.payments.BillingManager
 import coil.load
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.imageview.ShapeableImageView
 import io.livekit.android.ConnectOptions
 import io.livekit.android.LiveKit
@@ -67,9 +64,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.text.NumberFormat
-import retrofit2.HttpException
 
 /**
  * Activity displaying and managing a live streaming session (camera preview, comments, and gifts).
