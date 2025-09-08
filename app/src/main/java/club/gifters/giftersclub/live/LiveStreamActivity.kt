@@ -153,6 +153,9 @@ class LiveStreamActivity : BaseActivity() {
     private val lastGiftAtByStream: MutableMap<String, String?> = mutableMapOf()
     private val tokenPills: MutableMap<String, TextView> = mutableMapOf()
     private val namePills: MutableMap<String, TextView> = mutableMapOf()
+    // If we request permissions while attempting to resume a host/co-host session,
+    // stash the target stream here and continue after the user grants.
+    private var pendingResumeLive: LiveStream? = null
 
     private fun startCommentsPolling(sid: String) {
         commentsJob?.cancel()
@@ -254,14 +257,42 @@ class LiveStreamActivity : BaseActivity() {
         btnRequests.setOnClickListener { openRequestsBottomSheet() }
 
         if (deepId == null) {
-            if (!allPermissionsGranted()) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    REQUIRED_PERMISSIONS,
-                    REQUEST_CODE_PERMISSIONS
-                )
+            // If user already has an active live, resume it instead of creating a new one.
+            val currentUser = AuthUtils.getCurrentUserId(this)
+            if (currentUser != null) {
+                lifecycleScope.launch {
+                    val active = try {
+                        RetrofitClient.liveStreamApi.getLiveStreamsByHosts(
+                            select = "id,status",
+                            hostFilter = "eq.$currentUser",
+                            statusFilter = "eq.live",
+                            order = "updated_at.desc"
+                        ).firstOrNull()
+                    } catch (_: Exception) { null }
+                    if (active != null) {
+                        handleDeepLinkStream(active.id)
+                    } else {
+                        if (!allPermissionsGranted()) {
+                            ActivityCompat.requestPermissions(
+                                this@LiveStreamActivity,
+                                REQUIRED_PERMISSIONS,
+                                REQUEST_CODE_PERMISSIONS
+                            )
+                        } else {
+                            showCreateStreamDialog()
+                        }
+                    }
+                }
             } else {
-                showCreateStreamDialog()
+                if (!allPermissionsGranted()) {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        REQUIRED_PERMISSIONS,
+                        REQUEST_CODE_PERMISSIONS
+                    )
+                } else {
+                    showCreateStreamDialog()
+                }
             }
         }
 
@@ -458,6 +489,13 @@ class LiveStreamActivity : BaseActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
+                // If we were resuming a live session (host/co-host), continue that now.
+                pendingResumeLive?.let { live ->
+                    pendingResumeLive = null
+                    resumeHostSession(live)
+                    return
+                }
+                // Otherwise proceed to creation flow.
                 showCreateStreamDialog()
             } else {
                 Toast.makeText(this, R.string.permission_denied, Toast.LENGTH_SHORT).show()
@@ -1280,6 +1318,8 @@ class LiveStreamActivity : BaseActivity() {
     private fun resumeHostSession(live: LiveStream) {
         // require camera & audio permissions
         if (!allPermissionsGranted()) {
+            // Remember to resume this exact session after permission grant
+            pendingResumeLive = live
             ActivityCompat.requestPermissions(
                 this@LiveStreamActivity,
                 REQUIRED_PERMISSIONS,
