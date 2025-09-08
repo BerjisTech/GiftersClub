@@ -257,4 +257,5 @@
     <string name="reported">Reported</string>
     <string name="blocked">Blocked</string>
     <string name="more">More</string>
+    <string name="follow_user_directly">Follow user directly</string>
 </resources>

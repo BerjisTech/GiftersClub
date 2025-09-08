@@ -169,7 +169,7 @@
 
         <LinearLayout
             android:id="@+id/postActions"
-            android:layout_width="55dp"
+            android:layout_width="60dp"
             android:layout_height="300dp"
             android:gravity="bottom|center_horizontal"
             android:orientation="vertical"
@@ -177,13 +177,37 @@
             app:layout_constraintBottom_toBottomOf="@id/postDetails"
             app:layout_constraintEnd_toEndOf="@id/postDetails">
 
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/avatarImage"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:contentDescription="@string/user_avatar"
-                android:scaleType="centerCrop"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/avatarImage"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_round_button"
+                    android:contentDescription="@string/user_avatar"
+                    android:scaleType="centerCrop"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
+
+                <ImageView
+                    android:id="@+id/directFollowUser"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="40dp"
+                    android:background="@drawable/bg_round_button"
+                    android:contentDescription="@string/follow_user_directly"
+                    android:src="@drawable/ic_plus_white"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
 
             <LinearLayout
                 android:layout_width="40dp"
