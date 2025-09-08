@@ -17,6 +17,7 @@ import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
+import club.gifters.giftersclub.gifts.FollowApiHolder
 import club.gifters.giftersclub.social.SubscriptionApiHolder
 import coil.load
 import kotlinx.coroutines.CoroutineScope
@@ -69,6 +70,14 @@ class PostAdapter(
         private val tvCommentCount: TextView = itemView.findViewById(R.id.tvCommentCount)
         private val btnShare: TextView = itemView.findViewById(R.id.btnShare)
         private val tvShareCount: TextView = itemView.findViewById(R.id.tvShareCount)
+        private val directFollow: ImageView = itemView.findViewById(R.id.directFollowUser)
+        private var isFollowingAuthor: Boolean = false
+
+        private fun updateFollowIcon() {
+            directFollow.setImageResource(
+                if (isFollowingAuthor) android.R.drawable.ic_menu_send else R.drawable.ic_plus_white
+            )
+        }
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private var current: Post? = null
         private var startX = 0f
@@ -128,6 +137,40 @@ class PostAdapter(
                     }
                 } else {
                     avatar.setImageResource(android.R.color.darker_gray)
+                }
+            }
+
+            // Default icon while we resolve status
+            isFollowingAuthor = false
+            updateFollowIcon()
+
+            // Hide follow for own posts; otherwise resolve follow status
+            scope.launch {
+                try {
+                    val currentUser = AuthUtils.getCurrentUserId(itemView.context)
+                    if (currentUser == post.userId) {
+                        directFollow.visibility = View.GONE
+                    } else {
+                        directFollow.visibility = View.VISIBLE
+                        isFollowingAuthor = FollowApiHolder.isFollowingUser(post.userId)
+                        updateFollowIcon()
+                    }
+                } catch (_: Exception) { }
+            }
+
+            // Toggle follow/unfollow on tap
+            directFollow.setOnClickListener {
+                scope.launch {
+                    try {
+                        val ok = if (isFollowingAuthor)
+                            FollowApiHolder.unfollowUser(post.userId)
+                        else
+                            FollowApiHolder.followUser(post.userId)
+                        if (ok) {
+                            isFollowingAuthor = !isFollowingAuthor
+                            updateFollowIcon()
+                        }
+                    } catch (_: Exception) { }
                 }
             }
             timestamp.text = formatRelativeTime(post.createdAt)

@@ -21,6 +21,7 @@ import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.LiveStream
 import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.social.SubscriptionApiHolder
+import club.gifters.giftersclub.gifts.FollowApiHolder
 import coil.load
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -198,6 +199,14 @@ class FeedAdapter(
         private val btnShare: TextView = itemView.findViewById(R.id.btnShare)
         private val btnRepost: TextView = itemView.findViewById(R.id.btnRepost)
         private val tvShareCount: TextView = itemView.findViewById(R.id.tvShareCount)
+        private val directFollow: ImageView = itemView.findViewById(R.id.directFollowUser)
+        private var isFollowingAuthor: Boolean = false
+
+        private fun updateFollowIcon() {
+            directFollow.setImageResource(
+                if (isFollowingAuthor) android.R.drawable.ic_menu_send else R.drawable.ic_plus_white
+            )
+        }
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private var current: Post? = null
 
@@ -260,6 +269,39 @@ class FeedAdapter(
             }
             timestamp.text = formatRelativeTime(post.createdAt)
             content.text = post.content ?: ""
+
+            // Default to not-following icon, then resolve actual state
+            isFollowingAuthor = false
+            updateFollowIcon()
+
+            scope.launch {
+                try {
+                    val currentUser = AuthUtils.getCurrentUserId(itemView.context)
+                    if (currentUser == post.userId) {
+                        directFollow.visibility = View.GONE
+                    } else {
+                        directFollow.visibility = View.VISIBLE
+                        isFollowingAuthor = FollowApiHolder.isFollowingUser(post.userId)
+                        updateFollowIcon()
+                    }
+                } catch (_: Exception) { }
+            }
+
+            // Toggle follow/unfollow on tap
+            directFollow.setOnClickListener {
+                scope.launch {
+                    try {
+                        val ok = if (isFollowingAuthor)
+                            FollowApiHolder.unfollowUser(post.userId)
+                        else
+                            FollowApiHolder.followUser(post.userId)
+                        if (ok) {
+                            isFollowingAuthor = !isFollowingAuthor
+                            updateFollowIcon()
+                        }
+                    } catch (_: Exception) { }
+                }
+            }
             val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
             val lockAction = itemView.findViewById<TextView>(R.id.tvLockAction)
             val indicatorLayout = itemView.findViewById<LinearLayout>(R.id.mediaIndicatorLayout)
