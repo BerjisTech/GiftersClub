@@ -70,6 +70,11 @@ class RequestsBottomSheetFragment : BottomSheetDialogFragment() {
                         lifecycleScope.launch {
                             try {
                                 RetrofitClient.functionsApi.liveInvite(mapOf("action" to "accept", "inviteId" to id))
+                                // Switch current live to multi_host shared comments.
+                                val sid = arguments?.getString(ARG_STREAM_ID)
+                                if (!sid.isNullOrEmpty()) {
+                                    try { RetrofitClient.functionsApi.setLiveMode(mapOf("streamId" to sid, "mode" to "multi_host", "commentScope" to "shared")) } catch (_: Exception) {}
+                                }
                                 Toast.makeText(requireContext(), "Accepted", Toast.LENGTH_SHORT).show()
                                 loadRequests(root)
                             } catch (_: Exception) {
@@ -103,4 +108,3 @@ class RequestsBottomSheetFragment : BottomSheetDialogFragment() {
         }
     }
 }
-

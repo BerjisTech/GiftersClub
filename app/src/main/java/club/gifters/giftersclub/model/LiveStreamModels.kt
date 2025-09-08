@@ -28,7 +28,15 @@ data class LiveStream(
     /**
      * Optional LiveKit room id to group multi-host sessions.
      */
-    @SerializedName("room_id") val roomId: String? = null
+    @SerializedName("room_id") val roomId: String? = null,
+    /**
+     * Optional mode and options to steer client behavior. Defaults preserved for old rows.
+     */
+    @SerializedName("mode") val mode: String? = null,                 // "solo" | "multi_host" | "match"
+    @SerializedName("comment_scope") val commentScope: String? = null, // "shared" | "isolated"
+    @SerializedName("layout_max_hosts") val layoutMaxHosts: Int? = null,
+    @SerializedName("match_scoring") val matchScoring: String? = null, // "tokens" | "likes"
+    @SerializedName("match_duration_sec") val matchDurationSec: Int? = null
 )
 
 /**

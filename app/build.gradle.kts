@@ -57,12 +57,14 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        // AGP 8.x requires JDK 17; align toolchain + bytecode level
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
-        jvmTarget = "11"
+        // Keep Kotlin JVM target aligned with Java toolchain
+        jvmTarget = "17"
     }
 }
 

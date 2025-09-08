@@ -146,6 +146,9 @@ class LiveStreamActivity : BaseActivity() {
     private var isMatch: Boolean = false
     private var battleId: String? = null
     private var battleStartedAt: String? = null
+    private var matchEndsAtIso: String? = null
+    private var matchTimerJob: Job? = null
+    private var matchTimerText: TextView? = null
     private val matchParticipants: MutableList<club.gifters.giftersclub.model.BattleParticipant> = mutableListOf()
     private val userIdToStreamId: MutableMap<String, String> = mutableMapOf() // also stores usernames under key "uname:<userId>"
     private val tokenTallies: MutableMap<String, Int> = mutableMapOf()
@@ -153,6 +156,10 @@ class LiveStreamActivity : BaseActivity() {
     private val lastGiftAtByStream: MutableMap<String, String?> = mutableMapOf()
     private val tokenPills: MutableMap<String, TextView> = mutableMapOf()
     private val namePills: MutableMap<String, TextView> = mutableMapOf()
+    // Client-side options hydrated from currentStream
+    private var commentScope: String = "shared" // or "isolated"
+    private val maxHosts: Int get() = currentStream?.layoutMaxHosts ?: 8
+    private var overflowBadge: TextView? = null
     // If we request permissions while attempting to resume a host/co-host session,
     // stash the target stream here and continue after the user grants.
     private var pendingResumeLive: LiveStream? = null
@@ -162,12 +169,14 @@ class LiveStreamActivity : BaseActivity() {
         commentsJob = lifecycleScope.launch {
             while (isActive && !isEnded) {
                 delay(2000)
-                // Recompute cohost streams on each tick to catch room_id changes
-                val streamIds = try {
-                    val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,room_id", "eq.$sid")
-                    val room = rows.firstOrNull()?.roomId
-                    if (!room.isNullOrEmpty()) RetrofitClient.liveStreamApi.getLiveStreamsByRoomId("id", "eq.$room").map { it.id } else listOf(sid)
-                } catch (_: Exception) { listOf(sid) }
+                // Determine scope: shared -> merge by room_id, isolated -> just this stream
+                val streamIds = if (commentScope == "shared") {
+                    try {
+                        val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,room_id", "eq.$sid")
+                        val room = rows.firstOrNull()?.roomId
+                        if (!room.isNullOrEmpty()) RetrofitClient.liveStreamApi.getLiveStreamsByRoomId("id", "eq.$room").map { it.id } else listOf(sid)
+                    } catch (_: Exception) { listOf(sid) }
+                } else listOf(sid)
                 val merged = mutableListOf<club.gifters.giftersclub.model.LiveStreamComment>()
                 for (s in streamIds) {
                     try {
@@ -623,6 +632,7 @@ class LiveStreamActivity : BaseActivity() {
         container.removeAllViews()
         videoViews.values.forEach { it.release() }
         videoViews.clear()
+        ensureOverflowBadge(container)
 
         // Connect to LiveKit as viewer (subscribe only)
         val lkToken = currentStream?.token ?: currentStream?.id
@@ -704,6 +714,7 @@ class LiveStreamActivity : BaseActivity() {
                                         ensureGridMode(container)
                                         val key = "${event.participant.sid}_${rt.sid}"
                                         addVideoTile(container, key, rt)
+                                        updateOverflow(container)
                                     }
                                 }
                                 is RoomEvent.DataReceived -> {
@@ -725,12 +736,14 @@ class LiveStreamActivity : BaseActivity() {
                                     if (rt != null) {
                                         val key = "${event.participant.sid}_${rt.sid}"
                                         removeVideoTile(container, key)
+                                        updateOverflow(container)
                                     }
                                 }
                                 is RoomEvent.ParticipantDisconnected -> {
                                     // remove all tiles for this participant
                                     val keys = videoViews.keys.filter { it.startsWith("${event.participant.sid}_") }
                                     keys.forEach { k -> removeVideoTile(container, k) }
+                                    updateOverflow(container)
                                 }
                                 else -> Unit
                             }
@@ -785,10 +798,19 @@ class LiveStreamActivity : BaseActivity() {
                                                 val idx = combo.second
                                                 commentsAdapter.updateContentAt(idx, "sent ${newCount} $giftName combo")
                                                 giftCombos[key] = Pair(newCount, idx)
+                                                // Try resolve animation rule for combo
+                                                val anim = resolveAnimationForGift(e.giftId, (e.tokensUsed ?: 0), newCount)
+                                                if (anim != null) {
+                                                    Toast.makeText(this@LiveStreamActivity, "Animation: ${anim.first}", Toast.LENGTH_SHORT).show()
+                                                }
                                             } else {
                                                 commentsAdapter.addSyntheticComment(e.gifterId, "sent a $giftName", e.gifter)
                                                 val idx = commentsAdapter.itemCount - 1
                                                 giftCombos[key] = Pair(1, idx)
+                                                val anim = resolveAnimationForGift(e.giftId, (e.tokensUsed ?: 0), 1)
+                                                if (anim != null) {
+                                                    Toast.makeText(this@LiveStreamActivity, "Animation: ${anim.first}", Toast.LENGTH_SHORT).show()
+                                                }
                                             }
                                         }
                                         rvLiveComments.scrollToPosition(commentsAdapter.itemCount - 1)
@@ -871,6 +893,33 @@ class LiveStreamActivity : BaseActivity() {
         track.addRenderer(v)
     }
 
+    private suspend fun resolveAnimationForGift(
+        giftId: String,
+        tokensUsed: Int = 0,
+        comboCount: Int = 1
+    ): Pair<String, String>? {
+        val scope = when {
+            isMatch -> "match"
+            (currentStream?.roomId?.isNotEmpty() == true) -> "multi_host"
+            else -> "solo"
+        }
+        return try {
+            val rules = RetrofitClient.liveStreamApi.getGiftAnimationRules(
+                giftIdFilter = "eq.$giftId",
+                scopeFilter = "in.(all,$scope)"
+            )
+            val chosen = rules.firstOrNull { r ->
+                val min = (r["min_tokens"] as? Double)?.toInt() ?: 0
+                val combo = (r["combo_count"] as? Double)?.toInt() ?: 1
+                tokensUsed >= min && comboCount >= combo
+            } ?: rules.firstOrNull()
+            val anim = (chosen?.get("animation") as? Map<*, *>) ?: return null
+            val type = anim["type"] as? String ?: return null
+            val url = anim["url"] as? String ?: return null
+            type to url
+        } catch (_: Exception) { null }
+    }
+
     private fun addLocalTile(container: FrameLayout) {
         val room = liveKitRoom ?: return
         val localPubPair = room.localParticipant.videoTrackPublications.firstOrNull() ?: return
@@ -936,6 +985,7 @@ class LiveStreamActivity : BaseActivity() {
         try { previewView?.release() } catch (_: Exception) {}
         previewView = null
         container.removeAllViews()
+        ensureOverflowBadge(container)
         addLocalTile(container)
         // Also add any currently subscribed remote tracks
         try {
@@ -945,6 +995,7 @@ class LiveStreamActivity : BaseActivity() {
                     if (rt != null) {
                         val key = "${p.sid}_${rt.sid}"
                         addVideoTile(container, key, rt)
+                        updateOverflow(container)
                     }
                 }
             }
@@ -961,18 +1012,25 @@ class LiveStreamActivity : BaseActivity() {
     }
 
     private fun layoutTiles(container: FrameLayout) {
-        val n = container.childCount
+        // All children except overflow badge are tiles
+        val all = (0 until container.childCount).map { container.getChildAt(it) }
+        val tiles = all.filter { it !== overflowBadge }
+        val n = tiles.size
         if (n == 0) return
         val w = container.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
         val h = container.height.takeIf { it > 0 } ?: resources.displayMetrics.heightPixels
 
+        // Respect maxHosts: hide overflow tiles and only layout the first displayCount
+        val displayCount = kotlin.math.min(n, maxHosts)
+        tiles.forEachIndexed { idx, v -> v.visibility = if (idx < displayCount) View.VISIBLE else View.GONE }
+
         fun place(childIndex: Int, l: Int, t: Int, r: Int, b: Int) {
-            if (childIndex >= 0 && childIndex < n) {
-                container.getChildAt(childIndex).layout(l, t, r, b)
+            if (childIndex >= 0 && childIndex < displayCount) {
+                tiles[childIndex].layout(l, t, r, b)
             }
         }
 
-        when (n) {
+        when (displayCount) {
             1 -> place(0, 0, 0, w, h)
             2 -> {
                 val cw = w / 2
@@ -1035,10 +1093,10 @@ class LiveStreamActivity : BaseActivity() {
                 val minTilePx = (120 * resources.displayMetrics.density).toInt()
                 val maxColsByWidth = kotlin.math.max(1, w / minTilePx)
                 val cols = kotlin.math.min(kotlin.math.min(3, n), kotlin.math.max(1, maxColsByWidth))
-                val rows = kotlin.math.ceil(n / cols.toDouble()).toInt()
+                val rows = kotlin.math.ceil(displayCount / cols.toDouble()).toInt()
                 val cw = w / cols
                 val ch = h / rows
-                for (i in 0 until n) {
+                for (i in 0 until displayCount) {
                     val r = i / cols
                     val c = i % cols
                     val l = c * cw
@@ -1048,6 +1106,38 @@ class LiveStreamActivity : BaseActivity() {
             }
         }
         container.requestLayout()
+        updateOverflow(container)
+    }
+
+    private fun ensureOverflowBadge(container: FrameLayout) {
+        if (overflowBadge != null) return
+        val tv = TextView(this).apply {
+            setTextColor(android.graphics.Color.WHITE)
+            setBackgroundColor(0xB3000000.toInt())
+            textSize = 12f
+            setPadding(12, 6, 12, 6)
+            visibility = View.GONE
+        }
+        val lp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+            gravity = android.view.Gravity.END or android.view.Gravity.TOP
+            topMargin = (8 * resources.displayMetrics.density).toInt()
+            marginEnd = (8 * resources.displayMetrics.density).toInt()
+        }
+        container.addView(tv, lp)
+        overflowBadge = tv
+    }
+
+    private fun updateOverflow(container: FrameLayout) {
+        val tv = overflowBadge ?: return
+        val tiles = (0 until container.childCount).map { container.getChildAt(it) }.filter { it !== tv }
+        val total = tiles.size
+        val overflow = total - kotlin.math.min(total, maxHosts)
+        if (overflow > 0) {
+            tv.text = "+$overflow"
+            tv.visibility = View.VISIBLE
+        } else {
+            tv.visibility = View.GONE
+        }
     }
 
     /**
@@ -1178,6 +1268,8 @@ class LiveStreamActivity : BaseActivity() {
                 fetchedLive = ls
                 // set current stream for viewer flows
                 currentStream = ls
+                // hydrate options
+                commentScope = (ls.commentScope ?: "shared").lowercase()
                 // Access gating before joining (host bypass)
                 val currentUser = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
                 val isHost = (currentUser != null && currentUser == ls.hostId)
@@ -1328,6 +1420,7 @@ class LiveStreamActivity : BaseActivity() {
             return
         }
         currentStream = live
+        commentScope = (live.commentScope ?: "shared").lowercase()
         liveTopBar.visibility = View.VISIBLE
         liveTopBar.bringToFront()
         // load host profile and comments
@@ -1499,6 +1592,7 @@ class LiveStreamActivity : BaseActivity() {
                                 ensureGridMode(container)
                                 val key = "${participant.sid}_${track.sid}"
                                 addVideoTile(container, key, track)
+                                updateOverflow(container)
                             }
                         }
                     }
@@ -1516,6 +1610,7 @@ class LiveStreamActivity : BaseActivity() {
                                 ensureGridMode(container)
                                 val key = "${evt.participant.sid}_${rt.sid}"
                                 addVideoTile(container, key, rt)
+                                updateOverflow(container)
                             }
                         }
                         is RoomEvent.TrackUnsubscribed -> {
@@ -1523,6 +1618,7 @@ class LiveStreamActivity : BaseActivity() {
                             if (rt != null) {
                                 val key = "${evt.participant.sid}_${rt.sid}"
                                 removeVideoTile(container, key)
+                                updateOverflow(container)
                             }
                         }
                         is RoomEvent.ParticipantDisconnected -> {
@@ -1584,7 +1680,16 @@ class LiveStreamActivity : BaseActivity() {
                 // Stash usernames into a separate map by extending userIdToStreamId key prefix
                 profs.forEach { p -> userIdToStreamId["uname:" + p.userId] = p.username ?: p.userId.take(6) }
             } catch (_: Exception) {}
+            // Determine endsAt from row or fallback to startedAt + match_duration_sec
+            matchEndsAtIso = b.endsAt ?: run {
+                val start = b.startedAt
+                val dur = currentStream?.matchDurationSec ?: 180
+                if (start != null) try {
+                    java.time.Instant.parse(start).plusSeconds(dur.toLong()).toString()
+                } catch (_: Exception) { null } else null
+            }
             renderMatchOverlay()
+            startMatchTimer()
         } catch (_: Exception) { }
     }
 
@@ -1599,6 +1704,18 @@ class LiveStreamActivity : BaseActivity() {
                     gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
                     topMargin = 16
                 }
+            }
+            // Center timer text
+            val timer = TextView(this).apply {
+                setTextColor(android.graphics.Color.WHITE)
+                textSize = 14f
+                setPadding(12,6,12,6)
+                setBackgroundColor(0x66000000)
+            }
+            matchTimerText = timer
+            val timerLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
+                topMargin = 40
             }
             val bar1 = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
                 max = 100
@@ -1616,6 +1733,7 @@ class LiveStreamActivity : BaseActivity() {
             }
             barContainer.addView(bar1); barContainer.addView(bar2)
             matchOverlay.addView(barContainer)
+            matchOverlay.addView(timer, timerLp)
 
             // Clickable boxes overlay using GridLayout
             val grid = android.widget.GridLayout(this).apply {
@@ -1696,6 +1814,28 @@ class LiveStreamActivity : BaseActivity() {
         }
     }
 
+    private fun startMatchTimer() {
+        matchTimerJob?.cancel()
+        val endIso = matchEndsAtIso ?: return
+        matchTimerJob = lifecycleScope.launch {
+            while (isActive && isMatch) {
+                try {
+                    val now = java.time.Instant.now()
+                    val end = java.time.Instant.parse(endIso)
+                    val remaining = java.time.Duration.between(now, end).seconds
+                    val secs = remaining.coerceAtLeast(0)
+                    val mm = (secs / 60).toInt()
+                    val ss = (secs % 60).toInt()
+                    val txt = String.format("%02d:%02d", mm, ss)
+                    runOnUiThread { matchTimerText?.text = txt }
+                    if (secs <= 0) break
+                } catch (_: Exception) { }
+                delay(1000)
+            }
+            runOnUiThread { matchTimerText?.text = "00:00" }
+        }
+    }
+
     private fun percentFor(userId: String): Int {
         val sum = tokenTallies.values.sum()
         if (sum <= 0) return 0
@@ -1718,6 +1858,11 @@ class LiveStreamActivity : BaseActivity() {
                     try {
                         // Resolve username → user_id (optional, live-invite can accept username too)
                         RetrofitClient.functionsApi.liveInvite(mapOf("action" to "invite", "streamId" to (currentStream?.id ?: return@launch), "username" to uname))
+                        // Switch mode to multi_host with shared comments when inviting
+                        val sid = currentStream?.id
+                        if (!sid.isNullOrEmpty()) {
+                            try { RetrofitClient.functionsApi.setLiveMode(mapOf("streamId" to sid, "mode" to "multi_host", "commentScope" to "shared")) } catch (_: Exception) {}
+                        }
                         Toast.makeText(this@LiveStreamActivity, "Invited", Toast.LENGTH_SHORT).show()
                     } catch (_: Exception) {
                         Toast.makeText(this@LiveStreamActivity, "Invite failed", Toast.LENGTH_SHORT).show()
@@ -1750,8 +1895,15 @@ class LiveStreamActivity : BaseActivity() {
                     .setItems(names) { _, which ->
                         val inviteId = items[which].second
                         lifecycleScope.launch {
-                            try { RetrofitClient.functionsApi.liveInvite(mapOf("action" to "accept", "inviteId" to inviteId)) } catch (_: Exception) {}
-                            Toast.makeText(this@LiveStreamActivity, "Accepted", Toast.LENGTH_SHORT).show()
+                            try {
+                                RetrofitClient.functionsApi.liveInvite(mapOf("action" to "accept", "inviteId" to inviteId))
+                                // Set mode to multi_host with shared comments for this live
+                                val sid = currentStream?.id
+                                if (!sid.isNullOrEmpty()) {
+                                    try { RetrofitClient.functionsApi.setLiveMode(mapOf("streamId" to sid, "mode" to "multi_host", "commentScope" to "shared")) } catch (_: Exception) {}
+                                }
+                                Toast.makeText(this@LiveStreamActivity, "Accepted", Toast.LENGTH_SHORT).show()
+                            } catch (_: Exception) {}
                         }
                     }
                     .setNegativeButton(android.R.string.cancel, null)
@@ -1820,6 +1972,14 @@ class LiveStreamActivity : BaseActivity() {
                         val sid = currentStream?.id
                         val host = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
                         if (!sid.isNullOrEmpty() && !host.isNullOrEmpty()) {
+                            // Switch this live to match mode with isolated comments and default duration
+                            try {
+                                val body = mutableMapOf<String, Any>("streamId" to sid, "mode" to "match", "commentScope" to "isolated")
+                                val dur = currentStream?.matchDurationSec ?: 180
+                                body["matchDurationSec"] = dur
+                                body["matchScoring"] = (currentStream?.matchScoring ?: "tokens")
+                                RetrofitClient.functionsApi.setLiveMode(body)
+                            } catch (_: Exception) {}
                             // Open match setup to mirror web "This is a match"
                             try {
                                 MatchSetupBottomSheetFragment

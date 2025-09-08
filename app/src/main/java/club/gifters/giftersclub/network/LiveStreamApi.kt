@@ -9,6 +9,7 @@ import club.gifters.giftersclub.model.LiveStreamViewerRequest
 import club.gifters.giftersclub.model.GiftGalleryTemplate
 import club.gifters.giftersclub.model.LiveStreamGiftGallery
 import club.gifters.giftersclub.model.LiveGiftEvent
+import retrofit2.http.Path
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -135,6 +136,17 @@ interface LiveStreamApi {
         @Query("created_at", encoded = true) createdAfterFilter: String? = null,
         @Query("order", encoded = true) order: String = "created_at.asc"
     ): List<LiveGiftEvent>
+
+    /**
+     * Gift animation rules with embedded animation row.
+     */
+    @GET("gift_animation_rules")
+    suspend fun getGiftAnimationRules(
+        @Query("select", encoded = true) select: String = "*,animation:gift_animations(*)",
+        @Query("gift_id", encoded = true) giftIdFilter: String,
+        @Query("scope", encoded = true) scopeFilter: String = "in.(all,solo,multi_host,match)",
+        @Query("order", encoded = true) order: String = "is_featured.desc,min_tokens.desc,combo_count.desc"
+    ): List<Map<String, Any?>>
 
     // Battles
     @GET("battle_sessions")

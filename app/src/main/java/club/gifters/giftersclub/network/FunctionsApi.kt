@@ -157,4 +157,12 @@ interface FunctionsApi {
     suspend fun liveInviteRaw(
         @Body body: Map<String, @JvmSuppressWildcards Any>
     ): retrofit2.Response<okhttp3.ResponseBody>
+
+    /**
+     * Flip live stream mode/comment scope (and optional match settings) in one call.
+     */
+    @POST("live-mode")
+    suspend fun setLiveMode(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
 }
