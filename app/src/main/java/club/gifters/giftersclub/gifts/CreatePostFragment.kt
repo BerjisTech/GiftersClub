@@ -788,6 +788,39 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
         btnScale.setOnClickListener { /* pinch-to-zoom implemented on preview */ }
 
+        // Edit options toggle: show/hide option texts by rotating chevron
+        run {
+            val toggleOptionsText = layoutEdit.findViewById<ImageView>(R.id.toggleOptionsText)
+            val captionOptionsText = layoutEdit.findViewById<TextView>(R.id.captionOptionsText)
+            val stickerOptionsText = layoutEdit.findViewById<TextView>(R.id.stickerOptionsText)
+            val effectsOptionsText = layoutEdit.findViewById<TextView>(R.id.effectsOptionsText)
+            val aiMemeOptionsText = layoutEdit.findViewById<TextView>(R.id.aiMemeOptionsText)
+
+            fun setOptionsVisible(visible: Boolean) {
+                val v = if (visible) View.VISIBLE else View.GONE
+                captionOptionsText.visibility = v
+                stickerOptionsText.visibility = v
+                effectsOptionsText.visibility = v
+                aiMemeOptionsText.visibility = v
+            }
+            // Ensure default state: rotation 90, texts hidden
+            try {
+                toggleOptionsText.rotation = 90f
+            } catch (_: Exception) {}
+            setOptionsVisible(false)
+
+            toggleOptionsText.setOnClickListener {
+                val showing = toggleOptionsText.rotation == -90f
+                if (showing) {
+                    toggleOptionsText.rotation = 90f
+                    setOptionsVisible(false)
+                } else {
+                    toggleOptionsText.rotation = -90f
+                    setOptionsVisible(true)
+                }
+            }
+        }
+
         // Details preview: open full-screen preview when tapped
         ivPostPreview.setOnClickListener {
             try {

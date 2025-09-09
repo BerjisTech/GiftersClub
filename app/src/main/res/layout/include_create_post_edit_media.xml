@@ -49,6 +49,7 @@
 
     <!-- Edit Options -->
     <LinearLayout
+        android:id="@+id/editOptions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
@@ -60,7 +61,9 @@
         <LinearLayout
             android:id="@+id/captionOptions"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center">
 
             <TextView
                 android:id="@+id/captionOptionsText"
@@ -69,19 +72,24 @@
                 android:layout_marginEnd="4dp"
                 android:text="@string/caption"
                 android:textColor="@color/white"
-                android:visibility="gone" />
+                android:textSize="25sp"
+                android:visibility="visible" />
 
             <TextView
-                android:layout_width="18dp"
+                android:layout_width="40dp"
                 android:layout_height="wrap_content"
+                android:gravity="center"
                 android:text="@string/aa"
-                android:textColor="@color/white" />
+                android:textColor="@color/white"
+                android:textSize="30sp" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/stickerOptions"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center">
 
             <TextView
                 android:id="@+id/stickerOptionsText"
@@ -90,11 +98,12 @@
                 android:layout_marginEnd="4dp"
                 android:text="@string/stickers"
                 android:textColor="@color/white"
-                android:visibility="gone" />
+                android:textSize="25sp"
+                android:visibility="visible" />
 
             <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/stickers" />
         </LinearLayout>
@@ -102,7 +111,9 @@
         <LinearLayout
             android:id="@+id/effectsOptions"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center">
 
             <TextView
                 android:id="@+id/effectsOptionsText"
@@ -111,11 +122,12 @@
                 android:layout_marginEnd="4dp"
                 android:text="@string/effects"
                 android:textColor="@color/white"
-                android:visibility="gone" />
+                android:textSize="25sp"
+                android:visibility="visible" />
 
             <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/effects" />
         </LinearLayout>
@@ -124,6 +136,7 @@
             android:id="@+id/aiMemeOptions"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
             android:gravity="center">
 
             <TextView
@@ -133,11 +146,12 @@
                 android:layout_marginEnd="4dp"
                 android:text="@string/ai_meme"
                 android:textColor="@color/white"
-                android:visibility="gone" />
+                android:textSize="25sp"
+                android:visibility="visible" />
 
             <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/memes" />
         </LinearLayout>
@@ -145,8 +159,8 @@
 
         <ImageView
             android:id="@+id/toggleOptionsText"
-            android:layout_width="18dp"
-            android:layout_height="18dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:rotation="90"
             android:scaleType="fitCenter"
             android:src="@drawable/baseline_chevron_right_24" />
