@@ -34,6 +34,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.ToggleButton
+import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.appcompat.app.AlertDialog
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -788,7 +789,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
         btnScale.setOnClickListener { /* pinch-to-zoom implemented on preview */ }
 
-        // Edit options toggle: show/hide option texts by rotating chevron
+        // Edit options toggle: animated rotation + text fade/slide
         run {
             val toggleOptionsText = layoutEdit.findViewById<ImageView>(R.id.toggleOptionsText)
             val captionOptionsText = layoutEdit.findViewById<TextView>(R.id.captionOptionsText)
@@ -796,28 +797,42 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             val effectsOptionsText = layoutEdit.findViewById<TextView>(R.id.effectsOptionsText)
             val aiMemeOptionsText = layoutEdit.findViewById<TextView>(R.id.aiMemeOptionsText)
 
-            fun setOptionsVisible(visible: Boolean) {
-                val v = if (visible) View.VISIBLE else View.GONE
-                captionOptionsText.visibility = v
-                stickerOptionsText.visibility = v
-                effectsOptionsText.visibility = v
-                aiMemeOptionsText.visibility = v
+            val interp = AccelerateDecelerateInterpolator()
+            val offset = (8 * resources.displayMetrics.density)
+
+            fun reveal(tv: View) {
+                if (tv.visibility == View.VISIBLE) return
+                tv.alpha = 0f
+                tv.translationX = offset
+                tv.visibility = View.VISIBLE
+                tv.animate().alpha(1f).translationX(0f).setDuration(200).setInterpolator(interp).start()
+            }
+            fun conceal(tv: View) {
+                if (tv.visibility != View.VISIBLE) return
+                tv.animate()
+                    .alpha(0f)
+                    .translationX(offset)
+                    .setDuration(150)
+                    .setInterpolator(interp)
+                    .withEndAction { tv.visibility = View.GONE }
+                    .start()
             }
             // Ensure default state: rotation 90, texts hidden
             try {
                 toggleOptionsText.rotation = 90f
             } catch (_: Exception) {}
-            setOptionsVisible(false)
+            listOf(captionOptionsText, stickerOptionsText, effectsOptionsText, aiMemeOptionsText).forEach {
+                it.visibility = View.GONE
+                it.alpha = 0f
+                it.translationX = offset
+            }
 
             toggleOptionsText.setOnClickListener {
                 val showing = toggleOptionsText.rotation == -90f
-                if (showing) {
-                    toggleOptionsText.rotation = 90f
-                    setOptionsVisible(false)
-                } else {
-                    toggleOptionsText.rotation = -90f
-                    setOptionsVisible(true)
-                }
+                val targetRot = if (showing) 90f else -90f
+                toggleOptionsText.animate().rotation(targetRot).setDuration(200).setInterpolator(interp).start()
+                val texts = listOf(captionOptionsText, stickerOptionsText, effectsOptionsText, aiMemeOptionsText)
+                if (showing) texts.forEach { conceal(it) } else texts.forEach { reveal(it) }
             }
         }
 
