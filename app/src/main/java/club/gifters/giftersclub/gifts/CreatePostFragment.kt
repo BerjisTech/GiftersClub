@@ -96,6 +96,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private val postApi = RetrofitClient.postApi
 
     // Media selection preview and next step removed; using camera UI by default
+    private lateinit var flStepContainer: FrameLayout
     private lateinit var layoutMedia: ConstraintLayout
     private lateinit var layoutEdit: ConstraintLayout
     private lateinit var layoutDetails: ConstraintLayout
@@ -214,10 +215,17 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             else             -> Step.MEDIA
         }
         if (stepStack.isEmpty() || stepStack.last() != next) stepStack.add(next)
+        // Only toggle visibility; do not reparent views (prevents PreviewView/GPUImage glitches)
         layoutMedia.isVisible = next == Step.MEDIA
         layoutEdit.isVisible = next == Step.EDIT
         layoutDetails.isVisible = next == Step.DETAILS
         layoutTextEditor.isVisible = next == Step.TEXT
+        when (next) {
+            Step.MEDIA -> startCamera()
+            Step.EDIT -> { /* keep current image; avoid resetting to prevent visual artifacts */ }
+            Step.DETAILS -> updatePostPreview()
+            else -> {}
+        }
     }
 
     private fun showPreviousStepOrExit() {
@@ -225,18 +233,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             // pop current and show previous without pushing again
             stepStack.removeAt(stepStack.lastIndex)
             when (stepStack.last()) {
-                Step.MEDIA   -> { layoutMedia?.let { v ->
-                        layoutMedia.isVisible = true; layoutEdit.isVisible = false; layoutDetails.isVisible = false; layoutTextEditor.isVisible = false }
-                }
-                Step.EDIT    -> { layoutEdit?.let { v ->
-                        layoutMedia.isVisible = false; layoutEdit.isVisible = true; layoutDetails.isVisible = false; layoutTextEditor.isVisible = false }
-                }
-                Step.DETAILS -> { layoutDetails?.let { v ->
-                        layoutMedia.isVisible = false; layoutEdit.isVisible = false; layoutDetails.isVisible = true; layoutTextEditor.isVisible = false }
-                }
-                Step.TEXT    -> { layoutTextEditor?.let { v ->
-                        layoutMedia.isVisible = false; layoutEdit.isVisible = false; layoutDetails.isVisible = false; layoutTextEditor.isVisible = true }
-                }
+                Step.MEDIA   -> showStep(layoutMedia)
+                Step.EDIT    -> showStep(layoutEdit)
+                Step.DETAILS -> showStep(layoutDetails)
+                Step.TEXT    -> showStep(layoutTextEditor)
             }
         } else {
             // let system handle back (pop fragment) without re-entering our callback
@@ -273,19 +273,20 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        flStepContainer = view.findViewById(R.id.flStepContainer)
         layoutMedia = view.findViewById(R.id.layoutMedia)
         layoutEdit = view.findViewById(R.id.layoutEdit)
         layoutDetails = view.findViewById(R.id.layoutDetails)
-        ivPostPreview = view.findViewById(R.id.ivPostPreview)
-        etContent = view.findViewById(R.id.etContent)
-        btnEditMedia = view.findViewById(R.id.btnEditMedia)
-        btnEditMediaCard = view.findViewById(R.id.btnEditMediaCard)
-        btnApplyFilter = view.findViewById(R.id.btnApplyFilter)
-        btnPost = view.findViewById(R.id.btnPost)
+        // Details step views bound from details root
+        ivPostPreview = layoutDetails.findViewById(R.id.ivPostPreview)
+        etContent = layoutDetails.findViewById(R.id.etContent)
+        btnEditMedia = layoutDetails.findViewById(R.id.btnEditMedia)
+        btnEditMediaCard = layoutDetails.findViewById(R.id.btnEditMediaCard)
+        btnApplyFilter = layoutEdit.findViewById(R.id.btnApplyFilter)
+        btnPost = layoutDetails.findViewById(R.id.btnPost)
         progressBar = view.findViewById(R.id.progressBar)
 
-        // initialize step stack to the first step
-        if (stepStack.isEmpty()) stepStack.add(Step.MEDIA)
+        // defer initial step attach until all step roots are bound
 
         // Back press should go to previous step, not exit immediately
         backCallback = object : androidx.activity.OnBackPressedCallback(true) {
@@ -293,7 +294,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback!!)
 
-        btnEditMedia.setOnClickListener { showStep(layoutMedia) }
+        btnEditMedia.setOnClickListener { showStep(layoutEdit) }
         btnPost.setOnClickListener {
             submitPost()
         }
@@ -304,28 +305,29 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             btnEditMediaCard.visibility = if (show) View.VISIBLE else View.GONE
         }
         updateEditVisibility()
-    // Access type (free/subscription/paid) and pricing
-        rgAccessType = view.findViewById(R.id.rgAccessType)
-        etPrice = view.findViewById(R.id.etPrice)
-        layoutPostPlanPicker = view.findViewById(R.id.layoutPostPlanPicker)
-        actvPostPlan = view.findViewById(R.id.actvPostPlan)
+    // Access type (free/subscription/paid) and pricing (bind from Details layout root)
+        rgAccessType = layoutDetails.findViewById(R.id.rgAccessType)
+        etPrice = layoutDetails.findViewById(R.id.etPrice)
+        layoutPostPlanPicker = layoutDetails.findViewById(R.id.layoutPostPlanPicker)
+        actvPostPlan = layoutDetails.findViewById(R.id.actvPostPlan)
+        val layoutPostNoPlans: LinearLayout = layoutDetails.findViewById(R.id.layoutPostNoPlans)
         rgAccessType.setOnCheckedChangeListener { _, checkedId ->
             when (checkedId) {
                 R.id.rbPaid -> {
                     etPrice.visibility = View.VISIBLE
                     layoutPostPlanPicker.visibility = View.GONE
-                    view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.GONE
+                    layoutPostNoPlans.visibility = View.GONE
                 }
                 R.id.rbSubscriberOnly -> {
                     etPrice.visibility = View.GONE
                     val hasPlans = postPlanIdByName.isNotEmpty()
                     layoutPostPlanPicker.visibility = if (hasPlans) View.VISIBLE else View.GONE
-                    view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = if (hasPlans) View.GONE else View.VISIBLE
+                    layoutPostNoPlans.visibility = if (hasPlans) View.GONE else View.VISIBLE
                 }
                 else -> {
                     etPrice.visibility = View.GONE
                     layoutPostPlanPicker.visibility = View.GONE
-                    view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.GONE
+                    layoutPostNoPlans.visibility = View.GONE
                 }
             }
         }
@@ -367,22 +369,23 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
 
         // CameraX UI setup and start camera preview
-        previewView = view.findViewById(R.id.previewView)
-        btnSwitchCamera = view.findViewById(R.id.btnSwitchCamera)
-        btnToggleFlash = view.findViewById(R.id.btnToggleFlash)
-        btnSetTimer = view.findViewById(R.id.btnSetTimer)
-        btnShowFilters = view.findViewById(R.id.btnShowFilters)
-        btnTimer10m = view.findViewById(R.id.btnTimer10m)
-        btnTimer60s = view.findViewById(R.id.btnTimer60s)
-        btnTimer5s = view.findViewById(R.id.btnTimer5s)
-        btnTimer15s = view.findViewById(R.id.btnTimer15s)
-        btnModeToggle = view.findViewById(R.id.btnModeToggle)
+        // Media step views bound from media root
+        previewView = layoutMedia.findViewById(R.id.previewView)
+        btnSwitchCamera = layoutMedia.findViewById(R.id.btnSwitchCamera)
+        btnToggleFlash = layoutMedia.findViewById(R.id.btnToggleFlash)
+        btnSetTimer = layoutMedia.findViewById(R.id.btnSetTimer)
+        btnShowFilters = layoutMedia.findViewById(R.id.btnShowFilters)
+        btnTimer10m = layoutMedia.findViewById(R.id.btnTimer10m)
+        btnTimer60s = layoutMedia.findViewById(R.id.btnTimer60s)
+        btnTimer5s = layoutMedia.findViewById(R.id.btnTimer5s)
+        btnTimer15s = layoutMedia.findViewById(R.id.btnTimer15s)
+        btnModeToggle = layoutMedia.findViewById(R.id.btnModeToggle)
         // initialize photo/video icon
         btnModeToggle.setImageResource(if (isVideoMode) R.drawable.camera else R.drawable.video)
         // initialize photo/video icon
         btnModeToggle.setImageResource(if (isVideoMode) R.drawable.camera else R.drawable.video)
-        btnTextMode = view.findViewById(R.id.btnTextMode)
-        btnUndoSegment = view.findViewById(R.id.btnUndoSegment)
+        btnTextMode = layoutMedia.findViewById(R.id.btnTextMode)
+        btnUndoSegment = layoutMedia.findViewById(R.id.btnUndoSegment)
         btnUndoSegment.visibility = View.GONE
         btnUndoSegment.setOnClickListener {
             if (isPaused && recordedSegments.isNotEmpty()) {
@@ -398,21 +401,25 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 if (recordedSegments.isEmpty()) btnUndoSegment.visibility = View.GONE
             }
         }
-        // Text post editor view bindings
+        // Text post editor view bindings (bind from the text editor root)
         layoutTextEditor = view.findViewById(R.id.layoutTextEditor)
-        flTextCanvas = view.findViewById(R.id.flTextCanvas)
-        etTextPost = view.findViewById(R.id.etTextPost)
-        btnCancelTextPost = view.findViewById(R.id.btnCancelTextPost)
-        btnDoneTextPost = view.findViewById(R.id.btnDoneTextPost)
-        hsvTextStyles = view.findViewById(R.id.hsvTextStyles)
-        llTextStyles = view.findViewById(R.id.llTextStyles)
-        hsvColorPickers = view.findViewById(R.id.hsvColorPickers)
-        llColorPickers = view.findViewById(R.id.llColorPickers)
-        hsvBgImages = view.findViewById(R.id.hsvBgImages)
-        llBgImages = view.findViewById(R.id.llBgImages)
-        hsvFonts = view.findViewById(R.id.hsvFonts)
-        llFonts = view.findViewById(R.id.llFonts)
-        tabTextTools = view.findViewById(R.id.tabTextTools)
+        flTextCanvas = layoutTextEditor.findViewById(R.id.flTextCanvas)
+        etTextPost = layoutTextEditor.findViewById(R.id.etTextPost)
+        btnCancelTextPost = layoutTextEditor.findViewById(R.id.btnCancelTextPost)
+        btnDoneTextPost = layoutTextEditor.findViewById(R.id.btnDoneTextPost)
+        hsvTextStyles = layoutTextEditor.findViewById(R.id.hsvTextStyles)
+        llTextStyles = layoutTextEditor.findViewById(R.id.llTextStyles)
+        hsvColorPickers = layoutTextEditor.findViewById(R.id.hsvColorPickers)
+        llColorPickers = layoutTextEditor.findViewById(R.id.llColorPickers)
+        hsvBgImages = layoutTextEditor.findViewById(R.id.hsvBgImages)
+        llBgImages = layoutTextEditor.findViewById(R.id.llBgImages)
+        hsvFonts = layoutTextEditor.findViewById(R.id.hsvFonts)
+        llFonts = layoutTextEditor.findViewById(R.id.llFonts)
+        tabTextTools = layoutTextEditor.findViewById(R.id.tabTextTools)
+
+        // Now that all step roots are bound, attach the initial step into the container
+        if (stepStack.isEmpty()) stepStack.add(Step.MEDIA)
+        showStep(layoutMedia)
 
         // Populate text post editor controls
         listOf("B", "I", "U").forEach { style ->
@@ -494,8 +501,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         llColorPickers.addView(btnTextColorPicker)
         llColorPickers.addView(btnBgColorPicker)
         // Font size pickers
-        hsvFontSizes = view.findViewById(R.id.hsvFontSizes)
-        llFontSizes = view.findViewById(R.id.llFontSizes)
+        hsvFontSizes = layoutTextEditor.findViewById(R.id.hsvFontSizes)
+        llFontSizes = layoutTextEditor.findViewById(R.id.llFontSizes)
         listOf(24, 32, 40, 48).forEach { sizeSp ->
             val sizeBtn = TextView(requireContext()).apply {
                 text = "A"
@@ -555,8 +562,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
             llFonts.addView(txt)
         }
-        // Tab switcher for styling controls
-        tabTextTools = view.findViewById(R.id.tabTextTools)
+        // Tab switcher for styling controls (already bound from layoutTextEditor)
         // Tab‐driven switch between text styling controls
         val groups = listOf<View>(
             hsvTextStyles, hsvColorPickers, hsvFontSizes, hsvBgImages, hsvFonts
@@ -602,13 +608,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             etTextPost.isCursorVisible = true
             handleSelectedMedia(listOf(Uri.fromFile(file)))
         }
-        btnCapture = view.findViewById(R.id.btnCapture)
-        btnSelectDevice = view.findViewById(R.id.btnSelectDevice)
-        layoutFilterOptions = view.findViewById(R.id.layoutFilterOptions)
-        hsvFilters = view.findViewById(R.id.hsvFilters)
-        pbRecordProgress = view.findViewById(R.id.pbRecordProgress)
-        segmentsBar = view.findViewById(R.id.segmentsBar)
-        tvElapsedTime = view.findViewById(R.id.tvElapsedTime)
+        btnCapture = layoutMedia.findViewById(R.id.btnCapture)
+        btnSelectDevice = layoutMedia.findViewById(R.id.btnSelectDevice)
+        layoutFilterOptions = layoutMedia.findViewById(R.id.layoutFilterOptions)
+        hsvFilters = layoutMedia.findViewById(R.id.hsvFilters)
+        pbRecordProgress = layoutMedia.findViewById(R.id.pbRecordProgress)
+        segmentsBar = layoutMedia.findViewById(R.id.segmentsBar)
+        tvElapsedTime = layoutMedia.findViewById(R.id.tvElapsedTime)
 
         btnSelectDevice.setOnClickListener {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -759,22 +765,50 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
 
         // Initialize GPUImageView for filter preview and multi-filter setup
-        gpuImageView = view.findViewById(R.id.imageEditView)
+        // Edit step views bound from edit root
+        gpuImageView = layoutEdit.findViewById(R.id.imageEditView)
         // Crop & scale toolbar
-        btnCrop = view.findViewById(R.id.btnCrop)
-        btnScale = view.findViewById(R.id.btnScale)
+        btnCrop = layoutEdit.findViewById(R.id.btnCrop)
+        btnScale = layoutEdit.findViewById(R.id.btnScale)
         btnCrop.setOnClickListener {
             editedBitmap?.let { bmp ->
-        val srcFile = File(requireContext().cacheDir, "CROP_SRC_${System.currentTimeMillis()}.jpg")
-        FileOutputStream(srcFile).use { out -> bmp.compress(Bitmap.CompressFormat.JPEG, 90, out) }
-        val destFile = File(requireContext().cacheDir, "CROP_DST_${System.currentTimeMillis()}.jpg")
-        UCrop.of(Uri.fromFile(srcFile), Uri.fromFile(destFile))
-            .withAspectRatio(1f, 1f)
-            .start(requireActivity(), UCrop.REQUEST_CROP)
+                val srcFile = File(requireContext().cacheDir, "CROP_SRC_${System.currentTimeMillis()}.jpg")
+                FileOutputStream(srcFile).use { out -> bmp.compress(Bitmap.CompressFormat.JPEG, 95, out) }
+                val destFile = File(requireContext().cacheDir, "CROP_DST_${System.currentTimeMillis()}.jpg")
+                val options = UCrop.Options().apply {
+                    setFreeStyleCropEnabled(true) // allow free crop, phone-friendly
+                    setHideBottomControls(false)
+                    setToolbarTitle(getString(R.string.crop))
+                }
+                // Start UCrop for this Fragment so onActivityResult receives the result here
+                UCrop.of(Uri.fromFile(srcFile), Uri.fromFile(destFile))
+                    .withOptions(options)
+                    .start(requireContext(), this, UCrop.REQUEST_CROP)
             }
         }
-        btnScale = view.findViewById(R.id.btnScale)
         btnScale.setOnClickListener { /* pinch-to-zoom implemented on preview */ }
+
+        // Details preview: open full-screen preview when tapped
+        ivPostPreview.setOnClickListener {
+            try {
+                val intent = android.content.Intent(requireContext(), FullscreenPostPreviewActivity::class.java)
+                val bmp = editedBitmap ?: originalBitmap
+                if (bmp != null) {
+                    val file = java.io.File(requireContext().cacheDir, "post_preview.png")
+                    java.io.FileOutputStream(file).use { fos -> bmp.compress(Bitmap.CompressFormat.PNG, 100, fos) }
+                    intent.putExtra("image_path", file.absolutePath)
+                }
+                intent.putExtra("content_text", etContent.text?.toString() ?: "")
+                intent.putExtra("access_type", when (rgAccessType.checkedRadioButtonId) {
+                    R.id.rbPaid -> "paid"
+                    R.id.rbSubscriberOnly -> "subscription"
+                    else -> "free"
+                })
+                val priceText = etPrice.text?.toString()?.trim()
+                if (!priceText.isNullOrEmpty()) intent.putExtra("price", priceText)
+                startActivity(intent)
+            } catch (_: Exception) {}
+        }
 
         // Pinch-to-zoom on the camera preview
         scaleGestureDetector = ScaleGestureDetector(requireContext(), object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -814,7 +848,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             gpuImageView.requestRender()
         }
 
-        rvFilters = view.findViewById(R.id.rvFilters)
+        rvFilters = layoutEdit.findViewById(R.id.rvFilters)
         rvFilters.layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         val filters = listOf(
@@ -848,7 +882,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
         applyFilters()
 
-        sbFilterLevel = view.findViewById(R.id.sbFilterLevel)
+        sbFilterLevel = layoutEdit.findViewById(R.id.sbFilterLevel)
         sbFilterLevel.isVisible = false
         sbFilterLevel.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar, progress: Int, fromUser: Boolean) {
@@ -874,8 +908,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 // Log.e(TAG, "Error capturing filtered image", e)
                 originalBitmap
             }
-            layoutEdit.isVisible = false
-            layoutDetails.isVisible = true
+            showStep(layoutDetails)
             updatePostPreview()
         }
     }
