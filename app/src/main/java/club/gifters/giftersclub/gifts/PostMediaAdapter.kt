@@ -195,20 +195,25 @@ class PostMediaAdapter(
                 }
                 showControlsTemporarily()
             }
-            // Single tap toggles play/pause and shows controls; allow double-tap to bubble to parent
+            // Single tap toggles play/pause and shows controls; double‑tap bubbles to parent to like
             val gd = android.view.GestureDetector(itemView.context, object: android.view.GestureDetector.SimpleOnGestureListener() {
                 override fun onSingleTapConfirmed(e: android.view.MotionEvent): Boolean {
                     if (p.isPlaying) p.pause() else p.play()
                     showControlsTemporarily()
                     return true
                 }
+                override fun onDoubleTap(e: android.view.MotionEvent): Boolean {
+                    // Do not consume; let parent PostAdapter handle double‑tap like/unlike
+                    return false
+                }
             })
-            itemView.setOnTouchListener { _, ev ->
-                // Handle single‑tap locally; do NOT re-dispatch to parent to avoid recursion.
-                // Returning false allows the event to bubble so parent can still detect double‑tap.
+            // Attach detector to the video surface and the thumbnail image
+            val touchListener = View.OnTouchListener { _, ev ->
                 gd.onTouchEvent(ev)
-                false
+                false // allow parent to also receive for double‑tap
             }
+            playerView.setOnTouchListener(touchListener)
+            imageView.setOnTouchListener(touchListener)
         }
 
         private fun showControlsTemporarily() {
