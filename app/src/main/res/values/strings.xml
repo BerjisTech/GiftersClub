@@ -258,4 +258,9 @@
     <string name="blocked">Blocked</string>
     <string name="more">More</string>
     <string name="follow_user_directly">Follow user directly</string>
+    <string name="caption">Caption</string>
+    <string name="aa">Aa</string>
+    <string name="ai_meme">Ai Meme</string>
+    <string name="stickers">Stickers</string>
+    <string name="effects">Effects</string>
 </resources>
