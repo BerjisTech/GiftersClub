@@ -19,6 +19,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <TextView
+            android:id="@+id/proceedToDetails"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/save"
+            android:textColor="@color/white"
+            android:textSize="25sp" />
+
     </LinearLayout>
 
     <club.gifters.giftersclub.gifts.SafeGPUImageView
@@ -30,6 +38,18 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/layoutCropScaleToolbar" />
+
+    <!-- Overlay canvas for draggable captions/stickers -->
+    <FrameLayout
+        android:id="@+id/editOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toBottomOf="@+id/imageEditView"
+        app:layout_constraintEnd_toEndOf="@+id/imageEditView"
+        app:layout_constraintStart_toStartOf="@+id/imageEditView"
+        app:layout_constraintTop_toTopOf="@+id/imageEditView" />
 
     <!-- Edit Options -->
     <LinearLayout
@@ -222,6 +242,7 @@
         android:layout_height="match_parent"
         android:gravity="bottom"
         android:orientation="vertical"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -230,6 +251,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/black"
             android:gravity="center"
             android:paddingVertical="8dp">
 
@@ -302,6 +324,7 @@
             </LinearLayout>
 
             <TextView
+                android:id="@+id/doneCaption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Done"

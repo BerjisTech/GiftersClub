@@ -39,7 +39,8 @@
         <activity
             android:name=".gifts.CreatePostActivity"
             android:exported="false"
-            android:theme="@style/Theme.GiftersClub" />
+            android:theme="@style/Theme.GiftersClub"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
         <activity
             android:name=".gifts.FullscreenPostPreviewActivity"
             android:exported="false"
