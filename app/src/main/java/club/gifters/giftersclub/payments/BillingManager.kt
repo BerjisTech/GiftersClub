@@ -74,14 +74,10 @@ object BillingManager : PurchasesUpdatedListener {
                         installing = pm.getInstallerPackageName(pkg)
                     } catch (_: Throwable) {}
                 }
-                Rollbar.instance().log("Billing init: applicationId=${BuildConfig.APPLICATION_ID} pkg=$pkg installing=$installing initiating=$initiating originating=$originating")
+                // production: omit info logs
             } catch (_: Throwable) {}
             // Warn if app isn't Play-Store installed; IAP queries will return empty
-            try {
-                if (!isPlayStoreInstall()) {
-                    Toast.makeText(appContext, "Install from Play testing link for purchases", Toast.LENGTH_LONG).show()
-                }
-            } catch (_: Throwable) {}
+            // production: remove debug toasts about installer
             startConnection()
         }
     }
@@ -107,7 +103,7 @@ object BillingManager : PurchasesUpdatedListener {
         billingClient?.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(result: BillingResult) {
                 connected = result.responseCode == BillingClient.BillingResponseCode.OK
-                try { Rollbar.instance().log("Billing setup finished: code=${result.responseCode}") } catch (_: Throwable) {}
+                // production: omit info logs
                 if (connected) {
                     CoroutineScope(Dispatchers.IO).launch {
                         queryProducts()
@@ -144,10 +140,7 @@ object BillingManager : PurchasesUpdatedListener {
             .setProductList(list)
             .build()
         billingClient?.queryProductDetailsAsync(params) { result, detailsList ->
-            try {
-                val ids = detailsList.joinToString { it.productId }
-                Rollbar.instance().log("queryProductDetails: code=${result.responseCode} count=${detailsList.size} ids=[$ids]")
-            } catch (_: Throwable) {}
+            // production: omit info logs
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                 productDetails.clear()
                 detailsList.forEach { pd -> productDetails[pd.productId] = pd }
@@ -158,7 +151,7 @@ object BillingManager : PurchasesUpdatedListener {
     private suspend fun queryProductsRetry(maxAttempts: Int = 3, delayMs: Long = 2000L) {
         repeat(maxAttempts) { attempt ->
             if (productDetails.isNotEmpty()) return
-            try { Rollbar.instance().log("queryProductDetails retry attempt=${attempt + 1}") } catch (_: Throwable) {}
+            // production: omit retry info logs
             kotlinx.coroutines.delay(delayMs)
             queryProducts()
         }
@@ -201,10 +194,7 @@ object BillingManager : PurchasesUpdatedListener {
             .setProductList(list)
             .build()
         billingClient?.queryProductDetailsAsync(params) { result, detailsList ->
-            try {
-                val ids = detailsList.joinToString { it.productId }
-                Rollbar.instance().log("queryProductDetailsAwait: code=${result.responseCode} count=${detailsList.size} ids=[$ids]")
-            } catch (_: Throwable) {}
+            // production: omit info logs
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                 productDetails.clear()
                 detailsList.forEach { pd -> productDetails[pd.productId] = pd }
@@ -234,15 +224,9 @@ object BillingManager : PurchasesUpdatedListener {
             // Choose productId based on desired tokens but fall back to any available
             val chosenProductId = chooseProductId(desiredTokens)
             val pd = details[chosenProductId] ?: details.values.firstOrNull()
-            try { Rollbar.instance().log("launchPurchase: chosen=$chosenProductId tokens=${tokenPacks[chosenProductId]} available=${details.keys}") } catch (_: Throwable) {}
+            // production: omit info logs
             if (pd == null) {
-                if (!isPlayStoreInstall()) {
-                    Toast.makeText(activity, "Install from Play testing link to purchase", Toast.LENGTH_LONG).show()
-                    try { Rollbar.instance().log("launchPurchase: not Play-installed; installer check failed") } catch (_: Throwable) {}
-                } else {
-                    Toast.makeText(activity, "Products not ready, retry shortly", Toast.LENGTH_SHORT).show()
-                    try { Rollbar.instance().log("launchPurchase: empty ProductDetails despite Play install") } catch (_: Throwable) {}
-                }
+                // production: suppress debug toasts and info logs when products not ready
                 return@launch
             }
             val flowParams = BillingFlowParams.newBuilder()
@@ -286,7 +270,7 @@ object BillingManager : PurchasesUpdatedListener {
     fun launchTopUp(activity: Activity, desiredTokens: Int, onFinished: ((Boolean) -> Unit)? = null) {
         val plan = planPacks(desiredTokens)
         if (plan.isEmpty()) { onFinished?.invoke(false); return }
-        try { Rollbar.instance().log("launchTopUp: desired=$desiredTokens plan=$plan") } catch (_: Throwable) {}
+        // production: omit info logs
 
         var index = 0
         fun next(successSoFar: Boolean) {
@@ -305,7 +289,7 @@ object BillingManager : PurchasesUpdatedListener {
     }
 
     override fun onPurchasesUpdated(result: BillingResult, purchases: MutableList<Purchase>?) {
-        try { Rollbar.instance().log("onPurchasesUpdated: code=${result.responseCode} count=${purchases?.size ?: 0}") } catch (_: Throwable) {}
+        // production: omit info logs
         if (result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
             purchases.forEach { handlePurchase(it) }
         } else if (result.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
@@ -349,7 +333,7 @@ object BillingManager : PurchasesUpdatedListener {
 
         return try {
             val resp = RetrofitClient.functionsApi.processGooglePurchaseTokensRpc(body as Map<String, Any>)
-            try { Rollbar.instance().log("verifyOnServer: http=${resp.code()} success=${resp.isSuccessful}") } catch (_: Throwable) {}
+            // production: omit info logs
             if (resp.isSuccessful) {
                 // Consume after server success
                 consume(purchase.purchaseToken)
@@ -367,7 +351,7 @@ object BillingManager : PurchasesUpdatedListener {
         val client = billingClient ?: return@suspendCancellableCoroutine cont.resume(Unit)
         val params = ConsumeParams.newBuilder().setPurchaseToken(purchaseToken).build()
         client.consumeAsync(params) { br, _ ->
-            try { Rollbar.instance().log("consumeAsync: code=${br.responseCode}") } catch (_: Throwable) {}
+            // production: omit info logs
             cont.resume(Unit)
         }
     }
