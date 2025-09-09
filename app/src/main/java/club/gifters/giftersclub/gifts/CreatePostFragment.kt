@@ -909,6 +909,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             postCaptionLayout.visibility = View.VISIBLE
             effectsPane.visibility = View.GONE
             val captionText = layoutEdit.findViewById<TextView>(R.id.captionText)
+            captionText.text = ""
             captionText.requestFocus()
             try {
                 (requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
@@ -990,6 +991,34 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
         // Draggable caption overlays
         val editOverlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
+        // Editor opener lambda, accessible before drag handler
+        val openCaptionEditor: (TextView?) -> Unit = { existing ->
+            currentEditingCaption = existing
+            if (existing != null) {
+                captionText.text = existing.text
+                captionText.typeface = existing.typeface
+                captionText.setTextColor(existing.currentTextColor)
+                captionText.background = existing.background?.constantState?.newDrawable()?.mutate()
+                // Mirror alignment and outline state
+                captionAlignIndex = when (existing.textAlignment) {
+                    View.TEXT_ALIGNMENT_VIEW_END -> 0
+                    View.TEXT_ALIGNMENT_CENTER -> 1
+                    else -> 2
+                }
+                applyCaptionGravity()
+                captionUseBg = existing.background != null
+                applyCaptionOutlineMode()
+            } else {
+                captionText.text = ""
+            }
+            postCaptionLayout.visibility = View.VISIBLE
+            effectsPane.visibility = View.GONE
+            captionText.requestFocus()
+            try {
+                (requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                    .showSoftInput(captionText, InputMethodManager.SHOW_IMPLICIT)
+            } catch (_: Exception) { }
+        }
         fun applyStyle(to: TextView) {
             to.typeface = captionText.typeface
             to.setTextColor(captionText.currentTextColor)
@@ -1007,6 +1036,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 to.setPadding(0, 0, 0, 0)
                 to.setShadowLayer(6f, 0f, 0f, Color.BLACK)
             }
+            // Keep overlay caption's gravity consistent with editor
+            to.gravity = captionText.gravity
             to.textAlignment = when (captionText.gravity) {
                 Gravity.CENTER -> View.TEXT_ALIGNMENT_CENTER
                 else -> if ((captionText.gravity and Gravity.END) == Gravity.END) View.TEXT_ALIGNMENT_VIEW_END else View.TEXT_ALIGNMENT_VIEW_START
@@ -1016,37 +1047,29 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         fun makeDraggable(tv: View) {
             var dX = 0f
             var dY = 0f
+            var downX = 0f
+            var downY = 0f
+            var downTime = 0L
+            val clickSlop = (8 * resources.displayMetrics.density)
             tv.setOnTouchListener { v, ev ->
                 when (ev.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        dX = v.x - ev.rawX; dY = v.y - ev.rawY
-                    }
-
-                    MotionEvent.ACTION_MOVE -> {
-                        v.x = ev.rawX + dX; v.y = ev.rawY + dY
+                    MotionEvent.ACTION_DOWN -> { dX = v.x - ev.rawX; dY = v.y - ev.rawY; downX = ev.rawX; downY = ev.rawY; downTime = System.currentTimeMillis() }
+                    MotionEvent.ACTION_MOVE -> { v.x = ev.rawX + dX; v.y = ev.rawY + dY }
+                    MotionEvent.ACTION_UP -> {
+                        val dx = ev.rawX - downX
+                        val dy = ev.rawY - downY
+                        val dist2 = dx * dx + dy * dy
+                        val slop2 = clickSlop * clickSlop
+                        val dur = System.currentTimeMillis() - downTime
+                        if (dist2 < slop2 && dur < 250L) {
+                            v.performClick()
+                            if (v is TextView) {
+                                openCaptionEditor(v)
+                            }
+                        }
                     }
                 }
                 true
-            }
-        }
-
-        fun showCaptionEditorFor(existing: TextView?) {
-            currentEditingCaption = existing
-            if (existing != null) {
-                captionText.text = existing.text
-                captionText.typeface = existing.typeface
-                captionText.setTextColor(existing.currentTextColor)
-                captionText.background = existing.background?.constantState?.newDrawable()?.mutate()
-            } else {
-                captionText.text = ""
-            }
-            postCaptionLayout.visibility = View.VISIBLE
-            effectsPane.visibility = View.GONE
-            captionText.requestFocus()
-            try {
-                (requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-                    .showSoftInput(captionText, InputMethodManager.SHOW_IMPLICIT)
-            } catch (_: Exception) {
             }
         }
         layoutEdit.findViewById<View>(R.id.doneCaption)?.setOnClickListener {
@@ -1056,7 +1079,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             val target = currentEditingCaption ?: TextView(requireContext()).apply {
                 textSize = 22f
                 setTextColor(Color.WHITE)
-                setOnClickListener { showCaptionEditorFor(this) }
+                setOnClickListener { openCaptionEditor(this) }
             }
             target.text = txt
             applyStyle(target)
@@ -1076,7 +1099,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
             currentEditingCaption = null
         }
-        editOverlay.setOnClickListener { showCaptionEditorFor(null) }
+        editOverlay.setOnClickListener { openCaptionEditor(null) }
 
         // Populate fonts list with system families, styled like placeholders
         captionFonts.removeAllViews()
