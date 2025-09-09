@@ -27,6 +27,9 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
+import java.lang.reflect.Field
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -835,6 +838,134 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 if (showing) texts.forEach { conceal(it) } else texts.forEach { reveal(it) }
             }
         }
+
+        // ----- Edit Options: Caption vs Effects panes -----
+        val captionOptions = layoutEdit.findViewById<LinearLayout>(R.id.captionOptions)
+        val effectsOptions = layoutEdit.findViewById<LinearLayout>(R.id.effectsOptions)
+        val effectsPane = layoutEdit.findViewById<LinearLayout>(R.id.effectsPane)
+        val postCaptionLayout = layoutEdit.findViewById<LinearLayout>(R.id.postCaptionLayout)
+        // Default hidden per request
+        effectsPane.visibility = View.GONE
+        postCaptionLayout.visibility = View.GONE
+        captionOptions.setOnClickListener {
+            postCaptionLayout.visibility = View.VISIBLE
+            effectsPane.visibility = View.GONE
+        }
+        effectsOptions.setOnClickListener {
+            effectsPane.visibility = View.VISIBLE
+            postCaptionLayout.visibility = View.GONE
+        }
+
+        // ----- Caption controls -----
+        val captionText = layoutEdit.findViewById<TextView>(R.id.captionText)
+        val captionAlignment = layoutEdit.findViewById<LinearLayout>(R.id.captionAlignment)
+        val captionOutlineMode = layoutEdit.findViewById<TextView>(R.id.captionOutlineMode)
+        val captionFontBtn = layoutEdit.findViewById<TextView>(R.id.captionFont)
+        val captionColorBtn = layoutEdit.findViewById<ImageView>(R.id.captionColor)
+        val captionColorsScroll = layoutEdit.findViewById<HorizontalScrollView>(R.id.captionColorsScroll)
+        val captionFontsScroll = layoutEdit.findViewById<HorizontalScrollView>(R.id.captionFontsScroll)
+        val captionColors = layoutEdit.findViewById<LinearLayout>(R.id.captionColors)
+        val captionFonts = layoutEdit.findViewById<LinearLayout>(R.id.captionFonts)
+
+        // Both scrollers hidden by default
+        captionColorsScroll.visibility = View.GONE
+        captionFontsScroll.visibility = View.GONE
+
+        var captionAlignIndex = 0 // 0=end, 1=center, 2=start
+        var captionUseBg = false
+        fun applyCaptionGravity() {
+            captionText.gravity = when (captionAlignIndex % 3) {
+                0 -> Gravity.END or Gravity.CENTER_VERTICAL
+                1 -> Gravity.CENTER
+                else -> Gravity.START or Gravity.CENTER_VERTICAL
+            }
+        }
+        applyCaptionGravity()
+        captionAlignment.setOnClickListener {
+            captionAlignIndex = (captionAlignIndex + 1) % 3
+            applyCaptionGravity()
+        }
+
+        fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+        fun applyCaptionOutlineMode() {
+            if (captionUseBg) {
+                captionText.setShadowLayer(0f, 0f, 0f, 0)
+                val bg = GradientDrawable().apply {
+                    cornerRadius = dp(12).toFloat()
+                    setColor(0x66000000)
+                }
+                captionText.background = bg
+                val p = dp(8)
+                captionText.setPadding(p, p, p, p)
+            } else {
+                captionText.background = null
+                captionText.setPadding(0, 0, 0, 0)
+                captionText.setShadowLayer(6f, 0f, 0f, android.graphics.Color.BLACK)
+            }
+        }
+        applyCaptionOutlineMode()
+        captionOutlineMode.setOnClickListener {
+            captionUseBg = !captionUseBg
+            applyCaptionOutlineMode()
+        }
+
+        // Clicking Font button shows Colors scroller; clicking Color shows Fonts scroller
+        captionFontBtn.setOnClickListener {
+            captionColorsScroll.visibility = View.VISIBLE
+            captionFontsScroll.visibility = View.GONE
+        }
+        captionColorBtn.setOnClickListener {
+            captionFontsScroll.visibility = View.VISIBLE
+            captionColorsScroll.visibility = View.GONE
+        }
+
+        // Populate fonts list with system families, styled like placeholders
+        captionFonts.removeAllViews()
+        listOf(
+            Pair("Sans Serif", Typeface.SANS_SERIF),
+            Pair("Light", Typeface.create("sans-serif-light", Typeface.NORMAL)),
+            Pair("Medium", Typeface.create("sans-serif-medium", Typeface.NORMAL)),
+            Pair("Black", Typeface.create("sans-serif-black", Typeface.NORMAL)),
+            Pair("Serif", Typeface.SERIF),
+            Pair("Mono", Typeface.MONOSPACE)
+        ).forEach { (label, tf) ->
+            val tv = TextView(requireContext()).apply {
+                text = label
+                setPadding(dp(8), dp(4), dp(8), dp(4))
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
+                textSize = 20f
+                background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_border_gray_300)
+                typeface = tf
+                setOnClickListener { captionText.typeface = tf }
+            }
+            val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            params.setMargins(dp(8), dp(8), dp(8), dp(8))
+            captionFonts.addView(tv, params)
+        }
+
+        // Populate colors list with ALL colors from R.color, styled like placeholders
+        captionColors.removeAllViews()
+        try {
+            val fields: Array<Field> = R.color::class.java.fields
+            fields.forEach { field ->
+                val colorResId = try { field.getInt(null) } catch (_: Exception) { 0 }
+                if (colorResId != 0) {
+                    val iv = ImageView(requireContext()).apply {
+                        val sz = dp(30)
+                        layoutParams = LinearLayout.LayoutParams(sz, sz).apply { setMargins(dp(4), dp(4), dp(4), dp(4)) }
+                        background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_message_received)
+                        setPadding(dp(2), dp(2), dp(2), dp(2))
+                        setImageDrawable(ContextCompat.getDrawable(requireContext(), R.drawable.bg_message_received))
+                        imageTintList = ContextCompat.getColorStateList(requireContext(), colorResId)
+                        setOnClickListener {
+                            val c = ContextCompat.getColor(requireContext(), colorResId)
+                            captionText.setTextColor(c)
+                        }
+                    }
+                    captionColors.addView(iv)
+                }
+            }
+        } catch (_: Exception) {}
 
         // Details preview: open full-screen preview when tapped
         ivPostPreview.setOnClickListener {
