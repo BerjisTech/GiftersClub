@@ -12,6 +12,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -19,17 +20,16 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
-import android.graphics.drawable.GradientDrawable
-import android.view.Gravity
-import java.lang.reflect.Field
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -37,7 +37,6 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.ToggleButton
-import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.appcompat.app.AlertDialog
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -54,18 +53,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.model.CreatePostMediaRequest
 import club.gifters.giftersclub.model.CreatePostRequest
 import club.gifters.giftersclub.model.PostTagUpsertRequest
 import club.gifters.giftersclub.model.TagUpsertRequest
-import club.gifters.giftersclub.network.PresignRequest
 import club.gifters.giftersclub.network.RetrofitClient
-import com.akaita.android.circularseekbar.CircularSeekBar
-import com.akaita.android.circularseekbar.CircularSeekBar.OnCircularSeekBarChangeListener
 import com.google.android.material.progressindicator.CircularProgressIndicator
-import club.gifters.giftersclub.gifts.VideoCaptureHelper
 import com.google.android.material.tabs.TabLayout
 import com.yalantis.ucrop.UCrop
+import jp.co.cyberagent.android.gpuimage.GPUImage
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageBrightnessFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageColorInvertFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageContrastFilter
@@ -73,19 +68,15 @@ import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilterGroup
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageGrayscaleFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
-import jp.co.cyberagent.android.gpuimage.GPUImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import retrofit2.HttpException
 import yuku.ambilwarna.AmbilWarnaDialog
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.lang.reflect.Field
 import java.util.regex.Pattern
 
 /**
@@ -153,7 +144,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var elapsedHandler: Handler? = null
     private var elapsedRunnable: Runnable? = null
 
-    
+
     // Crop & scale in image editor
     private lateinit var btnCrop: ImageView
     private lateinit var btnScale: ImageView
@@ -193,7 +184,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var recordTimer: CountDownTimer? = null
     private var totalRecordedMs: Long = 0L
     private var currentSegmentStartMs: Long = 0L
-    private val recordedSegments = mutableListOf<java.io.File>()
+    private val recordedSegments = mutableListOf<File>()
     private val recordedSegmentDurations = mutableListOf<Long>()
     private var pendingFinalize: Boolean = false
     private val longPressHandler = Handler(Looper.getMainLooper())
@@ -206,17 +197,18 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     }
 
     private enum class Step { MEDIA, EDIT, DETAILS, TEXT }
+
     private val stepStack: MutableList<Step> = mutableListOf()
     private var backCallback: androidx.activity.OnBackPressedCallback? = null
 
     /** Show exactly one of the steps and record navigation for back handling. */
     private fun showStep(step: View) {
         val next = when (step) {
-            layoutMedia      -> Step.MEDIA
-            layoutEdit       -> Step.EDIT
-            layoutDetails    -> Step.DETAILS
+            layoutMedia -> Step.MEDIA
+            layoutEdit -> Step.EDIT
+            layoutDetails -> Step.DETAILS
             layoutTextEditor -> Step.TEXT
-            else             -> Step.MEDIA
+            else -> Step.MEDIA
         }
         if (stepStack.isEmpty() || stepStack.last() != next) stepStack.add(next)
         // Only toggle visibility; do not reparent views (prevents PreviewView/GPUImage glitches)
@@ -226,7 +218,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         layoutTextEditor.isVisible = next == Step.TEXT
         when (next) {
             Step.MEDIA -> startCamera()
-            Step.EDIT -> { /* keep current image; avoid resetting to prevent visual artifacts */ }
+            Step.EDIT -> { /* keep current image; avoid resetting to prevent visual artifacts */
+            }
+
             Step.DETAILS -> updatePostPreview()
             else -> {}
         }
@@ -237,14 +231,17 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             // pop current and show previous without pushing again
             stepStack.removeAt(stepStack.lastIndex)
             when (stepStack.last()) {
-                Step.MEDIA   -> showStep(layoutMedia)
-                Step.EDIT    -> showStep(layoutEdit)
+                Step.MEDIA -> showStep(layoutMedia)
+                Step.EDIT -> showStep(layoutEdit)
                 Step.DETAILS -> showStep(layoutDetails)
-                Step.TEXT    -> showStep(layoutTextEditor)
+                Step.TEXT -> showStep(layoutTextEditor)
             }
         } else {
             // let system handle back (pop fragment) without re-entering our callback
-            try { backCallback?.isEnabled = false } catch (_: Exception) {}
+            try {
+                backCallback?.isEnabled = false
+            } catch (_: Exception) {
+            }
             requireActivity().onBackPressed()
         }
     }
@@ -294,7 +291,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
         // Back press should go to previous step, not exit immediately
         backCallback = object : androidx.activity.OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() { showPreviousStepOrExit() }
+            override fun handleOnBackPressed() {
+                showPreviousStepOrExit()
+            }
         }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback!!)
 
@@ -309,7 +308,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             btnEditMediaCard.visibility = if (show) View.VISIBLE else View.GONE
         }
         updateEditVisibility()
-    // Access type (free/subscription/paid) and pricing (bind from Details layout root)
+        // Access type (free/subscription/paid) and pricing (bind from Details layout root)
         rgAccessType = layoutDetails.findViewById(R.id.rgAccessType)
         etPrice = layoutDetails.findViewById(R.id.etPrice)
         layoutPostPlanPicker = layoutDetails.findViewById(R.id.layoutPostPlanPicker)
@@ -322,12 +321,14 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     layoutPostPlanPicker.visibility = View.GONE
                     layoutPostNoPlans.visibility = View.GONE
                 }
+
                 R.id.rbSubscriberOnly -> {
                     etPrice.visibility = View.GONE
                     val hasPlans = postPlanIdByName.isNotEmpty()
                     layoutPostPlanPicker.visibility = if (hasPlans) View.VISIBLE else View.GONE
                     layoutPostNoPlans.visibility = if (hasPlans) View.GONE else View.VISIBLE
                 }
+
                 else -> {
                     etPrice.visibility = View.GONE
                     layoutPostPlanPicker.visibility = View.GONE
@@ -342,11 +343,20 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             try {
                 val uid = club.gifters.giftersclub.AuthUtils.getCurrentUserId(ctx) ?: ""
                 if (uid.isNotEmpty()) {
-                    val plans = club.gifters.giftersclub.network.RetrofitClient.subscriptionPlanApi.getSubscriptionPlans("eq.$uid")
+                    val plans =
+                        RetrofitClient.subscriptionPlanApi.getSubscriptionPlans(
+                            "eq.$uid"
+                        )
                     if (plans.isNotEmpty()) {
                         val names = listOf("All") + plans.map { it.name }
                         postPlanIdByName = plans.associate { it.name to it.id }
-                        actvPostPlan.setAdapter(android.widget.ArrayAdapter(ctx, android.R.layout.simple_dropdown_item_1line, names))
+                        actvPostPlan.setAdapter(
+                            android.widget.ArrayAdapter(
+                                ctx,
+                                android.R.layout.simple_dropdown_item_1line,
+                                names
+                            )
+                        )
                         actvPostPlan.threshold = 0
                         actvPostPlan.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvPostPlan.showDropDown() }
                         actvPostPlan.setOnClickListener { actvPostPlan.showDropDown() }
@@ -354,22 +364,32 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         // Adjust only if currently on subscriber-only
                         if (rgAccessType.checkedRadioButtonId == R.id.rbSubscriberOnly) {
                             layoutPostPlanPicker.visibility = View.VISIBLE
-                            view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.GONE
+                            view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility =
+                                View.GONE
                         }
                     } else {
                         // No plans loaded: only show message if subscriber-only is selected
                         if (rgAccessType.checkedRadioButtonId == R.id.rbSubscriberOnly) {
                             layoutPostPlanPicker.visibility = View.GONE
-                            view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility = View.VISIBLE
+                            view.findViewById<LinearLayout>(R.id.layoutPostNoPlans).visibility =
+                                View.VISIBLE
                         }
-                        view.findViewById<Button>(R.id.btnOpenSubscriptionSettingsFromPost).setOnClickListener {
-                            val intent = android.content.Intent(requireContext(), club.gifters.giftersclub.MainActivity::class.java)
-                            intent.putExtra(club.gifters.giftersclub.MainActivity.EXTRA_OPEN_SETTINGS_TAB, 4)
-                            startActivity(intent)
-                        }
+                        view.findViewById<Button>(R.id.btnOpenSubscriptionSettingsFromPost)
+                            .setOnClickListener {
+                                val intent = Intent(
+                                    requireContext(),
+                                    club.gifters.giftersclub.MainActivity::class.java
+                                )
+                                intent.putExtra(
+                                    club.gifters.giftersclub.MainActivity.EXTRA_OPEN_SETTINGS_TAB,
+                                    4
+                                )
+                                startActivity(intent)
+                            }
                     }
                 }
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
 
         // CameraX UI setup and start camera preview
@@ -396,7 +416,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 val file = recordedSegments.removeAt(recordedSegments.lastIndex)
                 val dur = recordedSegmentDurations.removeAt(recordedSegmentDurations.lastIndex)
                 totalRecordedMs = (totalRecordedMs - dur).coerceAtLeast(0L)
-                try { file.delete() } catch (_: Exception) {}
+                try {
+                    file.delete()
+                } catch (_: Exception) {
+                }
                 // update progress bar to reflect removal
                 recordLimitMs?.let { limit ->
                     val p = ((totalRecordedMs * 100) / limit).toInt().coerceIn(0, 100)
@@ -473,6 +496,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                             etTextPost.setTextColor(color)
                             setTextColor(color)
                         }
+
                         override fun onCancel(dialog: AmbilWarnaDialog) {}
                     }).show()
             }
@@ -498,6 +522,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                             flTextCanvas.setBackgroundColor(color)
                             setBackgroundColor(color)
                         }
+
                         override fun onCancel(dialog: AmbilWarnaDialog) {}
                     }).show()
             }
@@ -513,7 +538,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp.toFloat())
                 setTextColor(Color.WHITE)
                 setPadding(16, 8, 16, 8)
-                setOnClickListener { etTextPost.setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp.toFloat()) }
+                setOnClickListener {
+                    etTextPost.setTextSize(
+                        TypedValue.COMPLEX_UNIT_SP,
+                        sizeSp.toFloat()
+                    )
+                }
             }
             llFontSizes.addView(sizeBtn)
         }
@@ -732,9 +762,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                             if (recordLimitMs == null) recordLimitMs = 5 * 1000L
                             startRecording()
                         }
-                        longPressHandler.postDelayed(longPressRunnable!!, 500) // 500ms for long press
+                        longPressHandler.postDelayed(
+                            longPressRunnable!!,
+                            500
+                        ) // 500ms for long press
                     }
                 }
+
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     longPressRunnable?.let { longPressHandler.removeCallbacks(it) }
                     if (isRecording && recordLimitMs == null && !isPaused) {
@@ -776,9 +810,17 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnScale = layoutEdit.findViewById(R.id.btnScale)
         btnCrop.setOnClickListener {
             editedBitmap?.let { bmp ->
-                val srcFile = File(requireContext().cacheDir, "CROP_SRC_${System.currentTimeMillis()}.jpg")
-                FileOutputStream(srcFile).use { out -> bmp.compress(Bitmap.CompressFormat.JPEG, 95, out) }
-                val destFile = File(requireContext().cacheDir, "CROP_DST_${System.currentTimeMillis()}.jpg")
+                val srcFile =
+                    File(requireContext().cacheDir, "CROP_SRC_${System.currentTimeMillis()}.jpg")
+                FileOutputStream(srcFile).use { out ->
+                    bmp.compress(
+                        Bitmap.CompressFormat.JPEG,
+                        95,
+                        out
+                    )
+                }
+                val destFile =
+                    File(requireContext().cacheDir, "CROP_DST_${System.currentTimeMillis()}.jpg")
                 val options = UCrop.Options().apply {
                     setFreeStyleCropEnabled(true) // allow free crop, phone-friendly
                     setHideBottomControls(false)
@@ -808,8 +850,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 tv.alpha = 0f
                 tv.translationX = offset
                 tv.visibility = View.VISIBLE
-                tv.animate().alpha(1f).translationX(0f).setDuration(200).setInterpolator(interp).start()
+                tv.animate().alpha(1f).translationX(0f).setDuration(200).setInterpolator(interp)
+                    .start()
             }
+
             fun conceal(tv: View) {
                 if (tv.visibility != View.VISIBLE) return
                 tv.animate()
@@ -823,8 +867,14 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             // Ensure default state: rotation 90, texts hidden
             try {
                 toggleOptionsText.rotation = 90f
-            } catch (_: Exception) {}
-            listOf(captionOptionsText, stickerOptionsText, effectsOptionsText, aiMemeOptionsText).forEach {
+            } catch (_: Exception) {
+            }
+            listOf(
+                captionOptionsText,
+                stickerOptionsText,
+                effectsOptionsText,
+                aiMemeOptionsText
+            ).forEach {
                 it.visibility = View.GONE
                 it.alpha = 0f
                 it.translationX = offset
@@ -833,8 +883,14 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             toggleOptionsText.setOnClickListener {
                 val showing = toggleOptionsText.rotation == -90f
                 val targetRot = if (showing) 90f else -90f
-                toggleOptionsText.animate().rotation(targetRot).setDuration(200).setInterpolator(interp).start()
-                val texts = listOf(captionOptionsText, stickerOptionsText, effectsOptionsText, aiMemeOptionsText)
+                toggleOptionsText.animate().rotation(targetRot).setDuration(200)
+                    .setInterpolator(interp).start()
+                val texts = listOf(
+                    captionOptionsText,
+                    stickerOptionsText,
+                    effectsOptionsText,
+                    aiMemeOptionsText
+                )
                 if (showing) texts.forEach { conceal(it) } else texts.forEach { reveal(it) }
             }
         }
@@ -857,7 +913,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             try {
                 (requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
                     .showSoftInput(captionText, InputMethodManager.SHOW_IMPLICIT)
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
         effectsOptions.setOnClickListener {
             effectsPane.visibility = View.VISIBLE
@@ -870,8 +927,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         val captionOutlineMode = layoutEdit.findViewById<TextView>(R.id.captionOutlineMode)
         val captionFontBtn = layoutEdit.findViewById<TextView>(R.id.captionFont)
         val captionColorBtn = layoutEdit.findViewById<ImageView>(R.id.captionColor)
-        val captionColorsScroll = layoutEdit.findViewById<HorizontalScrollView>(R.id.captionColorsScroll)
-        val captionFontsScroll = layoutEdit.findViewById<HorizontalScrollView>(R.id.captionFontsScroll)
+        val captionColorsScroll =
+            layoutEdit.findViewById<HorizontalScrollView>(R.id.captionColorsScroll)
+        val captionFontsScroll =
+            layoutEdit.findViewById<HorizontalScrollView>(R.id.captionFontsScroll)
         val captionColors = layoutEdit.findViewById<LinearLayout>(R.id.captionColors)
         val captionFonts = layoutEdit.findViewById<LinearLayout>(R.id.captionFonts)
 
@@ -910,7 +969,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             } else {
                 captionText.background = null
                 captionText.setPadding(0, 0, 0, 0)
-                captionText.setShadowLayer(6f, 0f, 0f, android.graphics.Color.BLACK)
+                captionText.setShadowLayer(6f, 0f, 0f, Color.BLACK)
             }
         }
         applyCaptionOutlineMode()
@@ -936,43 +995,59 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             to.setTextColor(captionText.currentTextColor)
             if (captionText.background != null) {
                 to.background = captionText.background.constantState?.newDrawable()?.mutate()
-                to.setPadding(captionText.paddingLeft, captionText.paddingTop, captionText.paddingRight, captionText.paddingBottom)
+                to.setPadding(
+                    captionText.paddingLeft,
+                    captionText.paddingTop,
+                    captionText.paddingRight,
+                    captionText.paddingBottom
+                )
                 to.setShadowLayer(0f, 0f, 0f, 0)
             } else {
                 to.background = null
                 to.setPadding(0, 0, 0, 0)
-                to.setShadowLayer(6f, 0f, 0f, android.graphics.Color.BLACK)
+                to.setShadowLayer(6f, 0f, 0f, Color.BLACK)
             }
             to.textAlignment = when (captionText.gravity) {
                 Gravity.CENTER -> View.TEXT_ALIGNMENT_CENTER
                 else -> if ((captionText.gravity and Gravity.END) == Gravity.END) View.TEXT_ALIGNMENT_VIEW_END else View.TEXT_ALIGNMENT_VIEW_START
             }
         }
+
         fun makeDraggable(tv: View) {
-            var dX = 0f; var dY = 0f
+            var dX = 0f
+            var dY = 0f
             tv.setOnTouchListener { v, ev ->
                 when (ev.action) {
-                    MotionEvent.ACTION_DOWN -> { dX = v.x - ev.rawX; dY = v.y - ev.rawY }
-                    MotionEvent.ACTION_MOVE -> { v.x = ev.rawX + dX; v.y = ev.rawY + dY }
+                    MotionEvent.ACTION_DOWN -> {
+                        dX = v.x - ev.rawX; dY = v.y - ev.rawY
+                    }
+
+                    MotionEvent.ACTION_MOVE -> {
+                        v.x = ev.rawX + dX; v.y = ev.rawY + dY
+                    }
                 }
                 true
             }
         }
+
         fun showCaptionEditorFor(existing: TextView?) {
             currentEditingCaption = existing
             if (existing != null) {
-                captionText.setText(existing.text)
+                captionText.text = existing.text
                 captionText.typeface = existing.typeface
                 captionText.setTextColor(existing.currentTextColor)
                 captionText.background = existing.background?.constantState?.newDrawable()?.mutate()
             } else {
-                captionText.setText("")
+                captionText.text = ""
             }
             postCaptionLayout.visibility = View.VISIBLE
             effectsPane.visibility = View.GONE
             captionText.requestFocus()
-            try { (requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-                .showSoftInput(captionText, InputMethodManager.SHOW_IMPLICIT) } catch (_: Exception) {}
+            try {
+                (requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                    .showSoftInput(captionText, InputMethodManager.SHOW_IMPLICIT)
+            } catch (_: Exception) {
+            }
         }
         layoutEdit.findViewById<View>(R.id.doneCaption)?.setOnClickListener {
             val txt = captionText.text?.toString()?.trim().orEmpty()
@@ -986,13 +1061,19 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             target.text = txt
             applyStyle(target)
             if (currentEditingCaption == null) {
-                val lp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
+                val lp = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                )
                 lp.gravity = Gravity.CENTER
                 editOverlay.addView(target, lp)
                 makeDraggable(target)
             }
-            try { (requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-                .hideSoftInputFromWindow(captionText.windowToken, 0) } catch (_: Exception) {}
+            try {
+                (requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                    .hideSoftInputFromWindow(captionText.windowToken, 0)
+            } catch (_: Exception) {
+            }
             currentEditingCaption = null
         }
         editOverlay.setOnClickListener { showCaptionEditorFor(null) }
@@ -1012,11 +1093,15 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 setPadding(dp(8), dp(4), dp(8), dp(4))
                 setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
                 textSize = 20f
-                background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_border_gray_300)
+                background =
+                    ContextCompat.getDrawable(requireContext(), R.drawable.bg_border_gray_300)
                 typeface = tf
                 setOnClickListener { captionText.typeface = tf }
             }
-            val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
             params.setMargins(dp(8), dp(8), dp(8), dp(8))
             captionFonts.addView(tv, params)
         }
@@ -1026,15 +1111,29 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         try {
             val fields: Array<Field> = R.color::class.java.fields
             fields.forEach { field ->
-                val colorResId = try { field.getInt(null) } catch (_: Exception) { 0 }
+                val colorResId = try {
+                    field.getInt(null)
+                } catch (_: Exception) {
+                    0
+                }
                 if (colorResId != 0) {
                     val iv = ImageView(requireContext()).apply {
                         val sz = dp(30)
-                        layoutParams = LinearLayout.LayoutParams(sz, sz).apply { setMargins(dp(4), dp(4), dp(4), dp(4)) }
-                        background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_message_received)
+                        layoutParams = LinearLayout.LayoutParams(sz, sz)
+                            .apply { setMargins(dp(4), dp(4), dp(4), dp(4)) }
+                        background = ContextCompat.getDrawable(
+                            requireContext(),
+                            R.drawable.bg_message_received
+                        )
                         setPadding(dp(2), dp(2), dp(2), dp(2))
-                        setImageDrawable(ContextCompat.getDrawable(requireContext(), R.drawable.bg_message_received))
-                        imageTintList = ContextCompat.getColorStateList(requireContext(), colorResId)
+                        setImageDrawable(
+                            ContextCompat.getDrawable(
+                                requireContext(),
+                                R.drawable.bg_message_received
+                            )
+                        )
+                        imageTintList =
+                            ContextCompat.getColorStateList(requireContext(), colorResId)
                         setOnClickListener {
                             val c = ContextCompat.getColor(requireContext(), colorResId)
                             captionText.setTextColor(c)
@@ -1043,41 +1142,51 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     captionColors.addView(iv)
                 }
             }
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
 
         // Details preview: open full-screen preview when tapped
         ivPostPreview.setOnClickListener {
             try {
-                val intent = android.content.Intent(requireContext(), FullscreenPostPreviewActivity::class.java)
+                val intent = Intent(
+                    requireContext(),
+                    FullscreenPostPreviewActivity::class.java
+                )
                 val bmp = editedBitmap ?: originalBitmap
                 if (bmp != null) {
-                    val file = java.io.File(requireContext().cacheDir, "post_preview.png")
-                    java.io.FileOutputStream(file).use { fos -> bmp.compress(Bitmap.CompressFormat.PNG, 100, fos) }
+                    val file = File(requireContext().cacheDir, "post_preview.png")
+                    FileOutputStream(file)
+                        .use { fos -> bmp.compress(Bitmap.CompressFormat.PNG, 100, fos) }
                     intent.putExtra("image_path", file.absolutePath)
                 }
                 intent.putExtra("content_text", etContent.text?.toString() ?: "")
-                intent.putExtra("access_type", when (rgAccessType.checkedRadioButtonId) {
-                    R.id.rbPaid -> "paid"
-                    R.id.rbSubscriberOnly -> "subscription"
-                    else -> "free"
-                })
+                intent.putExtra(
+                    "access_type", when (rgAccessType.checkedRadioButtonId) {
+                        R.id.rbPaid -> "paid"
+                        R.id.rbSubscriberOnly -> "subscription"
+                        else -> "free"
+                    }
+                )
                 val priceText = etPrice.text?.toString()?.trim()
                 if (!priceText.isNullOrEmpty()) intent.putExtra("price", priceText)
                 startActivity(intent)
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
 
         // Pinch-to-zoom on the camera preview
-        scaleGestureDetector = ScaleGestureDetector(requireContext(), object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-            override fun onScale(detector: ScaleGestureDetector): Boolean {
-                val state = camera?.cameraInfo?.zoomState?.value ?: return true
-                val newRatio = (state.zoomRatio * detector.scaleFactor)
-                    .coerceIn(state.minZoomRatio, state.maxZoomRatio)
-                camera?.cameraControl?.setZoomRatio(newRatio)
-                currentZoomRatio = newRatio
-                return true
-            }
-        })
+        scaleGestureDetector = ScaleGestureDetector(
+            requireContext(),
+            object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                override fun onScale(detector: ScaleGestureDetector): Boolean {
+                    val state = camera?.cameraInfo?.zoomState?.value ?: return true
+                    val newRatio = (state.zoomRatio * detector.scaleFactor)
+                        .coerceIn(state.minZoomRatio, state.maxZoomRatio)
+                    camera?.cameraControl?.setZoomRatio(newRatio)
+                    currentZoomRatio = newRatio
+                    return true
+                }
+            })
         previewView.setOnTouchListener { _, ev ->
             scaleGestureDetector.onTouchEvent(ev)
             true
@@ -1092,14 +1201,14 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         selectedFilterItem = FilterItem("Normal", baseFilter, false)
         // initialize default slider positions for adjustable filters
         sliderPositions["Contrast+"] = 50
-        sliderPositions["Bright+"]   = 50
+        sliderPositions["Bright+"] = 50
 
         fun applyFilters() {
             val group = GPUImageFilterGroup().apply {
                 addFilter(baseFilter)
                 // apply all enabled adjustable filters
                 if ("Contrast+" in enabledAdjustable) addFilter(contrastFilter)
-                if ("Bright+"   in enabledAdjustable) addFilter(brightnessFilter)
+                if ("Bright+" in enabledAdjustable) addFilter(brightnessFilter)
             }
             gpuImageView.filter = group
             gpuImageView.requestRender()
@@ -1147,8 +1256,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     // remember and apply this adjustable filter
                     sliderPositions[selectedFilterItem.name] = progress
                     when (selectedFilterItem.filter) {
-                        is GPUImageContrastFilter   -> contrastFilter.setContrast(1f + (progress - 50)/50f)
-                        is GPUImageBrightnessFilter -> brightnessFilter.setBrightness((progress - 50)/50f)
+                        is GPUImageContrastFilter -> contrastFilter.setContrast(1f + (progress - 50) / 50f)
+                        is GPUImageBrightnessFilter -> brightnessFilter.setBrightness((progress - 50) / 50f)
                     }
                     applyFilters()
                 }
@@ -1159,19 +1268,36 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         })
 
         btnApplyFilter.setOnClickListener {
+            // Only capture/apply filters; stay on Edit
             editedBitmap = try {
                 gpuImageView.capture()
-            } catch (e: InterruptedException) {
-                // Log.e(TAG, "Error capturing filtered image", e)
+            } catch (_: InterruptedException) {
                 originalBitmap
+            }
+//            Toast.makeText(requireContext(), getString(R.string.applied), Toast.LENGTH_SHORT).show()
+        }
+
+        // Proceed button: composite overlays into edited bitmap and go to Details
+        layoutEdit.findViewById<View>(R.id.proceedToDetails)?.setOnClickListener {
+            val base = try {
+                gpuImageView.capture()
+            } catch (_: InterruptedException) {
+                editedBitmap ?: originalBitmap
+            }
+            if (base != null) {
+                val composed = Bitmap.createBitmap(base.width, base.height, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(composed)
+                canvas.drawBitmap(base, 0f, 0f, null)
+                try {
+                    val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
+                    overlay.draw(canvas)
+                } catch (_: Exception) {
+                }
+                editedBitmap = composed
             }
             showStep(layoutDetails)
             updatePostPreview()
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
     }
 
     override fun onRequestPermissionsResult(
@@ -1212,10 +1338,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     }
 
 
-
     private fun takePhoto() {
         val photoFile =
-            java.io.File(requireContext().cacheDir, "IMG_${System.currentTimeMillis()}.jpg")
+            File(requireContext().cacheDir, "IMG_${System.currentTimeMillis()}.jpg")
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
         imageCapture?.takePicture(
             outputOptions,
@@ -1238,14 +1363,18 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private fun startRecording() {
         if (isRecording) return
         val videoFile =
-            java.io.File(requireContext().cacheDir, "VID_${System.currentTimeMillis()}.mp4")
+            File(requireContext().cacheDir, "VID_${System.currentTimeMillis()}.mp4")
         videoCapture?.let { vc ->
             VideoCaptureHelper.startRecording(
                 vc,
                 videoFile,
                 ContextCompat.getMainExecutor(requireContext()),
                 object : VideoCapture.OnVideoSavedCallback {
-                    override fun onError(videoCaptureError: Int, message: String, cause: Throwable?) {
+                    override fun onError(
+                        videoCaptureError: Int,
+                        message: String,
+                        cause: Throwable?
+                    ) {
                         val ctx = context ?: return
                         Toast.makeText(ctx, "Video capture failed", Toast.LENGTH_SHORT).show()
                         recordingActive = false
@@ -1265,12 +1394,19 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                                 pendingFinalize = false
                                 // Merge all segments into a single file (fallback to last if merge fails)
                                 viewLifecycleOwner.lifecycleScope.launch {
-                                    val merged = withContext(Dispatchers.IO) { mergeSegmentsSafely(recordedSegments) }
+                                    val merged = withContext(Dispatchers.IO) {
+                                        mergeSegmentsSafely(recordedSegments)
+                                    }
                                     val file = merged ?: recordedSegments.lastOrNull() ?: videoFile
                                     handleSelectedMedia(listOf(Uri.fromFile(file)))
                                     // clean up other segments if merged
                                     if (merged != null) {
-                                        recordedSegments.forEach { if (it != merged) try { it.delete() } catch (_: Exception) {} }
+                                        recordedSegments.forEach {
+                                            if (it != merged) try {
+                                                it.delete()
+                                            } catch (_: Exception) {
+                                            }
+                                        }
                                     }
                                     // reset state for next recording
                                     recordedSegments.clear()
@@ -1297,20 +1433,21 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         recordTimer?.cancel()
         recordLimitMs?.let { limit ->
             val remaining = (limit - totalRecordedMs).coerceAtLeast(0L)
-            recordTimer = object : CountDownTimer(remaining, (remaining.coerceAtLeast(1000L) / 100)) {
-                override fun onTick(millisUntilFinished: Long) {
-                    val elapsed = totalRecordedMs + (remaining - millisUntilFinished)
-                    val p = ((elapsed * 100) / limit).toInt().coerceIn(0, 100)
-                    pbRecordProgress.progress = p
-                    updateSegmentsBar()
-                }
+            recordTimer =
+                object : CountDownTimer(remaining, (remaining.coerceAtLeast(1000L) / 100)) {
+                    override fun onTick(millisUntilFinished: Long) {
+                        val elapsed = totalRecordedMs + (remaining - millisUntilFinished)
+                        val p = ((elapsed * 100) / limit).toInt().coerceIn(0, 100)
+                        pbRecordProgress.progress = p
+                        updateSegmentsBar()
+                    }
 
-                override fun onFinish() {
-                    pbRecordProgress.progress = 100
-                    pendingFinalize = true
-                    stopRecording()
-                }
-            }.apply { start() }
+                    override fun onFinish() {
+                        pbRecordProgress.progress = 100
+                        pendingFinalize = true
+                        stopRecording()
+                    }
+                }.apply { start() }
         }
         updateSegmentsBar()
     }
@@ -1319,7 +1456,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         if (!isRecording) return
         try {
             if (recordingActive) videoCapture?.stopRecording()
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
         isRecording = false
         recordingActive = false
         isPaused = false
@@ -1332,7 +1470,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     private fun pauseRecording() {
         if (!isRecording || recordLimitMs == null) return
-        try { if (recordingActive) videoCapture?.stopRecording() } catch (_: Exception) {}
+        try {
+            if (recordingActive) videoCapture?.stopRecording()
+        } catch (_: Exception) {
+        }
         isRecording = false
         recordingActive = false
         isPaused = true
@@ -1345,9 +1486,15 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     override fun onPause() {
         super.onPause()
-        try { recordTimer?.cancel() } catch (_: Exception) {}
+        try {
+            recordTimer?.cancel()
+        } catch (_: Exception) {
+        }
         if (isRecording) {
-            try { if (recordingActive) videoCapture?.stopRecording() } catch (_: Exception) {}
+            try {
+                if (recordingActive) videoCapture?.stopRecording()
+            } catch (_: Exception) {
+            }
             isRecording = false
             recordingActive = false
         }
@@ -1372,31 +1519,55 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         recordedSegmentDurations.forEachIndexed { idx, dur ->
             if (dur > 0) {
                 val v = View(ctx)
-                v.setBackgroundColor(android.graphics.Color.WHITE)
+                v.setBackgroundColor(Color.WHITE)
                 v.alpha = 0.8f
-                segmentsBar.addView(v, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, dur.toFloat()))
+                segmentsBar.addView(
+                    v,
+                    LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        dur.toFloat()
+                    )
+                )
                 acc += dur
                 // separator
                 val sep = View(ctx)
-                sep.setBackgroundColor(android.graphics.Color.WHITE)
-                segmentsBar.addView(sep, LinearLayout.LayoutParams(sepWidth, LinearLayout.LayoutParams.MATCH_PARENT))
+                sep.setBackgroundColor(Color.WHITE)
+                segmentsBar.addView(
+                    sep,
+                    LinearLayout.LayoutParams(sepWidth, LinearLayout.LayoutParams.MATCH_PARENT)
+                )
             }
         }
         // Ongoing segment block (if recording or paused with current segment)
         val ongoing = (totalElapsed - acc).coerceAtLeast(0L)
         if (ongoing > 0) {
             val v = View(ctx)
-            v.setBackgroundColor(android.graphics.Color.WHITE)
+            v.setBackgroundColor(Color.WHITE)
             v.alpha = 1.0f
-            segmentsBar.addView(v, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, ongoing.toFloat()))
+            segmentsBar.addView(
+                v,
+                LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    ongoing.toFloat()
+                )
+            )
         }
         // Remaining space filler (transparent or dim)
         val remain = (limit - totalElapsed).coerceAtLeast(0L)
         if (remain > 0) {
             val filler = View(ctx)
-            filler.setBackgroundColor(android.graphics.Color.WHITE)
+            filler.setBackgroundColor(Color.WHITE)
             filler.alpha = 0.25f
-            segmentsBar.addView(filler, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, remain.toFloat()))
+            segmentsBar.addView(
+                filler,
+                LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    remain.toFloat()
+                )
+            )
         }
     }
 
@@ -1413,6 +1584,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 else -> String.format("%d sec", s)
             }
         }
+
         val tv = TextView(requireContext()).apply {
             text = formatDuration(chosen)
             setPadding(0, 0, 0, 16)
@@ -1425,6 +1597,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     chosen = p.coerceAtLeast(1)
                     tv.text = formatDuration(chosen)
                 }
+
                 override fun onStartTrackingTouch(s: SeekBar) {}
                 override fun onStopTrackingTouch(s: SeekBar) {}
             })
@@ -1467,7 +1640,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             selectedUris.addAll(uris.take(10))
         }
         // Update edit button visibility after selection: hide for video, show for photo/text
-        btnEditMediaCard.visibility = if (!isVideoSelected && !isVideoMode) View.VISIBLE else View.GONE
+        btnEditMediaCard.visibility =
+            if (!isVideoSelected && !isVideoMode) View.VISIBLE else View.GONE
         // Proceed to next step after selection
         if (isVideoSelected || selectedUris.isEmpty()) {
             showStep(layoutDetails)
@@ -1490,9 +1664,11 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     if (bmp != null) ivPostPreview.setImageBitmap(bmp)
                     else ivPostPreview.setImageResource(R.drawable.video)
                 }
+
                 editedBitmap != null -> {
                     ivPostPreview.setImageBitmap(editedBitmap)
                 }
+
                 selectedUris.isNotEmpty() -> {
                     val uri = selectedUris.first()
                     requireContext().contentResolver.openInputStream(uri)?.use { ins ->
@@ -1501,6 +1677,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         ivPostPreview.setImageBitmap(bmp)
                     }
                 }
+
                 else -> {
                     // No media selected (text-only flow): keep existing or clear
                     ivPostPreview.setImageDrawable(null)
@@ -1511,11 +1688,15 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     }
 
     // Merge multiple MP4 segments (same codec) into a single MP4. Returns merged file or null on failure.
-    private fun mergeSegmentsSafely(segments: List<java.io.File>): java.io.File? {
+    private fun mergeSegmentsSafely(segments: List<File>): File? {
         if (segments.isEmpty()) return null
         try {
-            val outFile = java.io.File(requireContext().cacheDir, "MERGED_${System.currentTimeMillis()}.mp4")
-            val muxer = android.media.MediaMuxer(outFile.absolutePath, android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+            val outFile =
+                File(requireContext().cacheDir, "MERGED_${System.currentTimeMillis()}.mp4")
+            val muxer = android.media.MediaMuxer(
+                outFile.absolutePath,
+                android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
+            )
 
             // Determine tracks from first segment
             val first = segments.first()
@@ -1528,10 +1709,16 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             for (i in 0 until firstExtractor.trackCount) {
                 val fmt = firstExtractor.getTrackFormat(i)
                 val mime = fmt.getString(android.media.MediaFormat.KEY_MIME)
-                if (mime?.startsWith("video/") == true) { vTrack = i; vFormat = fmt }
-                if (mime?.startsWith("audio/") == true) { aTrack = i; aFormat = fmt }
+                if (mime?.startsWith("video/") == true) {
+                    vTrack = i; vFormat = fmt
+                }
+                if (mime?.startsWith("audio/") == true) {
+                    aTrack = i; aFormat = fmt
+                }
             }
-            if (vFormat == null && aFormat == null) { firstExtractor.release(); muxer.release(); return null }
+            if (vFormat == null && aFormat == null) {
+                firstExtractor.release(); muxer.release(); return null
+            }
             var muxV = -1
             var muxA = -1
             if (vFormat != null) muxV = muxer.addTrack(vFormat!!)
@@ -1605,7 +1792,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             originalBitmap = BitmapFactory.decodeStream(stream)
             editedBitmap = originalBitmap
             editedBitmap?.let { bitmap ->
-            gpuImageView.setScaleType(GPUImage.ScaleType.CENTER_INSIDE)
+                gpuImageView.setScaleType(GPUImage.ScaleType.CENTER_INSIDE)
                 gpuImageView.setImage(bitmap)
             }
         }
@@ -1654,7 +1841,11 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 } else null
                 val requiredPlanId = if (selectedAccessType == "subscription") {
                     val chosen = actvPostPlan.text?.toString()?.trim().orEmpty()
-                    if (chosen.equals("All", true) || chosen.isEmpty()) null else postPlanIdByName[chosen]
+                    if (chosen.equals(
+                            "All",
+                            true
+                        ) || chosen.isEmpty()
+                    ) null else postPlanIdByName[chosen]
                 } else null
                 val postResp = postApi.createPost(
                     createPost = CreatePostRequest(
@@ -1707,9 +1898,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 }
                 // Background media upload via WorkManager and navigate to profile
                 enqueuePostUploadWork(post.id, selectedUris.toList(), editedBitmap)
-                Toast.makeText(requireContext(), "Uploading in background", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Uploading in background", Toast.LENGTH_SHORT)
+                    .show()
                 // Return to MainActivity and open profile there (CreatePostActivity has no mainContentContainer)
-                val intent = android.content.Intent(requireContext(), club.gifters.giftersclub.MainActivity::class.java)
+                val intent = Intent(
+                    requireContext(),
+                    club.gifters.giftersclub.MainActivity::class.java
+                )
                 intent.putExtra(club.gifters.giftersclub.MainActivity.EXTRA_OPEN_PROFILE, true)
                 startActivity(intent)
                 requireActivity().finish()
@@ -1722,9 +1917,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
     }
 
-    private fun getContentLength(uri: Uri): Long? = getContentLength(requireContext().applicationContext, uri)
+    private fun getContentLength(uri: Uri): Long? =
+        getContentLength(requireContext().applicationContext, uri)
 
-    private fun getContentLength(ctx: android.content.Context, uri: Uri): Long? {
+    private fun getContentLength(ctx: Context, uri: Uri): Long? {
         return try {
             ctx.contentResolver.openAssetFileDescriptor(uri, "r")?.use { afd ->
                 val len = afd.length
@@ -1743,7 +1939,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 }
             }
             null
-        } catch (_: Exception) { null }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun enqueuePostUploadWork(postId: String, uris: List<Uri>, editedBitmap: Bitmap?) {
@@ -1756,10 +1954,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         val finalUris = uris.toMutableList()
         if (finalUris.isNotEmpty() && !isVideoSelected && editedBitmap != null) {
             try {
-                val tmp = java.io.File(appCtx.cacheDir, "EDIT_${System.currentTimeMillis()}.jpg")
-                java.io.FileOutputStream(tmp).use { out -> editedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
+                val tmp = File(appCtx.cacheDir, "EDIT_${System.currentTimeMillis()}.jpg")
+                FileOutputStream(tmp)
+                    .use { out -> editedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
                 finalUris[0] = Uri.fromFile(tmp)
-            } catch (_: Exception) { }
+            } catch (_: Exception) {
+            }
         }
         // Persist URI read permission for background (WorkManager) use across process restarts and older devices
         try {
@@ -1767,18 +1967,21 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 if ("content".equals(uri.scheme, true)) {
                     requireContext().contentResolver.takePersistableUriPermission(
                         uri,
-                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
                     )
                 }
             }
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
         val uriStrings = finalUris.map { it.toString() }
-        val types = finalUris.map { appCtx.contentResolver.getType(it) ?: "application/octet-stream" }
+        val types =
+            finalUris.map { appCtx.contentResolver.getType(it) ?: "application/octet-stream" }
         val data = UploadPostWorker.buildInput(postId, uriStrings, types)
         val work = androidx.work.OneTimeWorkRequestBuilder<UploadPostWorker>()
             .setInputData(data)
             .setConstraints(
-                androidx.work.Constraints.Builder().setRequiredNetworkType(androidx.work.NetworkType.CONNECTED).build()
+                androidx.work.Constraints.Builder()
+                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED).build()
             )
             .addTag("post-upload-${currentUid}")
             .build()
@@ -1797,6 +2000,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 }
                 handleSelectedMedia(uris)
             }
+
             requestCode == UCrop.REQUEST_CROP && resultCode == Activity.RESULT_OK && data != null ->
                 UCrop.getOutput(data)?.let { uri -> handleSelectedMedia(listOf(uri)) }
         }

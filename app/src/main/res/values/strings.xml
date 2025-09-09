@@ -264,4 +264,5 @@
     <string name="stickers">Stickers</string>
     <string name="effects">Effects</string>
     <string name="save">Save</string>
+    <string name="applied">Filters Applied</string>
 </resources>
