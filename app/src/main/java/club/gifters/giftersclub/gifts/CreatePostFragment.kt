@@ -198,6 +198,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private val longPressHandler = Handler(Looper.getMainLooper())
     private var longPressRunnable: Runnable? = null
     private var isLongPress = false
+    // Track remote overlay asset loads (stickers) to prevent premature baking
+    private var pendingStickerLoads: Int = 0
 
 
     companion object {
@@ -1035,17 +1037,30 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
                 ).apply { gravity = Gravity.CENTER }
-                // initial size after attach
-                post {
-                    val w = overlay.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
-                    val target = (w * 0.25f).toInt()
-                    this.layoutParams = this.layoutParams.apply { width = target; height = FrameLayout.LayoutParams.WRAP_CONTENT }
-                    requestLayout()
-                }
             }
-            try { iv.load(url) } catch (_: Throwable) {}
-            attachDragAndScale(iv)
-            overlay.addView(iv)
+            // Load image, then size and attach to overlay so drawing works reliably
+            pendingStickerLoads++
+            iv.load(url) {
+                listener(
+                    onSuccess = { _, _ ->
+                        // Size relative to overlay width once ready
+                        iv.post {
+                            val w = overlay.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+                            val target = (w * 0.25f).toInt()
+                            iv.layoutParams = iv.layoutParams.apply {
+                                width = target
+                                height = FrameLayout.LayoutParams.WRAP_CONTENT
+                            }
+                            attachDragAndScale(iv)
+                            if (iv.parent == null) overlay.addView(iv)
+                            overlay.invalidate()
+                            pendingStickerLoads = (pendingStickerLoads - 1).coerceAtLeast(0)
+                        }
+                    },
+                    onError = { _, _ -> pendingStickerLoads = (pendingStickerLoads - 1).coerceAtLeast(0) }
+                )
+                crossfade(true)
+            }
         }
         fun showStickerPicker() {
             var dlg: AlertDialog? = null
@@ -1665,6 +1680,11 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
         // Proceed button: image -> compose bitmap; video -> export with overlays
         layoutEdit.findViewById<View>(R.id.proceedToDetails)?.setOnClickListener {
+            // Prevent baking while remote stickers are still loading
+            if (pendingStickerLoads > 0) {
+                Toast.makeText(requireContext(), getString(R.string.please_wait_sticker_loading), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             if (isVideoSelected && selectedUris.isNotEmpty()) {
                 val uri = selectedUris.first()
                 val retriever = android.media.MediaMetadataRetriever()
@@ -1697,7 +1717,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     canvas.drawBitmap(base, 0f, 0f, null)
                     try {
                         val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
-                        overlay.draw(canvas)
+                        // Render overlay scaled to base size for accurate placement
+                        val overlayBmp = VideoOverlayExporter.renderOverlayBitmap(overlay, base.width, base.height)
+                        canvas.drawBitmap(overlayBmp, 0f, 0f, null)
                     } catch (_: Exception) {}
                     editedBitmap = composed
                 }

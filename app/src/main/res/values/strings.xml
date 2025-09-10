@@ -262,6 +262,7 @@
     <string name="aa">Aa</string>
     <string name="ai_meme">Ai Meme</string>
     <string name="stickers">Stickers</string>
+    <string name="please_wait_sticker_loading">Please wait, loading sticker…</string>
     <string name="effects">Effects</string>
     <string name="save">Save</string>
     <string name="applied">Filters Applied</string>
