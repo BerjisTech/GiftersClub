@@ -173,14 +173,18 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
             try {
                 // Log.d(TAG, "→ RPC search_explore body={q=$query}")
                 val result = RetrofitClient.postApi.searchExploreRpc(mapOf("q" to query))
+                // Client-side safety filter for explicit posts
+                val safeTop = result.top.filter { it.isExplicit != true }
+                val safeVideos = result.videos.filter { it.isExplicit != true }
+                val safePhotos = result.photos.filter { it.isExplicit != true }
                 // Log.d(TAG, "← RPC search_explore result count: top=${result.top.size}, videos=${result.videos.size}, photos=${result.photos.size}")
                 // Populate tabs from unified result
                 viewPager.adapter = object : FragmentStateAdapter(this@ExploreFragment) {
                     override fun getItemCount() = tabTitles.size
                     override fun createFragment(position: Int) = when (position) {
-                        0 -> ExploreTopFragment.newInstance(result.top, result.users, result.live)
-                        1 -> ExplorePostsFragment.newInstanceFromList(result.videos)
-                        2 -> ExplorePostsFragment.newInstanceFromList(result.photos)
+                        0 -> ExploreTopFragment.newInstance(safeTop, result.users, result.live)
+                        1 -> ExplorePostsFragment.newInstanceFromList(safeVideos)
+                        2 -> ExplorePostsFragment.newInstanceFromList(safePhotos)
                         3 -> ExploreUsersFragment.newInstanceFromList(result.users)
                         4 -> ExploreLiveFragment.newInstanceFromList(result.live)
                         else -> ExploreTopFragment.newInstance(
