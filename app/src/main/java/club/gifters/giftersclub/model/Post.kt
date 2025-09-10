@@ -12,6 +12,7 @@ data class Post(
     @SerializedName("quote_post_id") val quotePostId: String?,
     @SerializedName("reply_comment_id") val replyCommentId: String?,
     @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("is_explicit") val isExplicit: Boolean? = null,
     val profile: Profile?,
     val media: List<PostMedia>?,
     @SerializedName("reaction_counts") val reactionCounts: ReactionCounts?,
