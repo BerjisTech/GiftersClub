@@ -52,6 +52,8 @@ import androidx.camera.core.VideoCapture
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
+import androidx.core.provider.FontRequest
+import androidx.core.provider.FontsContractCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -1003,6 +1005,23 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         FrameLayout.LayoutParams.WRAP_CONTENT
                     ).apply { gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL }
                 }
+                // Prefer Anton (Impact-like) if available via Downloadable Fonts
+                try {
+                    val req = FontRequest(
+                        "com.google.android.gms.fonts",
+                        "com.google.android.gms",
+                        "Anton",
+                        R.array.com_google_android_gms_fonts_certs
+                    )
+                    FontsContractCompat.requestFont(
+                        requireContext(),
+                        req,
+                        object : FontsContractCompat.FontRequestCallback() {
+                            override fun onTypefaceRetrieved(typeface: Typeface) { tv.typeface = typeface }
+                        },
+                        Handler(Looper.getMainLooper())
+                    )
+                } catch (_: Exception) {}
                 tv.post {
                     tv.x = (overlay.width - tv.width) / 2f
                     tv.y = yPos
@@ -1282,6 +1301,56 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             params.setMargins(dp(8), dp(8), dp(8), dp(8))
             captionFonts.addView(tv, params)
         }
+
+        // Extend with Downloadable Fonts (Google Fonts provider). Fetch on tap, preview if available.
+        fun requestDownloadableFont(family: String, onReady: (Typeface?) -> Unit) {
+            try {
+                val request = FontRequest(
+                    "com.google.android.gms.fonts",
+                    "com.google.android.gms",
+                    family,
+                    R.array.com_google_android_gms_fonts_certs
+                )
+                FontsContractCompat.requestFont(
+                    requireContext(),
+                    request,
+                    object : FontsContractCompat.FontRequestCallback() {
+                        override fun onTypefaceRetrieved(typeface: Typeface) { onReady(typeface) }
+                        override fun onTypefaceRequestFailed(reason: Int) { onReady(null) }
+                    },
+                    Handler(Looper.getMainLooper())
+                )
+            } catch (_: Exception) { onReady(null) }
+        }
+        fun addFontChip(label: String) {
+            val tv = TextView(requireContext()).apply {
+                text = label
+                setPadding(dp(8), dp(4), dp(8), dp(4))
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
+                textSize = 18f
+                background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_border_gray_300)
+                setOnClickListener {
+                    requestDownloadableFont(label) { tf -> if (tf != null) captionText.typeface = tf }
+                }
+            }
+            // Try preview
+            requestDownloadableFont(label) { tf -> if (tf != null) tv.typeface = tf }
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.setMargins(dp(8), dp(8), dp(8), dp(8))
+            captionFonts.addView(tv, params)
+        }
+        val googleFamilies = listOf(
+            "Anton", "Bebas Neue", "Oswald", "Teko", "Titillium Web",
+            "Lobster", "Pacifico", "Merriweather", "Playfair Display",
+            "Abril Fatface", "Dancing Script", "Indie Flower",
+            "Roboto Slab", "Montserrat", "Nunito", "Poppins",
+            "Rubik", "Righteous", "Fjalla One", "Concert One",
+            "Monoton", "Bangers"
+        )
+        googleFamilies.forEach { addFontChip(it) }
 
         // Populate colors list with ALL colors from R.color, styled like placeholders
         captionColors.removeAllViews()
