@@ -24,19 +24,24 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
+import android.widget.GridLayout
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.ToggleButton
+import android.text.InputType
+import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AlertDialog
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -898,6 +903,8 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         // ----- Edit Options: Caption vs Effects panes -----
         val captionOptions = layoutEdit.findViewById<LinearLayout>(R.id.captionOptions)
         val effectsOptions = layoutEdit.findViewById<LinearLayout>(R.id.effectsOptions)
+        val stickerOptions = layoutEdit.findViewById<LinearLayout>(R.id.stickerOptions)
+        val aiMemeOptions = layoutEdit.findViewById<LinearLayout>(R.id.aiMemeOptions)
         val effectsPane = layoutEdit.findViewById<LinearLayout>(R.id.effectsPane)
         val postCaptionLayout = layoutEdit.findViewById<LinearLayout>(R.id.postCaptionLayout)
         var currentEditingCaption: TextView? = null
@@ -921,6 +928,116 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             effectsPane.visibility = View.VISIBLE
             postCaptionLayout.visibility = View.GONE
         }
+
+        // --- Stickers: simple picker from bundled drawables ---
+        val stickerCandidates = listOf(
+            R.drawable.unicorn, R.drawable.rose, R.drawable.trophy, R.drawable.diamond,
+            R.drawable.gift, R.drawable.friends, R.drawable.google, R.drawable.logo,
+            R.drawable.bell, R.drawable.nebula
+        )
+        fun addStickerOverlay(@DrawableRes id: Int) {
+            val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
+            val iv = ImageView(requireContext()).apply {
+                setImageResource(id)
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    gravity = Gravity.CENTER
+                }
+                // Initial size scaled to ~20% of overlay width
+                post {
+                    val w = overlay.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+                    val target = (w * 0.25f).toInt()
+                    this.layoutParams = this.layoutParams.apply {
+                        width = target
+                        height = FrameLayout.LayoutParams.WRAP_CONTENT
+                    }
+                    requestLayout()
+                }
+            }
+            attachDragAndScale(iv)
+            overlay.addView(iv)
+        }
+        fun showStickerPicker() {
+            val grid = GridLayout(requireContext()).apply {
+                columnCount = 4
+                setPadding(dp(12), dp(12), dp(12), dp(12))
+            }
+            stickerCandidates.forEach { resId ->
+                val iv = ImageView(requireContext()).apply {
+                    setImageResource(resId)
+                    val s = dp(64)
+                    layoutParams = ViewGroup.MarginLayoutParams(s, s).apply { setMargins(dp(6), dp(6), dp(6), dp(6)) }
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    setOnClickListener {
+                        dlg?.dismiss()
+                        addStickerOverlay(resId)
+                    }
+                }
+                grid.addView(iv)
+            }
+            var dlg: AlertDialog? = null
+            dlg = AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.stickers))
+                .setView(ScrollView(requireContext()).apply { addView(grid) })
+                .setNegativeButton(android.R.string.cancel, null)
+                .create()
+            dlg.show()
+        }
+        stickerOptions.setOnClickListener { showStickerPicker() }
+
+        // --- AI Meme (local generator): top/bottom Impact-style text ---
+        fun addMemeText(top: String?, bottom: String?) {
+            val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
+            fun make(text: String, yPos: Float): TextView {
+                val tv = MemeTextView(requireContext()).apply {
+                    setTextColor(Color.WHITE)
+                    textSize = 24f
+                    setPadding(dp(6), dp(2), dp(6), dp(2))
+                    setTypeface(typeface, Typeface.BOLD)
+                    setText(text.uppercase())
+                    gravity = Gravity.CENTER
+                    layoutParams = FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL }
+                }
+                tv.post {
+                    tv.x = (overlay.width - tv.width) / 2f
+                    tv.y = yPos
+                }
+                return tv
+            }
+            val margin = dp(12).toFloat()
+            if (!top.isNullOrBlank()) {
+                val tvTop = make(top, margin)
+                attachDragAndScale(tvTop)
+                overlay.addView(tvTop)
+            }
+            if (!bottom.isNullOrBlank()) {
+                val tvBottom = make(bottom, (overlay.height - margin - dp(48)).coerceAtLeast(margin))
+                attachDragAndScale(tvBottom)
+                overlay.addView(tvBottom)
+            }
+        }
+        fun showMemeDialog() {
+            val container = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(16), dp(12), dp(16), dp(4))
+            }
+            val etTop = EditText(requireContext()).apply { hint = getString(R.string.top_text); inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES }
+            val etBottom = EditText(requireContext()).apply { hint = getString(R.string.bottom_text); inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES }
+            container.addView(etTop)
+            container.addView(etBottom)
+            AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.ai_meme))
+                .setView(container)
+                .setPositiveButton(getString(R.string.add)) { _, _ -> addMemeText(etTop.text?.toString(), etBottom.text?.toString()) }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
+        aiMemeOptions.setOnClickListener { showMemeDialog() }
 
         // ----- Caption controls -----
         val captionText = layoutEdit.findViewById<TextView>(R.id.captionText)
@@ -1066,6 +1183,43 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                             if (v is TextView) {
                                 openCaptionEditor(v)
                             }
+                        }
+                    }
+                }
+                true
+            }
+        }
+        fun attachDragAndScale(view: View) {
+            makeDraggable(view)
+            val scaleDetector = ScaleGestureDetector(requireContext(), object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                private var startScaleX = 1f
+                private var startScaleY = 1f
+                override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+                    startScaleX = view.scaleX
+                    startScaleY = view.scaleY
+                    return true
+                }
+                override fun onScale(detector: ScaleGestureDetector): Boolean {
+                    val s = detector.scaleFactor
+                    view.scaleX = (startScaleX * s).coerceIn(0.3f, 5f)
+                    view.scaleY = (startScaleY * s).coerceIn(0.3f, 5f)
+                    return true
+                }
+            })
+            view.setOnTouchListener { v, ev ->
+                scaleDetector.onTouchEvent(ev)
+                // Allow drag with one finger when not scaling
+                if (!scaleDetector.isInProgress) {
+                    when (ev.actionMasked) {
+                        MotionEvent.ACTION_DOWN -> {
+                            v.setTag(R.id.tag_dx, v.x - ev.rawX)
+                            v.setTag(R.id.tag_dy, v.y - ev.rawY)
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            val dx = (v.getTag(R.id.tag_dx) as? Float) ?: 0f
+                            val dy = (v.getTag(R.id.tag_dy) as? Float) ?: 0f
+                            v.x = ev.rawX + dx
+                            v.y = ev.rawY + dy
                         }
                     }
                 }
@@ -1245,6 +1399,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             FilterItem("Gray", GPUImageGrayscaleFilter()),
             FilterItem("Sepia", GPUImageSepiaToneFilter()),
             FilterItem("Invert", GPUImageColorInvertFilter()),
+            FilterItem("Sketch", jp.co.cyberagent.android.gpuimage.filter.GPUImageSketchFilter()),
+            FilterItem("Toon", jp.co.cyberagent.android.gpuimage.filter.GPUImageToonFilter()),
+            FilterItem("Pixelate", jp.co.cyberagent.android.gpuimage.filter.GPUImagePixelationFilter()),
+            FilterItem("Monochrome", jp.co.cyberagent.android.gpuimage.filter.GPUImageMonochromeFilter()),
+            FilterItem("Vignette", jp.co.cyberagent.android.gpuimage.filter.GPUImageVignetteFilter()),
+            FilterItem("GaussianBlur", jp.co.cyberagent.android.gpuimage.filter.GPUImageGaussianBlurFilter()),
             FilterItem("Contrast+", contrastFilter, true),
             FilterItem("Bright+", brightnessFilter, true)
         )
