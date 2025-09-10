@@ -1529,26 +1529,47 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 //            Toast.makeText(requireContext(), getString(R.string.applied), Toast.LENGTH_SHORT).show()
         }
 
-        // Proceed button: composite overlays into edited bitmap and go to Details
+        // Proceed button: image -> compose bitmap; video -> export with overlays
         layoutEdit.findViewById<View>(R.id.proceedToDetails)?.setOnClickListener {
-            val base = try {
-                gpuImageView.capture()
-            } catch (_: InterruptedException) {
-                editedBitmap ?: originalBitmap
-            }
-            if (base != null) {
-                val composed = Bitmap.createBitmap(base.width, base.height, Bitmap.Config.ARGB_8888)
-                val canvas = Canvas(composed)
-                canvas.drawBitmap(base, 0f, 0f, null)
+            if (isVideoSelected && selectedUris.isNotEmpty()) {
+                val uri = selectedUris.first()
+                val retriever = android.media.MediaMetadataRetriever()
                 try {
+                    retriever.setDataSource(requireContext(), uri)
+                    val vw = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 720
+                    val vh = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 1280
                     val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
-                    overlay.draw(canvas)
+                    val bmp = VideoOverlayExporter.renderOverlayBitmap(overlay, vw, vh)
+                    progressBar.isVisible = true
+                    VideoOverlayExporter.export(requireContext(), uri, bmp, onProgress = null) { res ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            progressBar.isVisible = false
+                            res.output?.let { file ->
+                                selectedUris.clear()
+                                selectedUris.add(Uri.fromFile(file))
+                            }
+                            showStep(layoutDetails)
+                            updatePostPreview()
+                        }
+                    }
                 } catch (_: Exception) {
+                    showStep(layoutDetails); updatePostPreview()
+                } finally { retriever.release() }
+            } else {
+                val base = try { gpuImageView.capture() } catch (_: InterruptedException) { editedBitmap ?: originalBitmap }
+                if (base != null) {
+                    val composed = Bitmap.createBitmap(base.width, base.height, Bitmap.Config.ARGB_8888)
+                    val canvas = Canvas(composed)
+                    canvas.drawBitmap(base, 0f, 0f, null)
+                    try {
+                        val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
+                        overlay.draw(canvas)
+                    } catch (_: Exception) {}
+                    editedBitmap = composed
                 }
-                editedBitmap = composed
+                showStep(layoutDetails)
+                updatePostPreview()
             }
-            showStep(layoutDetails)
-            updatePostPreview()
         }
     }
 
@@ -1895,7 +1916,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         btnEditMediaCard.visibility =
             if (!isVideoSelected && !isVideoMode) View.VISIBLE else View.GONE
         // Proceed to next step after selection
-        if (isVideoSelected || selectedUris.isEmpty()) {
+        if (isVideoSelected) {
+            showStep(layoutEdit)
+            loadVideoFrameForEditing()
+        } else if (selectedUris.isEmpty()) {
             showStep(layoutDetails)
             updatePostPreview()
         } else {
@@ -2059,6 +2083,24 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         group.addFilter(brightnessFilter)
         gpuImageView.filter = group
         gpuImageView.requestRender()
+    }
+
+    private fun loadVideoFrameForEditing() {
+        val uri = selectedUris.firstOrNull() ?: return
+        try {
+            val retriever = android.media.MediaMetadataRetriever()
+            retriever.setDataSource(requireContext(), uri)
+            val bmp = retriever.getFrameAtTime(0)
+            retriever.release()
+            if (bmp != null) {
+                originalBitmap = bmp
+                editedBitmap = bmp
+                gpuImageView.setScaleType(GPUImage.ScaleType.CENTER_INSIDE)
+                gpuImageView.setImage(bmp)
+            }
+        } catch (_: Exception) { }
+        initialCameraFilter?.let { baseFilter = it }
+        applyFilters()
     }
 
 
