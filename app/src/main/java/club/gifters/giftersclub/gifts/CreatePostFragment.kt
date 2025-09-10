@@ -931,6 +931,72 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             postCaptionLayout.visibility = View.GONE
         }
 
+        // dp helper must appear before first use
+        fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+        fun makeDraggable(tv: View) {
+            var dX = 0f
+            var dY = 0f
+            var downX = 0f
+            var downY = 0f
+            var downTime = 0L
+            val clickSlop = (8 * resources.displayMetrics.density)
+            tv.setOnTouchListener { v, ev ->
+                when (ev.action) {
+                    MotionEvent.ACTION_DOWN -> { dX = v.x - ev.rawX; dY = v.y - ev.rawY; downX = ev.rawX; downY = ev.rawY; downTime = System.currentTimeMillis() }
+                    MotionEvent.ACTION_MOVE -> { v.x = ev.rawX + dX; v.y = ev.rawY + dY }
+                    MotionEvent.ACTION_UP -> {
+                        val dx = ev.rawX - downX
+                        val dy = ev.rawY - downY
+                        val dist2 = dx * dx + dy * dy
+                        val slop2 = clickSlop * clickSlop
+                        val dur = System.currentTimeMillis() - downTime
+                        if (dist2 < slop2 && dur < 250L) {
+                            // Trigger view's own click handler; caption TextViews
+                            // have their editor opener set via setOnClickListener elsewhere.
+                            v.performClick()
+                        }
+                    }
+                }
+                true
+            }
+        }
+        fun attachDragAndScale(view: View) {
+            makeDraggable(view)
+            val scaleDetector = ScaleGestureDetector(requireContext(), object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                private var startScaleX = 1f
+                private var startScaleY = 1f
+                override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+                    startScaleX = view.scaleX
+                    startScaleY = view.scaleY
+                    return true
+                }
+                override fun onScale(detector: ScaleGestureDetector): Boolean {
+                    val s = detector.scaleFactor
+                    view.scaleX = (startScaleX * s).coerceIn(0.3f, 5f)
+                    view.scaleY = (startScaleY * s).coerceIn(0.3f, 5f)
+                    return true
+                }
+            })
+            view.setOnTouchListener { v, ev ->
+                scaleDetector.onTouchEvent(ev)
+                if (!scaleDetector.isInProgress) {
+                    when (ev.actionMasked) {
+                        MotionEvent.ACTION_DOWN -> {
+                            v.setTag(R.id.tag_dx, v.x - ev.rawX)
+                            v.setTag(R.id.tag_dy, v.y - ev.rawY)
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            val dx = (v.getTag(R.id.tag_dx) as? Float) ?: 0f
+                            val dy = (v.getTag(R.id.tag_dy) as? Float) ?: 0f
+                            v.x = ev.rawX + dx
+                            v.y = ev.rawY + dy
+                        }
+                    }
+                }
+                true
+            }
+        }
+
         // --- Stickers: simple picker from bundled drawables ---
         val stickerCandidates = listOf(
             R.drawable.unicorn, R.drawable.rose, R.drawable.trophy, R.drawable.diamond,
@@ -962,6 +1028,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             overlay.addView(iv)
         }
         fun showStickerPicker() {
+            var dlg: AlertDialog? = null
             val grid = GridLayout(requireContext()).apply {
                 columnCount = 4
                 setPadding(dp(12), dp(12), dp(12), dp(12))
@@ -979,7 +1046,6 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 }
                 grid.addView(iv)
             }
-            var dlg: AlertDialog? = null
             dlg = AlertDialog.Builder(requireContext())
                 .setTitle(getString(R.string.stickers))
                 .setView(ScrollView(requireContext()).apply { addView(grid) })
@@ -1092,7 +1158,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             applyCaptionGravity()
         }
 
-        fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+        // moved dp above first usage
         fun applyCaptionOutlineMode() {
             if (captionUseBg) {
                 captionText.setShadowLayer(0f, 0f, 0f, 0)
@@ -1180,71 +1246,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             }
         }
 
-        fun makeDraggable(tv: View) {
-            var dX = 0f
-            var dY = 0f
-            var downX = 0f
-            var downY = 0f
-            var downTime = 0L
-            val clickSlop = (8 * resources.displayMetrics.density)
-            tv.setOnTouchListener { v, ev ->
-                when (ev.action) {
-                    MotionEvent.ACTION_DOWN -> { dX = v.x - ev.rawX; dY = v.y - ev.rawY; downX = ev.rawX; downY = ev.rawY; downTime = System.currentTimeMillis() }
-                    MotionEvent.ACTION_MOVE -> { v.x = ev.rawX + dX; v.y = ev.rawY + dY }
-                    MotionEvent.ACTION_UP -> {
-                        val dx = ev.rawX - downX
-                        val dy = ev.rawY - downY
-                        val dist2 = dx * dx + dy * dy
-                        val slop2 = clickSlop * clickSlop
-                        val dur = System.currentTimeMillis() - downTime
-                        if (dist2 < slop2 && dur < 250L) {
-                            v.performClick()
-                            if (v is TextView) {
-                                openCaptionEditor(v)
-                            }
-                        }
-                    }
-                }
-                true
-            }
-        }
-        fun attachDragAndScale(view: View) {
-            makeDraggable(view)
-            val scaleDetector = ScaleGestureDetector(requireContext(), object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                private var startScaleX = 1f
-                private var startScaleY = 1f
-                override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
-                    startScaleX = view.scaleX
-                    startScaleY = view.scaleY
-                    return true
-                }
-                override fun onScale(detector: ScaleGestureDetector): Boolean {
-                    val s = detector.scaleFactor
-                    view.scaleX = (startScaleX * s).coerceIn(0.3f, 5f)
-                    view.scaleY = (startScaleY * s).coerceIn(0.3f, 5f)
-                    return true
-                }
-            })
-            view.setOnTouchListener { v, ev ->
-                scaleDetector.onTouchEvent(ev)
-                // Allow drag with one finger when not scaling
-                if (!scaleDetector.isInProgress) {
-                    when (ev.actionMasked) {
-                        MotionEvent.ACTION_DOWN -> {
-                            v.setTag(R.id.tag_dx, v.x - ev.rawX)
-                            v.setTag(R.id.tag_dy, v.y - ev.rawY)
-                        }
-                        MotionEvent.ACTION_MOVE -> {
-                            val dx = (v.getTag(R.id.tag_dx) as? Float) ?: 0f
-                            val dy = (v.getTag(R.id.tag_dy) as? Float) ?: 0f
-                            v.x = ev.rawX + dx
-                            v.y = ev.rawY + dy
-                        }
-                    }
-                }
-                true
-            }
-        }
+        // moved earlier
         layoutEdit.findViewById<View>(R.id.doneCaption)?.setOnClickListener {
             val txt = captionText.text?.toString()?.trim().orEmpty()
             postCaptionLayout.visibility = View.GONE

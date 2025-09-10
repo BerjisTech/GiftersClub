@@ -108,6 +108,11 @@ dependencies {
     implementation(libs.billing.ktx)
     // Rollbar Android SDK for crash/error reporting
     implementation("com.rollbar:rollbar-android:1.10.3")
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.datasource)
+    implementation(libs.androidx.media3.transformer)
+    implementation(libs.androidx.media3.effect)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -133,11 +138,10 @@ dependencies {
     implementation("com.google.android.flexbox:flexbox:3.0.0")
     // WorkManager for resilient background uploads
     implementation("androidx.work:work-runtime-ktx:2.9.0")
-    // Media3 ExoPlayer with UI and data sources (caching via media3-datasource)
-    implementation("androidx.media3:media3-exoplayer:1.3.1")
-    implementation("androidx.media3:media3-ui:1.3.1")
-    implementation("androidx.media3:media3-datasource:1.3.1")
-    // Media3 Transformer + Effect for video export with overlays
-    implementation("androidx.media3:media3-transformer:1.3.1")
-    implementation("androidx.media3:media3-effect:1.3.1")
+    // Media3 stack via version catalog (all on the same version)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.datasource)
+    implementation(libs.androidx.media3.transformer)
+    implementation(libs.androidx.media3.effect)
 }

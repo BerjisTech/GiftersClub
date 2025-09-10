@@ -9,11 +9,14 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.BitmapOverlay
 import androidx.media3.effect.OverlayEffect
-import androidx.media3.effect.OverlaySettings
+// OverlaySettings not needed with Media3 1.8; use default placement
+import androidx.media3.effect.TextureOverlay
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.Effects
 import androidx.media3.transformer.ExportException
+import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
+import androidx.media3.transformer.Composition
 import java.io.File
 
 /**
@@ -35,23 +38,21 @@ object VideoOverlayExporter {
         val outFile = File(context.cacheDir, "VID_OVL_${System.currentTimeMillis()}.mp4")
         val mediaItem = MediaItem.fromUri(input)
 
-        val bitmapOverlay = BitmapOverlay.createStaticBitmapOverlay(overlayBitmap, OverlaySettings.Builder().build())
-        val overlayEffect = OverlayEffect(listOf(bitmapOverlay))
+        val bitmapOverlay = BitmapOverlay.createStaticBitmapOverlay(overlayBitmap)
+        val overlays: com.google.common.collect.ImmutableList<TextureOverlay> =
+            com.google.common.collect.ImmutableList.of(bitmapOverlay as TextureOverlay)
+        val overlayEffect = OverlayEffect(overlays)
         val effects = Effects(/*audioEffects=*/ emptyList(), /*videoEffects=*/ listOf(overlayEffect))
         val edited = EditedMediaItem.Builder(mediaItem).setEffects(effects).build()
 
         val transformer = Transformer.Builder(context)
             .addListener(object : Transformer.Listener {
-                override fun onCompleted(composition: EditedMediaItem, exportResult: Transformer.ExportResult) {
+                override fun onCompleted(composition: Composition, exportResult: ExportResult) {
                     onComplete(Result(outFile, null))
                 }
 
-                override fun onError(composition: EditedMediaItem, exportResult: Transformer.ExportResult, exception: ExportException) {
+                override fun onError(composition: Composition, exportResult: ExportResult, exception: ExportException) {
                     onComplete(Result(null, exception))
-                }
-
-                override fun onProgress(composition: EditedMediaItem, progress: Transformer.ProgressHolder) {
-                    onProgress?.invoke(progress.progress / 100f)
                 }
             })
             .build()
@@ -72,4 +73,3 @@ object VideoOverlayExporter {
         return bmp
     }
 }
-
