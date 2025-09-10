@@ -1032,6 +1032,46 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             attachDragAndScale(iv)
             overlay.addView(iv)
         }
+        fun addStickerOverlayFromDrawable(drawable: android.graphics.drawable.Drawable) {
+            val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
+            // Clone drawable into a standalone Bitmap to avoid sharing state with dialog view
+            fun drawableToBitmap(d: android.graphics.drawable.Drawable): android.graphics.Bitmap {
+                return if (d is android.graphics.drawable.BitmapDrawable && d.bitmap != null) {
+                    d.bitmap
+                } else {
+                    val iw = d.intrinsicWidth.takeIf { it > 0 } ?: dp(64)
+                    val ih = d.intrinsicHeight.takeIf { it > 0 } ?: dp(64)
+                    val bmp = android.graphics.Bitmap.createBitmap(iw, ih, android.graphics.Bitmap.Config.ARGB_8888)
+                    val c = android.graphics.Canvas(bmp)
+                    d.setBounds(0, 0, c.width, c.height)
+                    d.draw(c)
+                    bmp
+                }
+            }
+            val clone = android.graphics.drawable.BitmapDrawable(resources, drawableToBitmap(drawable))
+            val iv = ImageView(requireContext()).apply {
+                setImageDrawable(clone)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                adjustViewBounds = true
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                ).apply { gravity = Gravity.CENTER }
+            }
+            // Attach first, then size similar to local flow for consistency
+            overlay.addView(iv)
+            attachDragAndScale(iv)
+            iv.post {
+                val w = overlay.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+                val target = (w * 0.25f).toInt()
+                iv.layoutParams = iv.layoutParams.apply {
+                    width = target
+                    height = FrameLayout.LayoutParams.WRAP_CONTENT
+                }
+                iv.requestLayout()
+                overlay.invalidate()
+            }
+        }
         fun addStickerOverlayFromUrl(url: String) {
             val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
             viewLifecycleOwner.lifecycleScope.launch {
@@ -1086,17 +1126,18 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     val remote = withContext(Dispatchers.IO) { RetrofitClient.stickersApi.getActiveStickers() }
                     if (remote.isNotEmpty()) {
                         remote.forEach { row ->
-                            val iv = ImageView(requireContext()).apply {
+                            val thumb = ImageView(requireContext()).apply {
                                 val s = dp(64)
                                 layoutParams = ViewGroup.MarginLayoutParams(s, s).apply { setMargins(dp(6), dp(6), dp(6), dp(6)) }
                                 scaleType = ImageView.ScaleType.FIT_CENTER
                             }
-                            try { iv.load(row.imageUrl) } catch (_: Throwable) {}
-                            iv.setOnClickListener {
+                            try { thumb.load(row.imageUrl) { crossfade(false) } } catch (_: Throwable) {}
+                            thumb.setOnClickListener {
+                                val d = thumb.drawable
                                 dlg?.dismiss()
-                                addStickerOverlayFromUrl(row.imageUrl)
+                                if (d != null) addStickerOverlayFromDrawable(d) else addStickerOverlayFromUrl(row.imageUrl)
                             }
-                            grid.addView(iv)
+                            grid.addView(thumb)
                         }
                     }
                 } catch (_: Exception) { /* ignore */ }
