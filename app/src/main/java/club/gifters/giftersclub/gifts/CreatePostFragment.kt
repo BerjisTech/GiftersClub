@@ -1140,7 +1140,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                             val safe = fun(s: String?): String? {
                                 if (s.isNullOrBlank()) return s
                                 val banned = listOf("\uD83D\uDD1E") // placeholder minimal client filter
-                                var t = s
+                                var t = s!!
                                 banned.forEach { w -> t = t.replace(w, "") }
                                 return t
                             }
