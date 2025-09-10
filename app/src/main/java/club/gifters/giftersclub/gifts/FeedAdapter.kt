@@ -109,6 +109,7 @@ class FeedAdapter(
     inner class LiveVH(view: View): RecyclerView.ViewHolder(view) {
         private val title: TextView = view.findViewById(R.id.tvLiveTitle)
         private val viewers: TextView = view.findViewById(R.id.tvViewerCount)
+        private val host: TextView = view.findViewById(R.id.tvLiveHost)
         private val previewContainer: FrameLayout = view.findViewById(R.id.previewContainer)
         private var preview: SurfaceViewRenderer? = null
         private var room: Room? = null
@@ -126,6 +127,13 @@ class FeedAdapter(
         fun bind(live: LiveStream) {
             title.text = live.title
             viewers.text = "${live.viewerCount} watching"
+            host.text = ""
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val prof = RetrofitClient.profileApi.getProfileByUserId("*", "eq.${live.hostId}").firstOrNull()
+                    withContext(Dispatchers.Main) { host.text = prof?.username ?: prof?.name ?: "" }
+                } catch (_: Exception) { }
+            }
             startPreview(live)
         }
 

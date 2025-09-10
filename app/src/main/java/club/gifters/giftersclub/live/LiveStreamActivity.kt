@@ -1494,7 +1494,8 @@ class LiveStreamActivity : BaseActivity() {
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT
         )
-        preview.setMirror(isFrontFacing)
+        // Show preview as viewers see it (no mirror)
+        preview.setMirror(false)
         container.addView(preview)
         previewView = preview
 
@@ -1507,7 +1508,8 @@ class LiveStreamActivity : BaseActivity() {
                     val localTrack2 = localPubPair?.second as? LocalVideoTrack
                     localTrack2?.switchCamera()
                     isFrontFacing = !isFrontFacing
-                    previewView?.setMirror(isFrontFacing)
+                    // Keep host preview unmirrored regardless of camera
+                    previewView?.setMirror(false)
                 } catch (_: Exception) { }
             }
 
@@ -2096,7 +2098,8 @@ class LiveStreamActivity : BaseActivity() {
                                 val localTrack2 = localPubPair?.second as? LocalVideoTrack
                                 localTrack2?.switchCamera()
                                 isFrontFacing = !isFrontFacing
-                                previewView?.setMirror(isFrontFacing)
+                                // Keep host preview unmirrored regardless of camera
+                                previewView?.setMirror(false)
                             } catch (_: Exception) { }
                         }
                         // Camera on/off toggle
@@ -2173,7 +2176,8 @@ class LiveStreamActivity : BaseActivity() {
                                 FrameLayout.LayoutParams.MATCH_PARENT,
                                 FrameLayout.LayoutParams.MATCH_PARENT
                             )
-                            preview.setMirror(isFrontFacing)
+                            // Keep host preview unmirrored in CameraX path as well
+                            preview.setMirror(false)
                             container.addView(preview)
                             previewView = preview
                             // Initialize renderer and bind the first local video track (if available)

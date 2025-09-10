@@ -41,6 +41,7 @@ import android.widget.TextView
 import android.widget.Toast
 import android.widget.ToggleButton
 import android.text.InputType
+import coil.load
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AlertDialog
 import androidx.camera.core.Camera
@@ -1027,28 +1028,68 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             attachDragAndScale(iv)
             overlay.addView(iv)
         }
+        fun addStickerOverlayFromUrl(url: String) {
+            val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
+            val iv = ImageView(requireContext()).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                ).apply { gravity = Gravity.CENTER }
+                // initial size after attach
+                post {
+                    val w = overlay.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+                    val target = (w * 0.25f).toInt()
+                    this.layoutParams = this.layoutParams.apply { width = target; height = FrameLayout.LayoutParams.WRAP_CONTENT }
+                    requestLayout()
+                }
+            }
+            try { iv.load(url) } catch (_: Throwable) {}
+            attachDragAndScale(iv)
+            overlay.addView(iv)
+        }
         fun showStickerPicker() {
             var dlg: AlertDialog? = null
+            val container = ScrollView(requireContext())
             val grid = GridLayout(requireContext()).apply {
                 columnCount = 4
                 setPadding(dp(12), dp(12), dp(12), dp(12))
             }
-            stickerCandidates.forEach { resId ->
-                val iv = ImageView(requireContext()).apply {
-                    setImageResource(resId)
-                    val s = dp(64)
-                    layoutParams = ViewGroup.MarginLayoutParams(s, s).apply { setMargins(dp(6), dp(6), dp(6), dp(6)) }
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                    setOnClickListener {
-                        dlg?.dismiss()
-                        addStickerOverlay(resId)
+            container.addView(grid)
+            // First, populate with remote stickers if available
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    val remote = withContext(Dispatchers.IO) { RetrofitClient.stickersApi.getActiveStickers() }
+                    if (remote.isNotEmpty()) {
+                        remote.forEach { row ->
+                            val iv = ImageView(requireContext()).apply {
+                                val s = dp(64)
+                                layoutParams = ViewGroup.MarginLayoutParams(s, s).apply { setMargins(dp(6), dp(6), dp(6), dp(6)) }
+                                scaleType = ImageView.ScaleType.FIT_CENTER
+                            }
+                            try { iv.load(row.imageUrl) } catch (_: Throwable) {}
+                            iv.setOnClickListener {
+                                dlg?.dismiss()
+                                addStickerOverlayFromUrl(row.imageUrl)
+                            }
+                            grid.addView(iv)
+                        }
                     }
+                } catch (_: Exception) { /* ignore */ }
+                // Always add built-in local stickers as a fallback/extra
+                stickerCandidates.forEach { resId ->
+                    val iv = ImageView(requireContext()).apply {
+                        setImageResource(resId)
+                        val s = dp(64)
+                        layoutParams = ViewGroup.MarginLayoutParams(s, s).apply { setMargins(dp(6), dp(6), dp(6), dp(6)) }
+                        scaleType = ImageView.ScaleType.FIT_CENTER
+                        setOnClickListener { dlg?.dismiss(); addStickerOverlay(resId) }
+                    }
+                    grid.addView(iv)
                 }
-                grid.addView(iv)
             }
             dlg = AlertDialog.Builder(requireContext())
                 .setTitle(getString(R.string.stickers))
-                .setView(ScrollView(requireContext()).apply { addView(grid) })
+                .setView(container)
                 .setNegativeButton(android.R.string.cancel, null)
                 .create()
             dlg.show()

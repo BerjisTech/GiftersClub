@@ -59,6 +59,18 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
+        <TextView
+            android:id="@+id/tvHostName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginHorizontal="8dp"
+            android:layout_marginBottom="8dp"
+            android:textColor="#CCCCCC"
+            android:textSize="13sp"
+            android:textStyle="normal" />
+
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

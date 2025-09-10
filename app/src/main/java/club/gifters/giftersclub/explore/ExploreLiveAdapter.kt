@@ -51,6 +51,7 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {
         private val tvTitle: TextView = view.findViewById(R.id.tvTitle)
         private val tvViewerCount: TextView = view.findViewById(R.id.tvViewerCount)
+        private val tvHostName: TextView = view.findViewById(R.id.tvHostName)
         private val preview: FrameLayout = view.findViewById(R.id.previewLive)
         private var renderer: SurfaceViewRenderer? = null
         private var room: Room? = null
@@ -72,6 +73,14 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
         fun bind(item: LiveStream) {
             tvTitle.text = item.title
             tvViewerCount.text = "${item.viewerCount} watching"
+            tvHostName.text = ""
+            // Load host username
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val prof = RetrofitClient.profileApi.getProfileByUserId("*", "eq.${item.hostId}").firstOrNull()
+                    withContext(Dispatchers.Main) { tvHostName.text = prof?.username ?: prof?.name ?: "" }
+                } catch (_: Exception) { }
+            }
             startPreview(item)
         }
 

@@ -166,6 +166,10 @@ object RetrofitClient {
     val withdrawalApi: WithdrawalApi = retrofit.create(WithdrawalApi::class.java)
     val tokenApi: TokenApi = retrofit.create(TokenApi::class.java)
     val followsApi: FollowsApi = retrofit.create(FollowsApi::class.java)
+    /**
+     * API for remote stickers gallery (public.stickers)
+     */
+    val stickersApi: StickersApi = retrofit.create(StickersApi::class.java)
 
     /**
      * API for querying the recent_gifts view (gifts received by user).
