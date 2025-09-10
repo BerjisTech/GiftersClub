@@ -1122,11 +1122,43 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 .setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
+        fun showAIMemeOverlay(show: Boolean) {
+            val root = layoutEdit
+            val ovTag = 0xA1A1A1
+            if (show) {
+                if (root.findViewWithTag<View>(ovTag) != null) return
+                val overlay = FrameLayout(requireContext()).apply {
+                    setBackgroundColor(0x88000000.toInt())
+                    tag = ovTag
+                    layoutParams = ConstraintLayout.LayoutParams(
+                        ConstraintLayout.LayoutParams.MATCH_PARENT,
+                        ConstraintLayout.LayoutParams.MATCH_PARENT
+                    ).apply {
+                        topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                        bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                        startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                        endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                    }
+                }
+                val text = TextView(requireContext()).apply {
+                    text = "AI meme generating…"
+                    setTextColor(Color.WHITE)
+                    textSize = 18f
+                    setPadding(dp(16), dp(16), dp(16), dp(16))
+                    gravity = Gravity.CENTER
+                }
+                overlay.addView(text, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+                root.addView(overlay)
+            } else {
+                root.findViewWithTag<View>(ovTag)?.let { root.removeView(it) }
+            }
+        }
+
         aiMemeOptions.setOnClickListener {
             // Try AI meme: capture current preview (image or first video frame) and call Edge Function
             val base = try { gpuImageView.capture() } catch (_: Exception) { editedBitmap ?: originalBitmap }
             if (base == null) { showMemeDialog(); return@setOnClickListener }
-            progressBar.isVisible = true
+            showAIMemeOverlay(true)
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val baos = java.io.ByteArrayOutputStream()
@@ -1135,7 +1167,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     val resp = RetrofitClient.functionsApi.generateMeme(mapOf("image_base64" to b64, "sfw" to true))
                     val body = resp.body()
                     withContext(Dispatchers.Main) {
-                        progressBar.isVisible = false
+                        showAIMemeOverlay(false)
                         if (resp.isSuccessful && body != null) {
                             val safe = fun(s: String?): String? {
                                 if (s.isNullOrBlank()) return s
@@ -1147,6 +1179,25 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                             val top = safe(body.top_text)
                             val bottom = safe(body.bottom_text)
                             addMemeText(top, bottom)
+                            // Map AI sticker names to local assets
+                            body.stickers?.forEach { name ->
+                                val resName = name.lowercase().replace(" ", "_")
+                                val candidate = when {
+                                    resName.contains("unicorn") -> R.drawable.unicorn
+                                    resName.contains("rose") -> R.drawable.rose
+                                    resName.contains("trophy") -> R.drawable.trophy
+                                    resName.contains("diamond") -> R.drawable.diamond
+                                    resName.contains("gift") -> R.drawable.gift
+                                    resName.contains("friends") -> R.drawable.friends
+                                    resName.contains("google") -> R.drawable.google
+                                    resName.contains("logo") -> R.drawable.logo
+                                    resName.contains("bell") -> R.drawable.bell
+                                    resName.contains("nebula") -> R.drawable.nebula
+                                    else -> null
+                                }
+                                candidate?.let { addStickerOverlay(it) }
+                            }
+                            Toast.makeText(requireContext(), "Tip: tap text to edit, drag to move", Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(requireContext(), "Meme generator unavailable", Toast.LENGTH_SHORT).show()
                             showMemeDialog()
@@ -1154,13 +1205,15 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
-                        progressBar.isVisible = false
+                        showAIMemeOverlay(false)
                         Toast.makeText(requireContext(), "Meme generator unavailable", Toast.LENGTH_SHORT).show()
                         showMemeDialog()
                     }
                 }
             }
         }
+
+        // moved showAIMemeOverlay above usage
 
         // ----- Caption controls -----
         val captionText = layoutEdit.findViewById<TextView>(R.id.captionText)
