@@ -165,4 +165,10 @@ interface FunctionsApi {
     suspend fun setLiveMode(
         @Body body: Map<String, @JvmSuppressWildcards Any>
     ): Response<Unit>
+
+    /** Generate meme suggestions (top/bottom text, optional stickers) from an image. */
+    @POST("ai-meme")
+    suspend fun generateMeme(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<club.gifters.giftersclub.model.AiMemeResponse>
 }

@@ -1122,7 +1122,45 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 .setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
-        aiMemeOptions.setOnClickListener { showMemeDialog() }
+        aiMemeOptions.setOnClickListener {
+            // Try AI meme: capture current preview (image or first video frame) and call Edge Function
+            val base = try { gpuImageView.capture() } catch (_: Exception) { editedBitmap ?: originalBitmap }
+            if (base == null) { showMemeDialog(); return@setOnClickListener }
+            progressBar.isVisible = true
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val baos = java.io.ByteArrayOutputStream()
+                    base.compress(Bitmap.CompressFormat.JPEG, 85, baos)
+                    val b64 = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP)
+                    val resp = RetrofitClient.functionsApi.generateMeme(mapOf("image_base64" to b64, "sfw" to true))
+                    val body = resp.body()
+                    withContext(Dispatchers.Main) {
+                        progressBar.isVisible = false
+                        if (resp.isSuccessful && body != null) {
+                            val safe = fun(s: String?): String? {
+                                if (s.isNullOrBlank()) return s
+                                val banned = listOf("\uD83D\uDD1E") // placeholder minimal client filter
+                                var t = s
+                                banned.forEach { w -> t = t.replace(w, "") }
+                                return t
+                            }
+                            val top = safe(body.top_text)
+                            val bottom = safe(body.bottom_text)
+                            addMemeText(top, bottom)
+                        } else {
+                            Toast.makeText(requireContext(), "Meme generator unavailable", Toast.LENGTH_SHORT).show()
+                            showMemeDialog()
+                        }
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        progressBar.isVisible = false
+                        Toast.makeText(requireContext(), "Meme generator unavailable", Toast.LENGTH_SHORT).show()
+                        showMemeDialog()
+                    }
+                }
+            }
+        }
 
         // ----- Caption controls -----
         val captionText = layoutEdit.findViewById<TextView>(R.id.captionText)
