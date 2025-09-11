@@ -20,6 +20,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import android.util.TypedValue
+import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
@@ -1098,7 +1099,10 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         FrameLayout.LayoutParams.WRAP_CONTENT
                     ).apply { gravity = Gravity.CENTER }
                 }
-                // Size relative to overlay width once ready
+                // Add immediately to ensure it is present during composition,
+                // then adjust size on the next frame similar to local flow.
+                overlay.addView(iv)
+                attachDragAndScale(iv)
                 iv.post {
                     val w = overlay.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
                     val target = (w * 0.25f).toInt()
@@ -1106,11 +1110,32 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         width = target
                         height = FrameLayout.LayoutParams.WRAP_CONTENT
                     }
-                    attachDragAndScale(iv)
-                    overlay.addView(iv)
+                    iv.requestLayout()
                     overlay.invalidate()
                 }
             }
+        }
+
+        // Ensure a remote sticker is cached to local storage and return the file path if available.
+        suspend fun ensureStickerCached(url: String): String? = withContext(Dispatchers.IO) {
+            try {
+                val dir = File(requireContext().cacheDir, "stickers").apply { mkdirs() }
+                val name = url.hashCode().toString() + ".png"
+                val outFile = File(dir, name)
+                // TTL: refresh if older than 3 days
+                val threeDaysMs = 3L * 24 * 60 * 60 * 1000
+                if (outFile.exists() && outFile.length() > 0 && (System.currentTimeMillis() - outFile.lastModified()) < threeDaysMs) {
+                    return@withContext outFile.absolutePath
+                }
+                val req = ImageRequest.Builder(requireContext())
+                    .data(url)
+                    .allowHardware(false)
+                    .build()
+                val res = requireContext().imageLoader.execute(req)
+                val drawable = res.drawable as? android.graphics.drawable.BitmapDrawable ?: return@withContext null
+                FileOutputStream(outFile).use { fos -> drawable.bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos) }
+                return@withContext outFile.absolutePath
+            } catch (_: Exception) { null }
         }
         fun showStickerPicker() {
             var dlg: AlertDialog? = null
@@ -1133,9 +1158,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                             }
                             try { thumb.load(row.imageUrl) { crossfade(false) } } catch (_: Throwable) {}
                             thumb.setOnClickListener {
-                                val d = thumb.drawable
                                 dlg?.dismiss()
-                                if (d != null) addStickerOverlayFromDrawable(d) else addStickerOverlayFromUrl(row.imageUrl)
+                                // Prefer local cached file to avoid hardware bitmaps and ensure availability
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    val local = ensureStickerCached(row.imageUrl)
+                                    addStickerOverlayFromUrl(local ?: row.imageUrl)
+                                }
                             }
                             grid.addView(thumb)
                         }
@@ -1767,7 +1795,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         // Render overlay scaled to base size for accurate placement
                         val overlayBmp = VideoOverlayExporter.renderOverlayBitmap(overlay, base.width, base.height)
                         canvas.drawBitmap(overlayBmp, 0f, 0f, null)
-                    } catch (_: Exception) {}
+                    } catch (e: Exception) { Log.e(TAG, "Overlay render failed", e) }
                     editedBitmap = composed
                 }
                 showStep(layoutDetails)
