@@ -159,6 +159,8 @@ class LiveStreamActivity : BaseActivity() {
     // Client-side options hydrated from currentStream
     private var commentScope: String = "shared" // or "isolated"
     private val maxHosts: Int get() = currentStream?.layoutMaxHosts ?: 8
+    // Temporary stabilization: prefer showing a single remote tile (viewer) by default
+    private var preferSingleRemote: Boolean = true
     private var overflowBadge: TextView? = null
     // If we request permissions while attempting to resume a host/co-host session,
     // stash the target stream here and continue after the user grants.
@@ -656,7 +658,7 @@ class LiveStreamActivity : BaseActivity() {
                     room.connect(
                         LiveKitConfig.WS_URL,
                         lkToken,
-                        ConnectOptions()
+                        ConnectOptions( /* autoSubscribe = */ true )
                     )
                     liveKitRoom = room
                     // Listen for data messages for realtime tallies
@@ -831,9 +833,13 @@ class LiveStreamActivity : BaseActivity() {
         v.setScalingType(livekit.org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
         v.setEnableHardwareScaler(true)
         try { liveKitRoom?.initVideoRenderer(v) } catch (_: Exception) {}
-        // Use default Z-order to avoid black video issues on some devices
-        v.setZOrderMediaOverlay(false)
+        // For remote videos, draw as media overlay to ensure visibility above other SurfaceViews
+        v.setZOrderMediaOverlay(true)
         val tile = FrameLayout(this)
+        tile.layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
         val tileLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         tile.layoutParams = tileLp
         // set border (1dp gray for non-match; colored when match)
@@ -888,11 +894,19 @@ class LiveStreamActivity : BaseActivity() {
             tokenPills[userId] = tokens
             namePills[userId] = name
         }
-        container.addView(tile)
-        layoutTiles(container)
-        videoViews[key] = v
-        tileViews[key] = tile
-        track.addRenderer(v)
+        runOnUiThread {
+            if (preferSingleRemote) {
+                // Remove any existing remote tiles so only one remote video is shown
+                val toRemove = videoViews.keys.filter { !it.startsWith("local_") && it != key }
+                toRemove.forEach { k -> removeVideoTile(container, k) }
+            }
+            container.addView(tile)
+            // Defer layout until after the container has a size
+            container.post { layoutTiles(container) }
+            videoViews[key] = v
+            tileViews[key] = tile
+            track.addRenderer(v)
+        }
     }
 
     private suspend fun resolveAnimationForGift(
@@ -1289,6 +1303,7 @@ class LiveStreamActivity : BaseActivity() {
                 // If host resumes their own live, go into host UI; else join as viewer
                 AuthUtils.getCurrentUserId(this@LiveStreamActivity)?.let { currentId ->
                     if (currentId == ls.hostId) {
+                        preferSingleRemote = false
                         resumeHostSession(ls)
                         return@launch
                     }
@@ -1298,6 +1313,8 @@ class LiveStreamActivity : BaseActivity() {
                         viewer = LiveStreamViewerRequest(ls.id, currentId)
                     )
                 }
+                // Viewer: prefer single remote tile by default
+                preferSingleRemote = true
                 initViewer()
             } catch (e: Exception) {
                 // Do not end the live on client-side error; just show message and exit
@@ -1582,7 +1599,7 @@ class LiveStreamActivity : BaseActivity() {
                     room.connect(
                         LiveKitConfig.WS_URL,
                         lkToken,
-                        ConnectOptions()
+                        ConnectOptions( /* autoSubscribe = */ true )
                     )
                     // enable camera/mic and attach local preview
                     try { room.localParticipant.setCameraEnabled(true) } catch (_: Exception) {}
