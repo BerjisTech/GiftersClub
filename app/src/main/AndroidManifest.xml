@@ -215,6 +215,15 @@
             tools:node="merge"
             tools:replace="android:foregroundServiceType" />
 
+
+        <service
+            android:name="club.gifters.giftersclub.push.FirebasePushService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <activity android:name=".live.LiveStreamActivity" />
 
         <!-- Rollbar access token via manifest placeholder for Rollbar.init(this) support -->

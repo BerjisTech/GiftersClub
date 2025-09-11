@@ -19,6 +19,7 @@ import com.rollbar.android.Rollbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import com.google.firebase.messaging.FirebaseMessaging
 
 /**
  * Application wiring for on-device caching across HTTP, images, and video.
@@ -54,6 +55,17 @@ class GiftersClubApp : Application() {
                     val pub = club.gifters.giftersclub.security.E2EEKeyManager.getOrCreatePublicKeyBase64(this)
                     GlobalScope.launch(Dispatchers.IO) {
                         try { club.gifters.giftersclub.network.RetrofitClient.userKeysApi.upsertKey(mapOf("user_id" to userId, "public_key" to pub)) } catch (_: Exception) {}
+                    }
+                    // Also upsert FCM token for unified push targeting
+                    FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+                        GlobalScope.launch(Dispatchers.IO) {
+                            try {
+                                club.gifters.giftersclub.network.RetrofitClient.deviceTokensApi.upsert(
+                                    mapOf("user_id" to userId, "platform" to "android", "provider" to "fcm", "token" to token,
+                                        "app_version" to try { packageManager.getPackageInfo(packageName, 0).versionName ?: "" } catch (e: Exception) { "" })
+                                )
+                            } catch (_: Exception) {}
+                        }
                     }
                 }
             }

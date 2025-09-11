@@ -241,4 +241,6 @@ object RetrofitClient {
     val userAppsApi: UserAppsApi = retrofit.create(UserAppsApi::class.java)
     /** E2EE user public keys table */
     val userKeysApi: UserKeysApi = retrofit.create(UserKeysApi::class.java)
+    /** Device tokens upsert API */
+    val deviceTokensApi: DeviceTokensApi = retrofit.create(DeviceTokensApi::class.java)
 }
