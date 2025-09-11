@@ -42,6 +42,8 @@ import android.widget.TextView
 import android.widget.Toast
 import android.widget.ToggleButton
 import android.text.InputType
+import android.text.Editable
+import android.text.TextWatcher
 import coil.load
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -80,8 +82,13 @@ import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilterGroup
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageGrayscaleFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.json.JSONObject
 import yuku.ambilwarna.AmbilWarnaDialog
 import java.io.File
@@ -1139,18 +1146,45 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
         fun showStickerPicker() {
             var dlg: AlertDialog? = null
+            var prefetchJob: Job? = null
+            val outer = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.VERTICAL
+            }
+            val search = EditText(requireContext()).apply {
+                hint = "Search stickers"
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                setPadding(dp(12), dp(12), dp(12), dp(6))
+            }
             val container = ScrollView(requireContext())
             val grid = GridLayout(requireContext()).apply {
                 columnCount = 4
                 setPadding(dp(12), dp(12), dp(12), dp(12))
             }
             container.addView(grid)
+            outer.addView(search)
+            outer.addView(container, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+
+            // Hold references to views and their searchable names for filtering
+            val stickerViews = mutableListOf<Pair<View, String>>()
             // First, populate with remote stickers if available
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     val remote = withContext(Dispatchers.IO) { RetrofitClient.stickersApi.getActiveStickers() }
                     if (remote.isNotEmpty()) {
-                        remote.forEach { row ->
+                        // Warm local cache in background (refresh quietly, limited cost)
+                        val remoteShuffled = remote.shuffled()
+                        prefetchJob = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                            try {
+                                val semaphore = Semaphore(permits = 8)
+                                val tasks = remoteShuffled.map { row ->
+                                    async {
+                                        semaphore.withPermit { ensureStickerCached(row.imageUrl) }
+                                    }
+                                }
+                                tasks.awaitAll()
+                            } catch (_: Exception) {}
+                        }
+                        remoteShuffled.forEach { row ->
                             val thumb = ImageView(requireContext()).apply {
                                 val s = dp(64)
                                 layoutParams = ViewGroup.MarginLayoutParams(s, s).apply { setMargins(dp(6), dp(6), dp(6), dp(6)) }
@@ -1166,11 +1200,17 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                                 }
                             }
                             grid.addView(thumb)
+                            // Record searchable name (prefer explicit name; fallback to filename stem)
+                            val raw = try {
+                                if (row.name.isNotBlank()) row.name else row.imageUrl.substringAfterLast('/').substringBeforeLast('.')
+                            } catch (_: Exception) { row.name }
+                            val normalized = raw.replace('_', ' ').lowercase()
+                            stickerViews.add(thumb to normalized)
                         }
                     }
                 } catch (_: Exception) { /* ignore */ }
                 // Always add built-in local stickers as a fallback/extra
-                stickerCandidates.forEach { resId ->
+                stickerCandidates.shuffled().forEach { resId ->
                     val iv = ImageView(requireContext()).apply {
                         setImageResource(resId)
                         val s = dp(64)
@@ -1179,14 +1219,34 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                         setOnClickListener { dlg?.dismiss(); addStickerOverlay(resId) }
                     }
                     grid.addView(iv)
+                    val resName = try { resources.getResourceEntryName(resId) } catch (_: Exception) { "" }
+                    val normalized = resName.replace('_', ' ').lowercase()
+                    stickerViews.add(iv to normalized)
                 }
             }
             dlg = AlertDialog.Builder(requireContext())
                 .setTitle(getString(R.string.stickers))
-                .setView(container)
+                .setView(outer)
                 .setNegativeButton(android.R.string.cancel, null)
                 .create()
             dlg.show()
+            dlg.setOnDismissListener { prefetchJob?.cancel() }
+
+            // Search filter behavior
+            fun applyFilter(q: String?) {
+                val query = q?.trim()?.lowercase().orEmpty()
+                if (query.isEmpty()) {
+                    stickerViews.forEach { (v, _) -> v.visibility = View.VISIBLE }
+                } else {
+                    stickerViews.forEach { (v, name) -> v.visibility = if (name.contains(query)) View.VISIBLE else View.GONE }
+                }
+                grid.requestLayout()
+            }
+            search.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { applyFilter(s?.toString()) }
+                override fun afterTextChanged(s: Editable?) {}
+            })
         }
         stickerOptions.setOnClickListener { showStickerPicker() }
 
@@ -1748,13 +1808,15 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         })
 
         btnApplyFilter.setOnClickListener {
-            // Only capture/apply filters; stay on Edit
-            editedBitmap = try {
-                gpuImageView.capture()
-            } catch (_: InterruptedException) {
-                originalBitmap
+            // Only capture/apply filters; stay on Edit. Run capture off UI thread.
+            viewLifecycleOwner.lifecycleScope.launch {
+                progressBar.isVisible = true
+                val captured = withContext(Dispatchers.Default) {
+                    try { gpuImageView.capture() } catch (_: InterruptedException) { null }
+                }
+                editedBitmap = captured ?: originalBitmap
+                progressBar.isVisible = false
             }
-//            Toast.makeText(requireContext(), getString(R.string.applied), Toast.LENGTH_SHORT).show()
         }
 
         // Proceed button: image -> compose bitmap; video -> export with overlays
@@ -1785,21 +1847,33 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     showStep(layoutDetails); updatePostPreview()
                 } finally { retriever.release() }
             } else {
-                val base = try { gpuImageView.capture() } catch (_: InterruptedException) { editedBitmap ?: originalBitmap }
-                if (base != null) {
-                    val composed = Bitmap.createBitmap(base.width, base.height, Bitmap.Config.ARGB_8888)
-                    val canvas = Canvas(composed)
-                    canvas.drawBitmap(base, 0f, 0f, null)
-                    try {
-                        val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
-                        // Render overlay scaled to base size for accurate placement
-                        val overlayBmp = VideoOverlayExporter.renderOverlayBitmap(overlay, base.width, base.height)
-                        canvas.drawBitmap(overlayBmp, 0f, 0f, null)
-                    } catch (e: Exception) { Log.e(TAG, "Overlay render failed", e) }
-                    editedBitmap = composed
+                viewLifecycleOwner.lifecycleScope.launch {
+                    progressBar.isVisible = true
+                    // Capture GPU output off UI thread
+                    val base = withContext(Dispatchers.Default) {
+                        try { gpuImageView.capture() } catch (_: InterruptedException) { editedBitmap ?: originalBitmap }
+                    }
+                    var composed: Bitmap? = null
+                    if (base != null) {
+                        // Render overlay on the main thread for View safety
+                        val overlayBmp = withContext(Dispatchers.Main) {
+                            val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
+                            VideoOverlayExporter.renderOverlayBitmap(overlay, base.width, base.height)
+                        }
+                        // Compose on a background thread
+                        composed = withContext(Dispatchers.Default) {
+                            val out = Bitmap.createBitmap(base.width, base.height, Bitmap.Config.ARGB_8888)
+                            val canvas = Canvas(out)
+                            canvas.drawBitmap(base, 0f, 0f, null)
+                            try { canvas.drawBitmap(overlayBmp, 0f, 0f, null) } catch (e: Exception) { Log.e(TAG, "Overlay draw failed", e) }
+                            out
+                        }
+                    }
+                    if (composed != null) editedBitmap = composed
+                    progressBar.isVisible = false
+                    showStep(layoutDetails)
+                    updatePostPreview()
                 }
-                showStep(layoutDetails)
-                updatePostPreview()
             }
         }
     }
