@@ -829,8 +829,10 @@ class LiveStreamActivity : BaseActivity() {
         if (videoViews.containsKey(key)) return
         val v = SurfaceViewRenderer(this)
         v.setScalingType(livekit.org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
+        v.setEnableHardwareScaler(true)
         try { liveKitRoom?.initVideoRenderer(v) } catch (_: Exception) {}
-        v.setZOrderMediaOverlay(true)
+        // Use default Z-order to avoid black video issues on some devices
+        v.setZOrderMediaOverlay(false)
         val tile = FrameLayout(this)
         val tileLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         tile.layoutParams = tileLp
@@ -928,8 +930,12 @@ class LiveStreamActivity : BaseActivity() {
         if (videoViews.containsKey(key)) return
         val v = SurfaceViewRenderer(this)
         v.setScalingType(livekit.org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
+        v.setEnableHardwareScaler(true)
         try { room.initVideoRenderer(v) } catch (_: Exception) {}
-        v.setZOrderMediaOverlay(true)
+        // Keep normal Z-order for stability across devices
+        v.setZOrderMediaOverlay(false)
+        // Mirror only for front-facing camera so host sees a natural preview
+        v.setMirror(isFrontFacing)
         val tile = FrameLayout(this)
         tile.layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         val gd = android.graphics.drawable.GradientDrawable()
@@ -1494,8 +1500,8 @@ class LiveStreamActivity : BaseActivity() {
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT
         )
-        // Show preview as viewers see it (no mirror)
-        preview.setMirror(false)
+        // Mirror only for front-facing camera so host sees a natural preview
+        preview.setMirror(isFrontFacing)
         container.addView(preview)
         previewView = preview
 
@@ -1508,8 +1514,8 @@ class LiveStreamActivity : BaseActivity() {
                     val localTrack2 = localPubPair?.second as? LocalVideoTrack
                     localTrack2?.switchCamera()
                     isFrontFacing = !isFrontFacing
-                    // Keep host preview unmirrored regardless of camera
-                    previewView?.setMirror(false)
+                    // Update preview mirroring when camera flips
+                    previewView?.setMirror(isFrontFacing)
                 } catch (_: Exception) { }
             }
 
@@ -2098,8 +2104,8 @@ class LiveStreamActivity : BaseActivity() {
                                 val localTrack2 = localPubPair?.second as? LocalVideoTrack
                                 localTrack2?.switchCamera()
                                 isFrontFacing = !isFrontFacing
-                                // Keep host preview unmirrored regardless of camera
-                                previewView?.setMirror(false)
+                    // Update preview mirroring when camera flips
+                    previewView?.setMirror(isFrontFacing)
                             } catch (_: Exception) { }
                         }
                         // Camera on/off toggle
@@ -2176,8 +2182,8 @@ class LiveStreamActivity : BaseActivity() {
                                 FrameLayout.LayoutParams.MATCH_PARENT,
                                 FrameLayout.LayoutParams.MATCH_PARENT
                             )
-                            // Keep host preview unmirrored in CameraX path as well
-                            preview.setMirror(false)
+                            // Mirror only for front-facing camera so host sees a natural preview
+                            preview.setMirror(isFrontFacing)
                             container.addView(preview)
                             previewView = preview
                             // Initialize renderer and bind the first local video track (if available)
