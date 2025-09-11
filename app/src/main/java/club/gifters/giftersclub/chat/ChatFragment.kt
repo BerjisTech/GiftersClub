@@ -290,16 +290,30 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
 
             // fetch conversation overviews, but continue on error
             val sortedConvs = try {
-                chatApi.getConversationDetails().mapNotNull { detail ->
-                    val decryptedContent = try {
-                        val keys = RetrofitClient.userKeysApi.getKey(userIdFilter = "eq.${detail.partnerId}")
-                        val peerPub = keys.firstOrNull()?.public_key
-                        if (!peerPub.isNullOrBlank() && !detail.lastMessageContent.isNullOrBlank()) {
-                            club.gifters.giftersclub.security.E2EEKeyManager.decrypt(requireContext(), peerPub, detail.lastMessageContent!!)
-                        } else null
-                    } catch (_: Exception) { null }
-                    val previewContent = decryptedContent ?: detail.lastMessageContent
-                    previewContent?.let { content ->
+                val details = chatApi.getConversationDetails()
+                // Collect partnerIds that look encrypted and need keys
+                fun looksEncrypted(s: String?): Boolean =
+                    !s.isNullOrBlank() && s.trim().startsWith("{") && s.contains("\"ct\"")
+                val needKeys = details
+                    .filter { looksEncrypted(it.lastMessageContent) }
+                    .map { it.partnerId }
+                    .distinct()
+                val keysByUser: Map<String, String> = try {
+                    if (needKeys.isEmpty()) emptyMap() else {
+                        val inArg = "in.(" + needKeys.joinToString(",") + ")"
+                        RetrofitClient.userKeysApi.getKeys(userIdsInFilter = inArg)
+                            .associate { it.user_id to it.public_key }
+                    }
+                } catch (_: Exception) { emptyMap() }
+
+                details.mapNotNull { detail ->
+                    val contentRaw = detail.lastMessageContent
+                    val peerPub = keysByUser[detail.partnerId]
+                    val previewContent = if (peerPub != null && looksEncrypted(contentRaw)) {
+                        try { club.gifters.giftersclub.security.E2EEKeyManager.decrypt(requireContext(), peerPub, contentRaw!!) } catch (_: Exception) { null }
+                    } else null
+                    val finalContent = previewContent ?: contentRaw
+                    finalContent?.let { content ->
                         ConversationUi(
                             ConversationOverview(detail.userA, detail.userB, detail.lastMessageAt),
                             Profile(

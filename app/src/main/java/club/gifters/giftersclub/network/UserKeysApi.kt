@@ -18,5 +18,11 @@ interface UserKeysApi {
     suspend fun upsertKey(
         @Body row: Map<String, @JvmSuppressWildcards Any>
     ): Response<List<UserKeyRow>>
-}
 
+    /** Fetch multiple keys in a single call using an IN filter: user_id=in.(id1,id2,...) */
+    @GET("user_e2ee_keys")
+    suspend fun getKeys(
+        @Query("select", encoded = true) select: String = "user_id,public_key,created_at",
+        @Query("user_id", encoded = true) userIdsInFilter: String
+    ): List<UserKeyRow>
+}
