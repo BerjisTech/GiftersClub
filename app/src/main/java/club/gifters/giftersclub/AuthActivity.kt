@@ -84,6 +84,11 @@ class AuthActivity : BaseActivity() {
             val userId = parts.getOrNull(1)
                 ?.let { String(Base64.decode(it, Base64.URL_SAFE)) }
                 ?.let { JSONObject(it).optString("sub") } ?: return@launch
+            // Upsert E2EE public key for chats
+            try {
+                val pub = club.gifters.giftersclub.security.E2EEKeyManager.getOrCreatePublicKeyBase64(this@AuthActivity)
+                RetrofitClient.userKeysApi.upsertKey(mapOf("user_id" to userId, "public_key" to pub))
+            } catch (_: Exception) {}
             // Fetch public IP (like Angular/ipify) to get country code server‑side
             val clientIp = try {
                 val ipJson = URL("https://api.ipify.org?format=json").readText()

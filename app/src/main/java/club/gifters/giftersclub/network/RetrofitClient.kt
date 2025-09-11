@@ -239,4 +239,6 @@ object RetrofitClient {
      * API for tracking user app install/version history.
      */
     val userAppsApi: UserAppsApi = retrofit.create(UserAppsApi::class.java)
+    /** E2EE user public keys table */
+    val userKeysApi: UserKeysApi = retrofit.create(UserKeysApi::class.java)
 }

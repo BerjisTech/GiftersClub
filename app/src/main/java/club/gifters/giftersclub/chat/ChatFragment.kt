@@ -291,7 +291,15 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             // fetch conversation overviews, but continue on error
             val sortedConvs = try {
                 chatApi.getConversationDetails().mapNotNull { detail ->
-                    detail.lastMessageContent?.let { content ->
+                    val decryptedContent = try {
+                        val keys = RetrofitClient.userKeysApi.getKey(userIdFilter = "eq.${detail.partnerId}")
+                        val peerPub = keys.firstOrNull()?.public_key
+                        if (!peerPub.isNullOrBlank() && !detail.lastMessageContent.isNullOrBlank()) {
+                            club.gifters.giftersclub.security.E2EEKeyManager.decrypt(requireContext(), peerPub, detail.lastMessageContent!!)
+                        } else null
+                    } catch (_: Exception) { null }
+                    val previewContent = decryptedContent ?: detail.lastMessageContent
+                    previewContent?.let { content ->
                         ConversationUi(
                             ConversationOverview(detail.userA, detail.userB, detail.lastMessageAt),
                             Profile(
@@ -405,12 +413,23 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     val wasAtBottom = !rvMessages.canScrollVertically(1) ||
                             (lastVisible >= msgAdapter.itemCount - 1 && msgAdapter.itemCount > 0)
 
-                    val msgs = chatApi.getMessages(
+                    var msgs = chatApi.getMessages(
                         select = "*",
                         orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId)," +
                                 "and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
                         order = "created_at.asc"
                     )
+                    // Attempt E2EE decrypt using partner's public key
+                    try {
+                        val keys = RetrofitClient.userKeysApi.getKey(userIdFilter = "eq.$partnerId")
+                        val peerPub = keys.firstOrNull()?.public_key
+                        if (!peerPub.isNullOrBlank()) {
+                            msgs = msgs.map { m ->
+                                val dec = club.gifters.giftersclub.security.E2EEKeyManager.decrypt(requireContext(), peerPub, m.content)
+                                if (dec != null) m.copy(content = dec) else m
+                            }
+                        }
+                    } catch (_: Exception) {}
                     msgAdapter.submitList(msgs)
                     if (msgs.isNotEmpty()) {
                         if (!initialScrollDone) {
@@ -588,10 +607,22 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 selectedAttachment = null
             }
             try {
+                var body = content
+                var peerPub: String? = null
+                // Encrypt if partner's public key exists
+                try {
+                    val keys = RetrofitClient.userKeysApi.getKey(userIdFilter = "eq.$partnerId")
+                    peerPub = keys.firstOrNull()?.public_key
+                    if (!peerPub.isNullOrBlank()) {
+                        club.gifters.giftersclub.security.E2EEKeyManager.encrypt(requireContext(), peerPub!!, content)?.let { enc ->
+                            body = enc
+                        }
+                    }
+                } catch (_: Exception) {}
                 val payload = mutableMapOf<String, Any>(
                     "sender_id" to userId,
                     "receiver_id" to partnerId,
-                    "content" to content
+                    "content" to body
                 )
                 if (attachmentsPayload.isNotEmpty()) payload["attachments"] = attachmentsPayload
                 val resp = chatApi.sendMessage(payload)
@@ -599,7 +630,14 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     // Only auto-scroll if user was already at the bottom
                     val wasAtBottom = !rvMessages.canScrollVertically(1)
                     resp.body()?.firstOrNull()?.let { newMsg ->
-                        msgAdapter.addMessage(newMsg)
+                        // Try to decrypt our just-sent message for immediate display
+                        val displayMsg = try {
+                            if (!peerPub.isNullOrBlank()) {
+                                val dec = club.gifters.giftersclub.security.E2EEKeyManager.decrypt(requireContext(), peerPub!!, newMsg.content)
+                                if (dec != null) newMsg.copy(content = dec) else newMsg
+                            } else newMsg
+                        } catch (_: Exception) { newMsg }
+                        msgAdapter.addMessage(displayMsg)
                         if (wasAtBottom) {
                             rvMessages.scrollToPosition(msgAdapter.itemCount - 1)
                         }

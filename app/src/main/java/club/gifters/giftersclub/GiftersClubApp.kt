@@ -16,6 +16,9 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import java.io.File
 import com.rollbar.android.Rollbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 /**
  * Application wiring for on-device caching across HTTP, images, and video.
@@ -37,6 +40,24 @@ class GiftersClubApp : Application() {
         } catch (_: Throwable) {
             // No-op: if manifest is missing or malformed, Rollbar will not initialize
         }
+        // E2EE: publish public key if logged in (app already had a session)
+        try {
+            val prefs = getSharedPreferences("supabase", MODE_PRIVATE)
+            val access = prefs.getString("access_token", null)
+            if (!access.isNullOrBlank()) {
+                val parts = access.split('.')
+                val userId = try {
+                    val body = String(android.util.Base64.decode(parts.getOrNull(1) ?: "", android.util.Base64.URL_SAFE))
+                    org.json.JSONObject(body).optString("sub")
+                } catch (e: Exception) { "" }
+                if (userId.isNotEmpty()) {
+                    val pub = club.gifters.giftersclub.security.E2EEKeyManager.getOrCreatePublicKeyBase64(this)
+                    GlobalScope.launch(Dispatchers.IO) {
+                        try { club.gifters.giftersclub.network.RetrofitClient.userKeysApi.upsertKey(mapOf("user_id" to userId, "public_key" to pub)) } catch (_: Exception) {}
+                    }
+                }
+            }
+        } catch (_: Throwable) { }
     }
 }
 

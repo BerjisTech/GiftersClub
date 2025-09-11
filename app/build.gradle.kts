@@ -144,4 +144,8 @@ dependencies {
     implementation(libs.androidx.media3.datasource)
     implementation(libs.androidx.media3.transformer)
     implementation(libs.androidx.media3.effect)
+    // E2EE: BouncyCastle for X25519/HKDF/ChaCha20-Poly1305
+    implementation("org.bouncycastle:bcprov-jdk15to18:1.76")
+    // EncryptedSharedPreferences for secure key storage
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }
