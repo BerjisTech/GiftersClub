@@ -64,6 +64,9 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.CreatePostRequest
@@ -113,6 +116,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private lateinit var layoutMedia: ConstraintLayout
     private lateinit var layoutEdit: ConstraintLayout
     private lateinit var layoutDetails: ConstraintLayout
+    private lateinit var pvPostPreview: PlayerView
     private lateinit var rvFilters: RecyclerView
     private lateinit var sbFilterLevel: SeekBar
     private lateinit var gpuImageView: SafeGPUImageView
@@ -210,6 +214,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var isLongPress = false
     // Legacy: used when async-loading overlays; no longer gating proceed
     private var pendingStickerLoads: Int = 0
+    private var previewPlayer: androidx.media3.exoplayer.ExoPlayer? = null
 
 
     companion object {
@@ -244,6 +249,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             Step.DETAILS -> updatePostPreview()
             else -> {}
         }
+        if (next != Step.DETAILS) releasePreviewPlayer()
     }
 
     private fun showPreviousStepOrExit() {
@@ -300,6 +306,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         layoutDetails = view.findViewById(R.id.layoutDetails)
         // Details step views bound from details root
         ivPostPreview = layoutDetails.findViewById(R.id.ivPostPreview)
+        pvPostPreview = layoutDetails.findViewById(R.id.pvPostPreview)
         etContent = layoutDetails.findViewById(R.id.etContent)
         btnEditMedia = layoutDetails.findViewById(R.id.btnEditMedia)
         btnEditMediaCard = layoutDetails.findViewById(R.id.btnEditMediaCard)
@@ -2076,6 +2083,13 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             isRecording = false
             recordingActive = false
         }
+        // Aggressively release preview player to avoid SurfaceView buffer errors on activity transitions
+        releasePreviewPlayer()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        releasePreviewPlayer()
     }
 
     private fun updateSegmentsBar() {
@@ -2238,20 +2252,30 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             when {
                 isVideoSelected && selectedUris.isNotEmpty() -> {
                     val uri = selectedUris.first()
-                    val retriever = android.media.MediaMetadataRetriever()
-                    retriever.setDataSource(requireContext(), uri)
-                    val bmp = retriever.getFrameAtTime(0)
-                    retriever.release()
-                    if (bmp != null) ivPostPreview.setImageBitmap(bmp)
-                    else ivPostPreview.setImageResource(R.drawable.video)
+                    // Show PlayerView preview for video
+                    ivPostPreview.visibility = View.GONE
+                    pvPostPreview.visibility = View.VISIBLE
+                    val ctx = requireContext()
+                    val player = previewPlayer ?: club.gifters.giftersclub.media.Exo.newPlayer(ctx).also {
+                        previewPlayer = it
+                        pvPostPreview.player = it
+                    }
+                    player.setMediaItem(MediaItem.fromUri(uri))
+                    player.repeatMode = Player.REPEAT_MODE_ONE
+                    player.prepare()
+                    player.playWhenReady = true
                 }
 
                 editedBitmap != null -> {
+                    pvPostPreview.visibility = View.GONE
+                    ivPostPreview.visibility = View.VISIBLE
                     ivPostPreview.setImageBitmap(editedBitmap)
                 }
 
                 selectedUris.isNotEmpty() -> {
                     val uri = selectedUris.first()
+                    pvPostPreview.visibility = View.GONE
+                    ivPostPreview.visibility = View.VISIBLE
                     requireContext().contentResolver.openInputStream(uri)?.use { ins ->
                         val opts = BitmapFactory.Options().apply { inSampleSize = 2 }
                         val bmp = BitmapFactory.decodeStream(ins, null, opts)
@@ -2261,11 +2285,23 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
                 else -> {
                     // No media selected (text-only flow): keep existing or clear
+                    pvPostPreview.visibility = View.GONE
                     ivPostPreview.setImageDrawable(null)
                 }
             }
         } catch (_: Exception) {
         }
+    }
+
+    private fun releasePreviewPlayer() {
+        try {
+            previewPlayer?.let { p ->
+                pvPostPreview.player = null
+                p.release()
+            }
+        } catch (_: Exception) {
+        }
+        previewPlayer = null
     }
 
     // Merge multiple MP4 segments (same codec) into a single MP4. Returns merged file or null on failure.
@@ -2313,51 +2349,67 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
             val info = android.media.MediaCodec.BufferInfo()
 
             for (file in segments) {
-                val extractor = android.media.MediaExtractor()
-                extractor.setDataSource(file.absolutePath)
-                var thisV = -1
-                var thisA = -1
-                for (i in 0 until extractor.trackCount) {
-                    val fmt = extractor.getTrackFormat(i)
-                    val mime = fmt.getString(android.media.MediaFormat.KEY_MIME)
-                    if (mime?.startsWith("video/") == true && vFormat != null) thisV = i
-                    if (mime?.startsWith("audio/") == true && aFormat != null) thisA = i
+                // Write video samples from this segment
+                if (muxV >= 0 && vFormat != null) {
+                    val extractorV = android.media.MediaExtractor()
+                    try {
+                        extractorV.setDataSource(file.absolutePath)
+                        var thisV = -1
+                        for (i in 0 until extractorV.trackCount) {
+                            val fmt = extractorV.getTrackFormat(i)
+                            val mime = fmt.getString(android.media.MediaFormat.KEY_MIME)
+                            if (mime?.startsWith("video/") == true) { thisV = i; break }
+                        }
+                        if (thisV >= 0) {
+                            extractorV.selectTrack(thisV)
+                            var lastVPts = vPtsOffset
+                            while (true) {
+                                info.offset = 0
+                                info.size = extractorV.readSampleData(buffer, 0)
+                                if (info.size < 0) break
+                                if (extractorV.sampleTrackIndex != thisV) { extractorV.advance(); continue }
+                                info.presentationTimeUs = extractorV.sampleTime + vPtsOffset
+                                info.flags = extractorV.sampleFlags
+                                buffer.limit(info.offset + info.size)
+                                muxer.writeSampleData(muxV, buffer, info)
+                                lastVPts = info.presentationTimeUs
+                                extractorV.advance()
+                            }
+                            vPtsOffset = lastVPts + 1000 // +1ms gap
+                        }
+                    } finally { extractorV.release() }
                 }
-                if (thisV >= 0) extractor.selectTrack(thisV)
-                if (thisA >= 0) extractor.selectTrack(thisA)
 
-                var lastVPts = 0L
-                var lastAPts = 0L
-                // Interleave by track: write all video then all audio per segment (simpler, acceptable for concatenation)
-                if (thisV >= 0 && muxV >= 0) {
-                    while (true) {
-                        info.offset = 0
-                        info.size = extractor.readSampleData(buffer, 0)
-                        if (info.size < 0) break
-                        info.presentationTimeUs = extractor.sampleTime + vPtsOffset
-                        info.flags = extractor.sampleFlags
-                        muxer.writeSampleData(muxV, buffer, info)
-                        lastVPts = info.presentationTimeUs
-                        extractor.advance()
-                    }
-                    vPtsOffset = lastVPts + 1000 // +1ms gap
+                // Write audio samples from this segment
+                if (muxA >= 0 && aFormat != null) {
+                    val extractorA = android.media.MediaExtractor()
+                    try {
+                        extractorA.setDataSource(file.absolutePath)
+                        var thisA = -1
+                        for (i in 0 until extractorA.trackCount) {
+                            val fmt = extractorA.getTrackFormat(i)
+                            val mime = fmt.getString(android.media.MediaFormat.KEY_MIME)
+                            if (mime?.startsWith("audio/") == true) { thisA = i; break }
+                        }
+                        if (thisA >= 0) {
+                            extractorA.selectTrack(thisA)
+                            var lastAPts = aPtsOffset
+                            while (true) {
+                                info.offset = 0
+                                info.size = extractorA.readSampleData(buffer, 0)
+                                if (info.size < 0) break
+                                if (extractorA.sampleTrackIndex != thisA) { extractorA.advance(); continue }
+                                info.presentationTimeUs = extractorA.sampleTime + aPtsOffset
+                                info.flags = extractorA.sampleFlags
+                                buffer.limit(info.offset + info.size)
+                                muxer.writeSampleData(muxA, buffer, info)
+                                lastAPts = info.presentationTimeUs
+                                extractorA.advance()
+                            }
+                            aPtsOffset = lastAPts + 1000
+                        }
+                    } finally { extractorA.release() }
                 }
-                if (thisA >= 0 && muxA >= 0) {
-                    extractor.unselectTrack(thisV.takeIf { it >= 0 } ?: 0)
-                    extractor.selectTrack(thisA)
-                    while (true) {
-                        info.offset = 0
-                        info.size = extractor.readSampleData(buffer, 0)
-                        if (info.size < 0) break
-                        info.presentationTimeUs = extractor.sampleTime + aPtsOffset
-                        info.flags = extractor.sampleFlags
-                        muxer.writeSampleData(muxA, buffer, info)
-                        lastAPts = info.presentationTimeUs
-                        extractor.advance()
-                    }
-                    aPtsOffset = lastAPts + 1000
-                }
-                extractor.release()
             }
             muxer.stop()
             muxer.release()

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:csb="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/createPostRoot"
     android:layout_width="match_parent"
@@ -16,7 +15,9 @@
         android:layout_weight="1">
 
         <!-- Text post editor screen (hidden by default) -->
-        <include android:id="@+id/layoutTextEditor" layout="@layout/include_create_post_text_editor" />
+        <include
+            android:id="@+id/layoutTextEditor"
+            layout="@layout/include_create_post_text_editor" />
 
         <!-- Media selection and camera preview step -->
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -114,37 +115,37 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent">
 
-                        <TextView
-                            android:id="@+id/btnTimer10m"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:padding="8dp"
-                            android:text="@string/_10m"
-                            android:textColor="@color/white" />
+                    <TextView
+                        android:id="@+id/btnTimer10m"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp"
+                        android:text="@string/_10m"
+                        android:textColor="@color/white" />
 
-                        <TextView
-                            android:id="@+id/btnTimer60s"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:padding="8dp"
-                            android:text="@string/_60s"
-                            android:textColor="@color/white" />
+                    <TextView
+                        android:id="@+id/btnTimer60s"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp"
+                        android:text="@string/_60s"
+                        android:textColor="@color/white" />
 
-                        <TextView
-                            android:id="@+id/btnTimer15s"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:padding="8dp"
-                            android:text="@string/_15s"
-                            android:textColor="@color/white" />
+                    <TextView
+                        android:id="@+id/btnTimer15s"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp"
+                        android:text="@string/_15s"
+                        android:textColor="@color/white" />
 
-                        <TextView
-                            android:id="@+id/btnTimer5s"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:padding="8dp"
-                            android:text="@string/_5s"
-                            android:textColor="@color/white" />
+                    <TextView
+                        android:id="@+id/btnTimer5s"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp"
+                        android:text="@string/_5s"
+                        android:textColor="@color/white" />
 
 
                 </LinearLayout>
@@ -156,9 +157,11 @@
                     android:layout_height="4dp"
                     android:layout_marginBottom="8dp"
                     android:background="#33000000"
+                    android:orientation="horizontal"
+                    android:visibility="gone"
                     app:layout_constraintBottom_toTopOf="@id/captureButtonAndProgressBar"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" />
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
 
                 <!-- Camera filter list and record spinner -->
                 <HorizontalScrollView
@@ -215,15 +218,15 @@
                     android:layout_height="30dp"
                     android:layout_marginHorizontal="10dp"
                     android:layout_marginEnd="10dp"
-                    android:contentDescription="Undo segment"
                     android:background="@drawable/bg_round_button"
                     android:backgroundTint="@color/yellow_500"
+                    android:contentDescription="Undo segment"
                     android:src="@android:drawable/ic_menu_revert"
                     android:visibility="gone"
                     app:layout_constraintBottom_toBottomOf="@id/captureButtonAndProgressBar"
                     app:layout_constraintEnd_toStartOf="@id/btnModeToggle"
                     app:layout_constraintStart_toEndOf="@id/captureButtonAndProgressBar"
-                    app:layout_constraintTop_toTopOf="@id/captureButtonAndProgressBar"/>
+                    app:layout_constraintTop_toTopOf="@id/captureButtonAndProgressBar" />
 
                 <ImageView
                     android:id="@+id/btnModeToggle"
@@ -262,9 +265,13 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <include android:id="@+id/layoutEdit" layout="@layout/include_create_post_edit_media" />
+        <include
+            android:id="@+id/layoutEdit"
+            layout="@layout/include_create_post_edit_media" />
 
-        <include android:id="@+id/layoutDetails" layout="@layout/include_create_post_details" />
+        <include
+            android:id="@+id/layoutDetails"
+            layout="@layout/include_create_post_details" />
 
     </FrameLayout>
 

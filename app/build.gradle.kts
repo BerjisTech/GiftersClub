@@ -66,6 +66,65 @@ android {
         // Keep Kotlin JVM target aligned with Java toolchain
         jvmTarget = "17"
     }
+
+    // Optional: helper tasks to inspect native .so page sizes after a build
+    // Usage:
+    //   ./gradlew :app:assembleRelease
+    //   ./gradlew :app:printNativePageSizes
+    //   ./gradlew :app:verify16kPageSupport
+    // The scripts rely on readelf/llvm-readelf (available from the Android NDK or PATH)
+    tasks.register("printNativePageSizes") {
+        group = "verification"
+        description = "Prints page size info for merged native libs using scripts/scan_so_pagesize.sh"
+        doLast {
+            val script = rootProject.file("scripts/scan_so_pagesize.sh")
+            if (!script.exists()) {
+                println("scripts/scan_so_pagesize.sh not found")
+            } else {
+                val pb = ProcessBuilder("bash", script.absolutePath)
+                    .directory(rootProject.projectDir)
+                    .inheritIO()
+                val proc = pb.start()
+                val exit = proc.waitFor()
+                if (exit != 0) error("scan_so_pagesize.sh exited with $exit")
+            }
+        }
+        // Ensure we have something to scan
+        dependsOn("assembleRelease")
+    }
+
+    tasks.register("verify16kPageSupport") {
+        group = "verification"
+        description = "Fails if any merged .so lacks 16 KB page-size support (best-effort check)."
+        doLast {
+            val out = file("$projectDir/build/intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib")
+            if (!out.exists()) error("Merged native libs not found. Run :app:assembleRelease first.")
+            // Try to run the scan script and then grep for suspicious page size values
+            val script = rootProject.file("scripts/scan_so_pagesize.sh")
+            if (script.exists()) {
+                val scan = ProcessBuilder("bash", script.absolutePath)
+                    .directory(rootProject.projectDir)
+                    .redirectErrorStream(true)
+                    .start()
+                val output = scan.inputStream.bufferedReader().use { it.readText() }
+                val exit = scan.waitFor()
+                println(output)
+                if (exit != 0) error("scan_so_pagesize.sh exited with $exit")
+                // Heuristic: flag if any line mentions 4096 as a MaxPageSize/Page size value
+                val has4k = Regex("(?i)(MaxPageSize|Page size).*(4096|4k)").containsMatchIn(output)
+                if (has4k) error("Detected native libraries built for 4 KB pages. Update dependencies to 16 KB-compatible builds.")
+            } else {
+                println("scan_so_pagesize.sh not found; performing naive check for .so presence under $out")
+                val anySo = out.walk().any { it.isFile && it.extension == "so" }
+                if (anySo) {
+                    println("Found native libraries but could not verify page size. Install NDK (for llvm-readelf) and rerun.")
+                } else {
+                    println("No native libraries found in merged output.")
+                }
+            }
+        }
+        dependsOn("assembleRelease")
+    }
 }
 
 // Flavors removed: use a single applicationId for all builds

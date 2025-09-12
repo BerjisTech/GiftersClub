@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 
@@ -57,7 +58,15 @@ class UploadPostWorker(appContext: Context, params: WorkerParameters) : Coroutin
     }
 
     override suspend fun doWork(): Result {
-        setForeground(getForegroundInfo())
+        // Android 14+ restricts starting foreground services from background. Best-effort start;
+        // if not allowed, continue in background with regular notifications.
+        try {
+            if (android.os.Build.VERSION.SDK_INT < 34) {
+                setForeground(getForegroundInfo())
+            }
+        } catch (_: Exception) {
+            // Ignore and continue without foreground service
+        }
         val postId = inputData.getString(KEY_POST_ID) ?: return Result.failure()
         val uriStrings = inputData.getStringArray(KEY_URIS)?.toList().orEmpty()
         if (uriStrings.isEmpty()) return Result.success()
@@ -75,17 +84,21 @@ class UploadPostWorker(appContext: Context, params: WorkerParameters) : Coroutin
                 val ts = System.currentTimeMillis()
                 val filename = "${postId}-$ts-$index.$ext"
                 val body: RequestBody = if (isVideo) {
-                    object : RequestBody() {
-                        override fun contentType() = resolvedType.toMediaTypeOrNull()
-                        override fun contentLength(): Long = getContentLength(uri) ?: -1L
-                        override fun writeTo(sink: okio.BufferedSink) {
-                            val ins = applicationContext.contentResolver.openInputStream(uri)
-                                ?: throw Exception("Failed to open video stream")
-                            ins.use {
-                                val out = sink.outputStream(); it.copyTo(out); out.flush()
+                    // Many cloud providers (S3/GCS) require a fixed Content-Length for pre-signed PUTs.
+                    // Ensure we upload with a known length by copying to a temp file when necessary.
+                    val srcFile: java.io.File = when (uri.scheme?.lowercase()) {
+                        "file" -> java.io.File(uri.path!!)
+                        else -> {
+                            val tmp = java.io.File(applicationContext.cacheDir, "UP_${System.currentTimeMillis()}_${index}.bin")
+                            withContext(Dispatchers.IO) {
+                                applicationContext.contentResolver.openInputStream(uri)?.use { ins ->
+                                    java.io.FileOutputStream(tmp).use { outs -> ins.copyTo(outs) }
+                                } ?: throw Exception("Failed to open video stream")
                             }
+                            tmp
                         }
                     }
+                    srcFile.asRequestBody(resolvedType.toMediaTypeOrNull())
                 } else {
                     val bytes = withContext(Dispatchers.IO) {
                         applicationContext.contentResolver.openInputStream(uri)?.use { it.readBytes() }
@@ -100,7 +113,11 @@ class UploadPostWorker(appContext: Context, params: WorkerParameters) : Coroutin
                 val presignData = presignResp.body()!!
                 val putReq = Request.Builder().url(presignData.uploadUrl).put(body).build()
                 val putResp = withContext(Dispatchers.IO) { RetrofitClient.awsClient.newCall(putReq).execute() }
-                if (!putResp.isSuccessful) throw Exception("Upload failed: ${putResp.code}")
+                val ok = putResp.isSuccessful
+                val code = putResp.code
+                val errBody = try { putResp.body?.string() } catch (_: Exception) { null }
+                putResp.close()
+                if (!ok) throw Exception("Upload failed: $code ${errBody ?: ""}")
                 val publicUrl = presignData.publicUrl
                 val mediaResp = RetrofitClient.postApi.createPostMedia(
                     createMedia = club.gifters.giftersclub.model.CreatePostMediaRequest(
