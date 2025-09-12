@@ -268,7 +268,7 @@ class MainActivity : BaseActivity() {
                 )
             }
         }
-        // Retrieve current FCM token and store it in profiles via Supabase
+        // Retrieve current FCM token and upsert into user_device_tokens via Supabase
         com.google.firebase.messaging.FirebaseMessaging.getInstance().token
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -276,14 +276,16 @@ class MainActivity : BaseActivity() {
                     AuthUtils.getCurrentUserId(this)?.let { userId ->
                         lifecycleScope.launch(Dispatchers.IO) {
                             try {
-                                RetrofitClient.profileApi.updateProfile(
-                                    select = "*",
-                                    userIdFilter = "eq.$userId",
-                                    updates = mapOf("fcm_token" to fcmToken)
+                                RetrofitClient.deviceTokensApi.upsert(
+                                    mapOf(
+                                        "user_id" to userId,
+                                        "platform" to "android",
+                                        "provider" to "fcm",
+                                        "token" to fcmToken,
+                                        "app_version" to try { packageManager.getPackageInfo(packageName, 0).versionName ?: "" } catch (e: Exception) { "" }
+                                    )
                                 )
-                            } catch (ioe: IOException) {
-                            } catch (e: HttpException) {
-                            }
+                            } catch (_: Exception) { }
                         }
                     }
                 }

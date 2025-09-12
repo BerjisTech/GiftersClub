@@ -23,11 +23,17 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
       val userId = parts.getOrNull(1)
         ?.let { String(Base64.decode(it, Base64.URL_SAFE)) }
         ?.let { JSONObject(it).optString("sub") } ?: return@launch
-      RetrofitClient.profileApi.updateProfile(
-        select = "*",
-        userIdFilter = "eq.$userId",
-        updates = mapOf("fcm_token" to token)
-      )
+      try {
+        RetrofitClient.deviceTokensApi.upsert(
+          mapOf(
+            "user_id" to userId,
+            "platform" to "android",
+            "provider" to "fcm",
+            "token" to token,
+            "app_version" to try { packageManager.getPackageInfo(packageName, 0).versionName ?: "" } catch (e: Exception) { "" }
+          )
+        )
+      } catch (_: Exception) {}
     }
   }
 
