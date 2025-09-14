@@ -87,6 +87,9 @@
    • Implement SecuritySettingsFragment to block/unblock users, report users, and show user’s reports.
    • Implement ModerationSettingsFragment to add/remove filtered words with spinners and toasts.
    • Implement InteractionSettingsFragment to select who_can_interact (anyone, followers, friends) with persistence.
+8. Create Posts Enhancements
+   - In post edit screen, make "save" disabled and only enable when post is ready to be saved
+
 
 
 
