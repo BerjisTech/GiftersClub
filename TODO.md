@@ -93,6 +93,8 @@
    - Make the payment overlay semi transparent and display poster username
 
 9. Livestream enhancements
-    - Users above gifter level 10
+    - Users above gifter level 10 get custom "userx joined" notifications displayed to all users right above the comments section.
+    - I added a app\src\main\res\layout\include_livestream_tiles.xml file for custom multi host views since the pragramatic way breaks in some devices and is not very reliable. Adjust how streams work and use the new layout.
+    - Add an admin only or at least debug only button to trigger animations that I can trigger to test gift notifications
 
 

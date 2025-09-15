@@ -6,12 +6,11 @@
     android:background="@color/slate_950">
 
     <!--    One host view -->
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <FrameLayout
         android:id="@+id/oneHostView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_border_blue_300" />
 
     <!--    Two host view -->
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -23,7 +22,7 @@
         <FrameLayout
             android:id="@+id/twoHostViewPrimary"
             android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_height="300dp"
             android:background="@drawable/bg_border_blue_300"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/twoHostViewDivider"
@@ -42,7 +41,7 @@
         <FrameLayout
             android:id="@+id/twoHostViewSecondary"
             android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_height="300dp"
             android:background="@drawable/bg_border_pink_300"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -118,29 +117,26 @@
         <FrameLayout
             android:id="@+id/fourHostViewPrimary"
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@drawable/bg_border_blue_300"
+            android:layout_height="300dp"
+            android:background="@drawable/bg_border_pink_300"
             app:layout_constraintBottom_toTopOf="@id/fourHostViewDivider"
             app:layout_constraintEnd_toStartOf="@id/fourHostViewDivider"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintStart_toStartOf="parent" />
 
         <FrameLayout
             android:id="@+id/fourHostViewSecondary1"
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@drawable/bg_border_pink_300"
+            android:layout_height="300dp"
+            android:background="@drawable/bg_border_blue_300"
             app:layout_constraintBottom_toTopOf="@id/fourHostViewDivider"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/fourHostViewDivider"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintStart_toEndOf="@id/fourHostViewDivider" />
 
         <FrameLayout
             android:id="@+id/fourHostViewSecondary2"
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@drawable/bg_border_gray_300"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_height="300dp"
+            android:background="@drawable/bg_border_pink_300"
             app:layout_constraintEnd_toStartOf="@id/fourHostViewDivider"
             app:layout_constraintStart_toEndOf="@id/fourHostViewDivider"
             app:layout_constraintStart_toStartOf="parent"
@@ -149,19 +145,19 @@
         <FrameLayout
             android:id="@+id/fourHostViewSecondary3"
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@drawable/bg_border_gray_300"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_height="300dp"
+            android:background="@drawable/bg_border_blue_300"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/fourHostViewDivider"
             app:layout_constraintTop_toBottomOf="@id/fourHostViewDivider" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!--    Up to nine host view -->
+    <!--    Up to 17 host view -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/upToNineHostView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:visibility="gone">
 
         <View
             android:id="@+id/upToNineHostViewDivider"
@@ -181,6 +177,17 @@
             app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!--        Top dividers -->
+
+        <View
+            android:id="@+id/upToNineHostViewSideTopUpperDivider"
+            android:layout_width="1dp"
+            android:layout_height="1dp"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideTopDivider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <View
             android:id="@+id/upToNineHostViewSideTopDivider"
             android:layout_width="1dp"
@@ -191,6 +198,26 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <View
+            android:id="@+id/upToNineHostViewSideTopLowerDivider"
+            android:layout_width="1dp"
+            android:layout_height="1dp"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
+            app:layout_constraintTop_toBottomOf="@+id/upToNineHostViewSideTopDivider" />
+
+        <!--        Bottom dividers -->
+
+        <View
+            android:id="@+id/upToNineHostViewSideBottomUpperDivider"
+            android:layout_width="1dp"
+            android:layout_height="1dp"
+            app:layout_constraintBottom_toTopOf="@+id/upToNineHostViewSideBottomDivider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideDivider" />
+
+        <View
             android:id="@+id/upToNineHostViewSideBottomDivider"
             android:layout_width="1dp"
             android:layout_height="1dp"
@@ -198,6 +225,15 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
             app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideDivider" />
+
+        <View
+            android:id="@+id/upToNineHostViewSideBottomLowerDivider"
+            android:layout_width="1dp"
+            android:layout_height="1dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideBottomDivider" />
 
         <FrameLayout
             android:id="@+id/upToNineHostViewPrimary"
@@ -214,7 +250,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/bg_border_pink_300"
-            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideTopDivider"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideTopUpperDivider"
             app:layout_constraintEnd_toStartOf="@id/upToNineHostViewSideDivider"
             app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
             app:layout_constraintTop_toTopOf="parent" />
@@ -224,7 +260,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/bg_border_pink_300"
-            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideTopDivider"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideTopUpperDivider"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/upToNineHostViewSideDivider"
             app:layout_constraintTop_toTopOf="parent" />
@@ -235,20 +271,20 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/bg_border_pink_300"
-            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideTopDivider"
             app:layout_constraintEnd_toStartOf="@id/upToNineHostViewSideDivider"
             app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
-            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideTopDivider" />
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideTopUpperDivider" />
 
         <FrameLayout
             android:id="@+id/upToNineHostViewSecondary4"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/bg_border_pink_300"
-            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideTopDivider"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/upToNineHostViewSideDivider"
-            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideTopDivider" />
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideTopUpperDivider" />
 
 
         <FrameLayout
@@ -256,40 +292,120 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/bg_border_pink_300"
-            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideBottomDivider"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideTopLowerDivider"
             app:layout_constraintEnd_toStartOf="@id/upToNineHostViewSideDivider"
             app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
-            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideDivider" />
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideTopDivider" />
 
         <FrameLayout
             android:id="@+id/upToNineHostViewSecondary6"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/bg_border_pink_300"
-            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideBottomDivider"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideTopLowerDivider"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/upToNineHostViewSideDivider"
-            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideDivider" />
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideTopDivider" />
 
         <FrameLayout
             android:id="@+id/upToNineHostViewSecondary7"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/bg_border_pink_300"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideDivider"
             app:layout_constraintEnd_toStartOf="@id/upToNineHostViewSideDivider"
             app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
-            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideBottomDivider" />
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideTopLowerDivider" />
 
         <FrameLayout
             android:id="@+id/upToNineHostViewSecondary8"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/bg_border_pink_300"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideTopLowerDivider" />
+
+        <FrameLayout
+            android:id="@+id/upToNineHostViewSecondary9"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/bg_border_pink_300"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideBottomUpperDivider"
+            app:layout_constraintEnd_toStartOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideDivider" />
+
+        <FrameLayout
+            android:id="@+id/upToNineHostViewSecondary10"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/bg_border_pink_300"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideBottomUpperDivider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideDivider" />
+
+        <FrameLayout
+            android:id="@+id/upToNineHostViewSecondary11"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/bg_border_pink_300"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideBottomDivider"
+            app:layout_constraintEnd_toStartOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideBottomUpperDivider" />
+
+        <FrameLayout
+            android:id="@+id/upToNineHostViewSecondary12"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/bg_border_pink_300"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideBottomDivider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideBottomUpperDivider" />
+
+        <FrameLayout
+            android:id="@+id/upToNineHostViewSecondary13"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/bg_border_pink_300"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideBottomLowerDivider"
+            app:layout_constraintEnd_toStartOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideBottomDivider" />
+
+        <FrameLayout
+            android:id="@+id/upToNineHostViewSecondary14"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/bg_border_pink_300"
+            app:layout_constraintBottom_toTopOf="@id/upToNineHostViewSideBottomLowerDivider"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/upToNineHostViewSideDivider"
             app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideBottomDivider" />
+
+        <FrameLayout
+            android:id="@+id/upToNineHostViewSecondary15"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/bg_border_pink_300"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewDivider"
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideBottomLowerDivider" />
+
+        <FrameLayout
+            android:id="@+id/upToNineHostViewSecondary16"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/bg_border_pink_300"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/upToNineHostViewSideDivider"
+            app:layout_constraintTop_toBottomOf="@id/upToNineHostViewSideBottomLowerDivider" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
