@@ -89,7 +89,10 @@
    • Implement InteractionSettingsFragment to select who_can_interact (anyone, followers, friends) with persistence.
 8. Create Posts Enhancements
    - In post edit screen, make "save" disabled and only enable when post is ready to be saved
+   - Prevent usage of .octeat-stream and just pass real data for better caching. Accept known types like png, jpg, svg for images and mp4, .mov etc for video
+   - Make the payment overlay semi transparent and display poster username
 
-
+9. Livestream enhancements
+    - Users above gifter level 10
 
 
