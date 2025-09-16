@@ -198,7 +198,16 @@ class PostAdapter(
                         itemView.context.getString(R.string.subscribe_to_creator)
                     else
                         itemView.context.getString(R.string.purchase_access)
-                    overlay.setOnClickListener { onLocked(post) }
+                    overlay.isEnabled = true
+                    overlay.setOnClickListener {
+                        // Provide immediate feedback while action flows
+                        lockAction.text = if (post.accessType == "subscription")
+                            itemView.context.getString(R.string.subscribing_ellipsis)
+                        else
+                            itemView.context.getString(R.string.purchasing_ellipsis)
+                        overlay.isEnabled = false
+                        onLocked(post)
+                    }
                 } else {
                     mediaPager.visibility = View.VISIBLE
                     postDetails.visibility = View.VISIBLE

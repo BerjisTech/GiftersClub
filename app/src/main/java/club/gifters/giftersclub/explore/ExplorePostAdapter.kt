@@ -110,7 +110,21 @@ class ExplorePostAdapter(
                 }
                 if (!hasAccess) {
                     overlay.visibility = View.VISIBLE
-                    overlay.setOnClickListener { onLocked(post) }
+                    val lockAction = itemView.findViewById<TextView>(R.id.tvLockAction)
+                    // Set base action text based on access type
+                    lockAction.text = if (post.accessType == "subscription")
+                        itemView.context.getString(R.string.subscribe_to_creator)
+                    else
+                        itemView.context.getString(R.string.purchase_access)
+                    overlay.isEnabled = true
+                    overlay.setOnClickListener {
+                        lockAction.text = if (post.accessType == "subscription")
+                            itemView.context.getString(R.string.subscribing_ellipsis)
+                        else
+                            itemView.context.getString(R.string.purchasing_ellipsis)
+                        overlay.isEnabled = false
+                        onLocked(post)
+                    }
                 } else {
                     mediaPager.visibility = View.VISIBLE
                     mediaIndicatorLayout.visibility = if (mediaPager.adapter?.itemCount ?: 0 > 1) View.VISIBLE else View.GONE

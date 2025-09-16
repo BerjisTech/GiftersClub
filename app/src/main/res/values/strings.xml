@@ -105,9 +105,11 @@
     <string name="purchase_successful">Purchase successful!</string>
     <string name="purchase_failed">Purchase failed</string>
     <string name="subscribe_to_creator">Subscribe to creator</string>
+    <string name="subscribing_ellipsis">Subscribing...</string>
     <string name="subscription_type_hint">Subscription type (one_time, monthly, annual)</string>
     <string name="subscribe">Subscribe</string>
     <string name="purchase_access">Purchase access</string>
+    <string name="purchasing_ellipsis">Purchasing...</string>
     <string name="purchase_for_tokens">Purchase access for %1$d tokens?</string>
     <string name="balance">Balance</string>
     <string name="gift_icon">Gift Icon</string>

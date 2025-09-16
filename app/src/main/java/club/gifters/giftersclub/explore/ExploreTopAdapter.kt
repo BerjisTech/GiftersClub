@@ -133,7 +133,20 @@ class ExploreTopAdapter(
                     itemView.findViewById<View>(R.id.postDetails).visibility = View.GONE
                     val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
                     overlay.visibility = View.VISIBLE
-                    overlay.setOnClickListener { onLocked(post) }
+                    val lockAction = itemView.findViewById<TextView>(R.id.tvLockAction)
+                    lockAction.text = if (post.accessType == "subscription")
+                        itemView.context.getString(R.string.subscribe_to_creator)
+                    else
+                        itemView.context.getString(R.string.purchase_access)
+                    overlay.isEnabled = true
+                    overlay.setOnClickListener {
+                        lockAction.text = if (post.accessType == "subscription")
+                            itemView.context.getString(R.string.subscribing_ellipsis)
+                        else
+                            itemView.context.getString(R.string.purchasing_ellipsis)
+                        overlay.isEnabled = false
+                        onLocked(post)
+                    }
                     return@launch
                 }
                 mediaPager.visibility = View.VISIBLE

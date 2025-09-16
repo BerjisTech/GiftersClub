@@ -362,9 +362,17 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             val view = layoutInflater.inflate(R.layout.dialog_purchase_post_access, null)
             val tvMsg = view.findViewById<TextView>(R.id.tvPurchaseMessage)
             tvMsg.text = getString(R.string.purchase_for_tokens, post.price ?: 0)
-            view.findViewById<Button>(R.id.btnPurchaseConfirm).setOnClickListener {
+            val btnConfirm = view.findViewById<Button>(R.id.btnPurchaseConfirm)
+            val btnCancel = view.findViewById<Button>(R.id.btnPurchaseCancel)
+            btnConfirm.setOnClickListener {
                 sheet.dismiss()
                 lifecycleScope.launch {
+                    // UX: reflect that we are processing the purchase in any visible UI
+                    try {
+                        btnConfirm.isEnabled = false
+                        btnCancel.isEnabled = false
+                        btnConfirm.text = getString(R.string.purchasing_ellipsis)
+                    } catch (_: Exception) {}
                     val profList = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$userId")
                     val prof = profList.firstOrNull()
                     val balance = prof?.tokenBalance ?: 0
@@ -389,7 +397,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                     }
                 }
             }
-            view.findViewById<Button>(R.id.btnPurchaseCancel).setOnClickListener { sheet.dismiss() }
+            btnCancel.setOnClickListener { sheet.dismiss() }
             sheet.setContentView(view)
             sheet.show()
         }
