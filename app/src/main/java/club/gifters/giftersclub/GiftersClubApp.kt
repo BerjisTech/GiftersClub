@@ -80,9 +80,11 @@ object AppServices {
     lateinit var imageLoader: ImageLoader
         private set
 
-    // Media3 cache and media source factory shared by players
+    // Media3 cache and media data source factory shared by players
     private lateinit var mediaCache: SimpleCache
     private lateinit var mediaSourceFactory: DefaultMediaSourceFactory
+    lateinit var mediaCacheDataSourceFactory: CacheDataSource.Factory
+        private set
 
     fun init(context: Context) {
         // ---- OkHttp HTTP cache (100MB) ----
@@ -128,11 +130,11 @@ object AppServices {
 
         val upstreamFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("GiftersClub/1.0")
-        val cacheDsFactory = CacheDataSource.Factory()
+        mediaCacheDataSourceFactory = CacheDataSource.Factory()
             .setCache(mediaCache)
             .setUpstreamDataSourceFactory(upstreamFactory)
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
-        mediaSourceFactory = DefaultMediaSourceFactory(cacheDsFactory)
+        mediaSourceFactory = DefaultMediaSourceFactory(mediaCacheDataSourceFactory)
     }
 
     /**

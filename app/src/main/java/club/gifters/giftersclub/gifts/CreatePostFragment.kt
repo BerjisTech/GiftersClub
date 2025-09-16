@@ -2089,7 +2089,17 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        // Ensure no pending callbacks keep the Fragment/View hierarchy alive
+        try {
+            longPressRunnable?.let { longPressHandler.removeCallbacks(it) }
+            longPressHandler.removeCallbacksAndMessages(null)
+        } catch (_: Exception) {}
+        // Release any preview player resources
         releasePreviewPlayer()
+        // Drop large bitmap references to allow GC to reclaim memory
+        try { ivPostPreview.setImageDrawable(null) } catch (_: Exception) {}
+        originalBitmap = null
+        editedBitmap = null
     }
 
     private fun updateSegmentsBar() {

@@ -232,6 +232,9 @@ class PostMediaAdapter(
         }
 
         fun release() {
+            // Cancel any pending UI callbacks that could keep this view holder referenced
+            hideControlsRunnable?.let { controls.removeCallbacks(it) }
+            hideControlsRunnable = null
             playerView.player = null
             player?.release()
             player = null
