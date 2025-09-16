@@ -16,8 +16,8 @@ android {
         applicationId = "club.gifters.giftersclub"
         minSdk = 24
         targetSdk = 35
-        versionCode = 36
-        versionName = "1.0.36"
+        versionCode = 37
+        versionName = "1.0.37"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -75,7 +75,8 @@ android {
     // The scripts rely on readelf/llvm-readelf (available from the Android NDK or PATH)
     tasks.register("printNativePageSizes") {
         group = "verification"
-        description = "Prints page size info for merged native libs using scripts/scan_so_pagesize.sh"
+        description =
+            "Prints page size info for merged native libs using scripts/scan_so_pagesize.sh"
         doLast {
             val script = rootProject.file("scripts/scan_so_pagesize.sh")
             if (!script.exists()) {
@@ -97,7 +98,8 @@ android {
         group = "verification"
         description = "Fails if any merged .so lacks 16 KB page-size support (best-effort check)."
         doLast {
-            val out = file("$projectDir/build/intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib")
+            val out =
+                file("$projectDir/build/intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib")
             if (!out.exists()) error("Merged native libs not found. Run :app:assembleRelease first.")
             // Try to run the scan script and then grep for suspicious page size values
             val script = rootProject.file("scripts/scan_so_pagesize.sh")

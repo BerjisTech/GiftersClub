@@ -7,14 +7,13 @@ import android.widget.ImageView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import club.gifters.giftersclub.BaseActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import coil.load
 import club.gifters.giftersclub.R
-import club.gifters.giftersclub.media.MediaCache
+import club.gifters.giftersclub.media.Exo
 
 /**
  * Fullscreen viewer for image or video attachments.
@@ -31,12 +30,8 @@ class FullscreenMediaActivity : BaseActivity() {
         if (type == "video") {
             iv.isVisible = false
             pv.isVisible = true
-            // Build ExoPlayer with a media source that uses cache
-            val factory = MediaCache.cacheDataSourceFactory(this)
-            val mediaSourceFactory = DefaultMediaSourceFactory(factory)
-            val exo = ExoPlayer.Builder(this)
-                .setMediaSourceFactory(mediaSourceFactory)
-                .build()
+            // Build ExoPlayer using the app-wide cached media stack
+            val exo = Exo.newPlayer(this)
             pv.player = exo
             exo.repeatMode = Player.REPEAT_MODE_ONE
             exo.setMediaItem(MediaItem.fromUri(url))

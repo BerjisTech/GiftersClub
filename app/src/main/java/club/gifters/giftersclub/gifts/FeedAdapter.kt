@@ -114,9 +114,12 @@ class FeedAdapter(
         private var preview: SurfaceViewRenderer? = null
         private var room: Room? = null
         private var bindJob: Job? = null
+        private var eventsJob: Job? = null
         init {
             view.setOnClickListener {
                 val item = (getItem(bindingAdapterPosition) as? FeedItem.LiveItem)?.live ?: return@setOnClickListener
+                // Stop preview first to avoid overlapping audio
+                stopPreview()
                 val ctx = itemView.context
                 val uri = Uri.parse("https://gifters.club/live/${item.id}")
                 val intent = Intent(Intent.ACTION_VIEW, uri)
@@ -174,7 +177,7 @@ class FeedAdapter(
                             (pubPair.second as? RemoteVideoTrack)?.addRenderer(pv)
                         }
                     }
-                    scope.launch(Dispatchers.Main) {
+                    eventsJob = scope.launch(Dispatchers.Main) {
                         r.events.collect { evt ->
                             if (evt is RoomEvent.TrackSubscribed && evt.track is RemoteVideoTrack) {
                                 (evt.track as RemoteVideoTrack).addRenderer(pv)
@@ -187,6 +190,7 @@ class FeedAdapter(
 
         fun stopPreview() {
             bindJob?.cancel(); bindJob = null
+            eventsJob?.cancel(); eventsJob = null
             try { room?.disconnect() } catch (_: Exception) {}
             room = null
             previewContainer.removeAllViews()

@@ -125,6 +125,9 @@ class LiveStreamActivity : BaseActivity() {
     private val tileViews: MutableMap<String, View> = mutableMapOf()
     // Whether the video container is in grid mode (local + remotes as tiles)
     private var isGridMode: Boolean = false
+    // Static tiling: root of included tile layouts and per-track renderers
+    private var tilesRoot: View? = null
+    private val staticTrackRenderers: MutableMap<String, SurfaceViewRenderer> = mutableMapOf()
 
     // UI references for dynamic live stream controls
     private lateinit var liveTopBar: ConstraintLayout
@@ -351,13 +354,13 @@ class LiveStreamActivity : BaseActivity() {
                 BottomSheetBehavior.STATE_HALF_EXPANDED else BottomSheetBehavior.STATE_HIDDEN
         }
 
-        // Ensure initial relayout when container measures
+        // Ensure tiles root is ready after container is measured (no dynamic layout calculations)
         try {
             val container = findViewById<FrameLayout>(R.id.flLiveStream)
             container.viewTreeObserver.addOnGlobalLayoutListener(object: android.view.ViewTreeObserver.OnGlobalLayoutListener {
                 override fun onGlobalLayout() {
                     if (container.width > 0 && container.height > 0) {
-                        layoutTiles(container)
+                        ensureTilesLayout(container)
                         container.viewTreeObserver.removeOnGlobalLayoutListener(this)
                     }
                 }
@@ -629,12 +632,15 @@ class LiveStreamActivity : BaseActivity() {
             }
         }
 
-        // Prepare video container (we create one renderer per remote video)
+        // Prepare video container
         val container = findViewById<FrameLayout>(R.id.flLiveStream)
         container.removeAllViews()
+        // Clear both dynamic and static renderers
         videoViews.values.forEach { it.release() }
         videoViews.clear()
-        ensureOverflowBadge(container)
+        tilesRoot = null
+        staticTrackRenderers.values.forEach { try { it.release() } catch (_: Exception) {} }
+        staticTrackRenderers.clear()
 
         // Connect to LiveKit as viewer (subscribe only)
         val lkToken = currentStream?.token ?: currentStream?.id
@@ -678,17 +684,8 @@ class LiveStreamActivity : BaseActivity() {
                             }
                         }
                     }
-                    // Attach already-subscribed remote videos
-                    room.remoteParticipants.values.forEach { participant ->
-                        participant.videoTrackPublications.forEach { pubPair ->
-                            val track = pubPair.second as? RemoteVideoTrack
-                            if (track != null) {
-                                ensureGridMode(container)
-                                val key = "${participant.sid}_${track.sid}"
-                                addVideoTile(container, key, track)
-                            }
-                        }
-                    }
+                    // Attach already-subscribed remote videos into static tiles
+                    updateStaticTiles(container, includeLocal = false)
                     // Send a 'hello' identity message so viewers can label tiles accurately
                     try {
                         val uid = AuthUtils.getCurrentUserId(this@LiveStreamActivity) ?: ""
@@ -710,14 +707,7 @@ class LiveStreamActivity : BaseActivity() {
                         room.events.collect { event ->
                             when (event) {
                                 is RoomEvent.TrackSubscribed -> {
-                                    val rt = event.track as? RemoteVideoTrack
-                                    // Key by participant + track sid (avoid relying on publication field)
-                                    if (rt != null) {
-                                        ensureGridMode(container)
-                                        val key = "${event.participant.sid}_${rt.sid}"
-                                        addVideoTile(container, key, rt)
-                                        updateOverflow(container)
-                                    }
+                                    updateStaticTiles(container, includeLocal = false)
                                 }
                                 is RoomEvent.DataReceived -> {
                                     try {
@@ -733,19 +723,8 @@ class LiveStreamActivity : BaseActivity() {
                                         }
                                     } catch (_: Exception) { }
                                 }
-                                is RoomEvent.TrackUnsubscribed -> {
-                                    val rt = event.track as? RemoteVideoTrack
-                                    if (rt != null) {
-                                        val key = "${event.participant.sid}_${rt.sid}"
-                                        removeVideoTile(container, key)
-                                        updateOverflow(container)
-                                    }
-                                }
-                                is RoomEvent.ParticipantDisconnected -> {
-                                    // remove all tiles for this participant
-                                    val keys = videoViews.keys.filter { it.startsWith("${event.participant.sid}_") }
-                                    keys.forEach { k -> removeVideoTile(container, k) }
-                                    updateOverflow(container)
+                                is RoomEvent.TrackUnsubscribed, is RoomEvent.ParticipantDisconnected -> {
+                                    updateStaticTiles(container, includeLocal = false)
                                 }
                                 else -> Unit
                             }
@@ -1610,17 +1589,12 @@ class LiveStreamActivity : BaseActivity() {
                     localTrack?.addRenderer(preview)
                     // After connect, enumerate any already-subscribed remote tracks
                     val container = findViewById<FrameLayout>(R.id.flLiveStream)
-                    room.remoteParticipants.values.forEach { participant ->
-                        participant.videoTrackPublications.forEach { pubPair ->
-                            val track = pubPair.second as? RemoteVideoTrack
-                            if (track != null) {
-                                ensureGridMode(container)
-                                val key = "${participant.sid}_${track.sid}"
-                                addVideoTile(container, key, track)
-                                updateOverflow(container)
-                            }
-                        }
-                    }
+                    // Switch from any transient preview to static tiles
+                    container.removeAllViews()
+                    tilesRoot = null
+                    staticTrackRenderers.values.forEach { try { it.release() } catch (_: Exception) {} }
+                    staticTrackRenderers.clear()
+                    updateStaticTiles(container, includeLocal = true)
                 } catch (_: Exception) { }
                 // Load battle state after connect
                 lifecycleScope.launch { loadBattleState() }
@@ -1629,26 +1603,8 @@ class LiveStreamActivity : BaseActivity() {
             lifecycleScope.launch {
                 room.events.collect { evt ->
                     when (evt) {
-                        is RoomEvent.TrackSubscribed -> {
-                            val rt = evt.track as? RemoteVideoTrack
-                            if (rt != null) {
-                                ensureGridMode(container)
-                                val key = "${evt.participant.sid}_${rt.sid}"
-                                addVideoTile(container, key, rt)
-                                updateOverflow(container)
-                            }
-                        }
-                        is RoomEvent.TrackUnsubscribed -> {
-                            val rt = evt.track as? RemoteVideoTrack
-                            if (rt != null) {
-                                val key = "${evt.participant.sid}_${rt.sid}"
-                                removeVideoTile(container, key)
-                                updateOverflow(container)
-                            }
-                        }
-                        is RoomEvent.ParticipantDisconnected -> {
-                            val keys = videoViews.keys.filter { it.startsWith("${evt.participant.sid}_") }
-                            keys.forEach { k -> removeVideoTile(container, k) }
+                        is RoomEvent.TrackSubscribed, is RoomEvent.TrackUnsubscribed, is RoomEvent.ParticipantDisconnected -> {
+                            updateStaticTiles(container, includeLocal = true)
                         }
                         else -> Unit
                     }
@@ -1859,6 +1815,147 @@ class LiveStreamActivity : BaseActivity() {
             }
             runOnUiThread { matchTimerText?.text = "00:00" }
         }
+    }
+
+    /** Inflate the static tiles layout into the container if not present. */
+    private fun ensureTilesLayout(container: FrameLayout) {
+        if (tilesRoot != null) return
+        val v = layoutInflater.inflate(R.layout.include_livestream_tiles, container, false)
+        container.addView(v)
+        tilesRoot = v
+    }
+
+    /** Show the appropriate tile group for [count] and return the target frames in order. */
+    private fun selectFrames(count: Int): List<FrameLayout> {
+        val root = tilesRoot ?: return emptyList()
+        val one = root.findViewById<View>(R.id.oneHostView)
+        val two = root.findViewById<View>(R.id.twoHostView)
+        val three = root.findViewById<View>(R.id.threeHostView)
+        val four = root.findViewById<View>(R.id.fourHostView)
+        val many = root.findViewById<View>(R.id.upTo17HostView)
+        fun hideAll() { one.visibility = View.GONE; two.visibility = View.GONE; three.visibility = View.GONE; four.visibility = View.GONE; many.visibility = View.GONE }
+        hideAll()
+        return when (count.coerceIn(0, 17)) {
+            0 -> { one.visibility = View.VISIBLE; listOf(root.findViewById(R.id.oneHostView)) }
+            1 -> { one.visibility = View.VISIBLE; listOf(root.findViewById(R.id.oneHostView)) }
+            2 -> {
+                two.visibility = View.VISIBLE
+                listOf(
+                    root.findViewById(R.id.twoHostViewPrimary),
+                    root.findViewById(R.id.twoHostViewSecondary)
+                )
+            }
+            3 -> {
+                three.visibility = View.VISIBLE
+                listOf(
+                    root.findViewById(R.id.threeHostViewPrimary),
+                    root.findViewById(R.id.threeHostViewSecondary1),
+                    root.findViewById(R.id.threeHostViewSecondary2)
+                )
+            }
+            4 -> {
+                four.visibility = View.VISIBLE
+                listOf(
+                    root.findViewById(R.id.fourHostViewPrimary),
+                    root.findViewById(R.id.fourHostViewSecondary1),
+                    root.findViewById(R.id.fourHostViewSecondary2),
+                    root.findViewById(R.id.fourHostViewSecondary3)
+                )
+            }
+            else -> {
+                many.visibility = View.VISIBLE
+                val frames = mutableListOf<FrameLayout>()
+                frames += root.findViewById<FrameLayout>(R.id.upToNineHostViewPrimary)
+                // Secondary1..16
+                val ids = intArrayOf(
+                    R.id.upToNineHostViewSecondary1,
+                    R.id.upToNineHostViewSecondary2,
+                    R.id.upToNineHostViewSecondary3,
+                    R.id.upToNineHostViewSecondary4,
+                    R.id.upToNineHostViewSecondary5,
+                    R.id.upToNineHostViewSecondary6,
+                    R.id.upToNineHostViewSecondary7,
+                    R.id.upToNineHostViewSecondary8,
+                    R.id.upToNineHostViewSecondary9,
+                    R.id.upToNineHostViewSecondary10,
+                    R.id.upToNineHostViewSecondary11,
+                    R.id.upToNineHostViewSecondary12,
+                    R.id.upToNineHostViewSecondary13,
+                    R.id.upToNineHostViewSecondary14,
+                    R.id.upToNineHostViewSecondary15,
+                    R.id.upToNineHostViewSecondary16,
+                )
+                ids.forEach { frames += root.findViewById<FrameLayout>(it) }
+                frames
+            }
+        }
+    }
+
+    /** Rebuild static tiles and attach current tracks. */
+    private fun updateStaticTiles(container: FrameLayout, includeLocal: Boolean = false) {
+        ensureTilesLayout(container)
+        val room = liveKitRoom ?: return
+        val tracks = mutableListOf<Pair<String, Any>>()
+        if (includeLocal) try {
+            val pub = room.localParticipant.videoTrackPublications.firstOrNull()
+            val lt = pub?.second as? LocalVideoTrack
+            if (lt != null) tracks += ("local_${lt.sid ?: "cam"}") to lt
+        } catch (_: Exception) {}
+        try {
+            room.remoteParticipants.values.forEach { p ->
+                p.videoTrackPublications.forEach { pubPair ->
+                    val rt = pubPair.second as? RemoteVideoTrack
+                    if (rt != null) tracks += (rt.sid?.toString() ?: pubPair.first.sid.toString()) to rt
+                }
+            }
+        } catch (_: Exception) {}
+        val display = tracks.take(17)
+        val frames = selectFrames(display.size)
+        // Release renderers no longer used
+        val activeIds = display.map { it.first }.toSet()
+        val toRemove = staticTrackRenderers.keys.filter { it !in activeIds }
+        toRemove.forEach { id ->
+            try { staticTrackRenderers.remove(id)?.release() } catch (_: Exception) {}
+        }
+        // Attach tracks to frames
+        for (i in display.indices) {
+            val (id, t) = display[i]
+            val frame = frames[i]
+            frame.removeAllViews()
+            val renderer = staticTrackRenderers[id] ?: SurfaceViewRenderer(this).also { r ->
+                r.setScalingType(livekit.org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FIT)
+                r.setEnableHardwareScaler(true)
+                try { room.initVideoRenderer(r) } catch (_: Exception) {}
+                staticTrackRenderers[id] = r
+            }
+            frame.addView(renderer, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+            when (t) {
+                is RemoteVideoTrack -> t.addRenderer(renderer)
+                is LocalVideoTrack -> t.addRenderer(renderer)
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Keep the screen awake while watching a live stream
+        try { window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) } catch (_: Exception) {}
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Allow the screen to sleep again and release live resources
+        try { window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) } catch (_: Exception) {}
+        try { liveKitRoom?.disconnect() } catch (_: Exception) {}
+        liveKitRoom = null
+        try {
+            videoViews.values.forEach { it.release() }
+            videoViews.clear()
+            findViewById<android.widget.FrameLayout>(R.id.flLiveStream)?.removeAllViews()
+            staticTrackRenderers.values.forEach { it.release() }
+            staticTrackRenderers.clear()
+            tilesRoot = null
+        } catch (_: Exception) {}
     }
 
     private fun percentFor(userId: String): Int {

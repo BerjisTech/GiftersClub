@@ -56,6 +56,7 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
         private var renderer: SurfaceViewRenderer? = null
         private var room: Room? = null
         private var job: Job? = null
+        private var eventsJob: Job? = null
         init {
             view.setOnClickListener {
                 (getItem(bindingAdapterPosition))?.let { ls ->
@@ -107,14 +108,19 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
                     val rm = LiveKit.create(itemView.context, opts, LiveKitOverrides())
                     rm.initVideoRenderer(r)
                     room = rm
+                    // Connect with default autoSubscribe=true, then explicitly mute audio tracks.
                     withContext(Dispatchers.IO) { rm.connect(LiveKitConfig.WS_URL, token, io.livekit.android.ConnectOptions()) }
+                    // Attach already-subscribed video tracks for the preview surface.
                     rm.remoteParticipants.values.forEach { p ->
                         p.videoTrackPublications.forEach { pair -> (pair.second as? RemoteVideoTrack)?.addRenderer(r) }
                     }
-                    scope.launch {
+                    eventsJob = scope.launch {
                         rm.events.collect { e ->
-                            if (e is RoomEvent.TrackSubscribed && e.track is RemoteVideoTrack) {
-                                (e.track as RemoteVideoTrack).addRenderer(r)
+                            when (e) {
+                                is RoomEvent.TrackSubscribed -> {
+                                    (e.track as? RemoteVideoTrack)?.addRenderer(r)
+                                }
+                                else -> Unit
                             }
                         }
                     }
@@ -124,6 +130,7 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
 
         fun stopPreview() {
             job?.cancel(); job = null
+            eventsJob?.cancel(); eventsJob = null
             try { room?.disconnect() } catch (_: Exception) {}
             room = null
             renderer?.release(); renderer = null
