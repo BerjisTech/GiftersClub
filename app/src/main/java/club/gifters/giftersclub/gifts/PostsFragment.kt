@@ -95,7 +95,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     private lateinit var swipeRefresh: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
     private lateinit var adapter: FeedAdapter
     private var page = 0
-    private val limit = 10
+    private val limit = 50
     private val perAuthorLimit = 3
     private var isLoading = false
     private var hasRetry401 = false
