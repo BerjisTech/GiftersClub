@@ -204,9 +204,9 @@ class LiveStreamActivity : BaseActivity() {
                         }
                     } catch (_: Exception) {}
                 }
-                val ordered = merged.sortedByDescending { it.createdAt }
+                val ordered = merged.sortedBy { it.createdAt }
                 commentsAdapter.submitList(ordered)
-                if (ordered.isNotEmpty()) rvLiveComments.scrollToPosition(0)
+                if (ordered.isNotEmpty()) rvLiveComments.scrollToPosition(ordered.size - 1)
             }
         }
     }
@@ -220,7 +220,10 @@ class LiveStreamActivity : BaseActivity() {
         // comments list overlay (bottom-up) – max half-screen height, bring above video
         rvLiveComments = findViewById<RecyclerView>(R.id.rvLiveComments).also { rv ->
             commentsAdapter = CommentsAdapter()
-            rv.layoutManager = LinearLayoutManager(this).apply { reverseLayout = false }
+            rv.layoutManager = LinearLayoutManager(this).apply {
+                reverseLayout = false
+                stackFromEnd = true
+            }
             rv.adapter = commentsAdapter
             // limit height to half screen
             val half = resources.displayMetrics.heightPixels / 2
@@ -706,7 +709,8 @@ class LiveStreamActivity : BaseActivity() {
                     launch {
                         room.events.collect { event ->
                             when (event) {
-                                is RoomEvent.TrackSubscribed -> {
+                                is RoomEvent.TrackSubscribed, is RoomEvent.TrackPublished,
+                                is RoomEvent.ParticipantConnected -> {
                                     updateStaticTiles(container, includeLocal = false)
                                 }
                                 is RoomEvent.DataReceived -> {
@@ -1464,9 +1468,9 @@ class LiveStreamActivity : BaseActivity() {
                     select = "*,profile:profiles(*)",
                     streamFilter = "eq.$sid"
                 )
-                val initialSorted = initial.sortedByDescending { it.createdAt }
+                val initialSorted = initial.sortedBy { it.createdAt }
                 commentsAdapter.submitList(initialSorted)
-                if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(0)
+                if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(initialSorted.size - 1)
                 commentsJob = launch {
                     while (isActive) {
                         delay(3000)
@@ -1474,9 +1478,9 @@ class LiveStreamActivity : BaseActivity() {
                             select = "*,profile:profiles(*)",
                             streamFilter = "eq.$sid"
                         )
-                        val updatedSorted = updated.sortedByDescending { it.createdAt }
+                        val updatedSorted = updated.sortedBy { it.createdAt }
                         commentsAdapter.submitList(updatedSorted)
-                        if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(0)
+                        if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(updatedSorted.size - 1)
                     }
                 }
             }
@@ -1603,7 +1607,9 @@ class LiveStreamActivity : BaseActivity() {
             lifecycleScope.launch {
                 room.events.collect { evt ->
                     when (evt) {
-                        is RoomEvent.TrackSubscribed, is RoomEvent.TrackUnsubscribed, is RoomEvent.ParticipantDisconnected -> {
+                        is RoomEvent.TrackSubscribed, is RoomEvent.TrackPublished,
+                        is RoomEvent.ParticipantConnected,
+                        is RoomEvent.TrackUnsubscribed, is RoomEvent.ParticipantDisconnected -> {
                             updateStaticTiles(container, includeLocal = true)
                         }
                         else -> Unit
@@ -1836,7 +1842,7 @@ class LiveStreamActivity : BaseActivity() {
         fun hideAll() { one.visibility = View.GONE; two.visibility = View.GONE; three.visibility = View.GONE; four.visibility = View.GONE; many.visibility = View.GONE }
         hideAll()
         return when (count.coerceIn(0, 17)) {
-            0 -> { one.visibility = View.VISIBLE; listOf(root.findViewById(R.id.oneHostView)) }
+            0 -> { /* hide all */ emptyList() }
             1 -> { one.visibility = View.VISIBLE; listOf(root.findViewById(R.id.oneHostView)) }
             2 -> {
                 two.visibility = View.VISIBLE
@@ -2186,9 +2192,9 @@ class LiveStreamActivity : BaseActivity() {
                                 select = "*,profile:profiles(*)",
                                 streamFilter = "eq.$sid"
                             )
-                        val initialSorted = initial.sortedByDescending { it.createdAt }
-                        commentsAdapter.submitList(initialSorted)
-                        if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(0)
+                val initialSorted = initial.sortedBy { it.createdAt }
+                commentsAdapter.submitList(initialSorted)
+                if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(initialSorted.size - 1)
                         commentsJob = lifecycleScope.launch {
                             while (isActive) {
                                 delay(3000)
@@ -2196,9 +2202,9 @@ class LiveStreamActivity : BaseActivity() {
                                     select = "*,profile:profiles(*)",
                                     streamFilter = "eq.$sid"
                                 )
-                                val updatedSorted = updated.sortedByDescending { it.createdAt }
-                                commentsAdapter.submitList(updatedSorted)
-                                if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(0)
+                        val updatedSorted = updated.sortedBy { it.createdAt }
+                        commentsAdapter.submitList(updatedSorted)
+                        if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(updatedSorted.size - 1)
                             }
                         }
                         }
