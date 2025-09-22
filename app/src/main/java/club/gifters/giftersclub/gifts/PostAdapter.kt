@@ -194,24 +194,40 @@ class PostAdapter(
                 }
                 if (!hasAccess) {
                     overlay.visibility = View.VISIBLE
-                    lockAction.text = if (post.accessType == "subscription")
+                    // Show blurred media behind frosted overlay
+                    mediaPager.visibility = View.VISIBLE
+                    postDetails.visibility = View.VISIBLE
+                    val isSub = post.accessType == "subscription"
+                    lockAction.text = if (isSub)
                         itemView.context.getString(R.string.subscribe_to_creator)
                     else
                         itemView.context.getString(R.string.purchase_access)
-                    overlay.isEnabled = true
-                    overlay.setOnClickListener {
-                        // Provide immediate feedback while action flows
-                        lockAction.text = if (post.accessType == "subscription")
-                            itemView.context.getString(R.string.subscribing_ellipsis)
-                        else
-                            itemView.context.getString(R.string.purchasing_ellipsis)
-                        overlay.isEnabled = false
+                    itemView.findViewById<TextView>(R.id.tvCreatorName)?.text = "@" + (post.profile?.username ?: "")
+                    val btn = itemView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnLockCta)
+                    btn.text = if (isSub) itemView.context.getString(R.string.subscribe) else itemView.context.getString(R.string.unlock)
+                    btn.isEnabled = true
+                    btn.setOnClickListener {
+                        btn.isEnabled = false
+                        lockAction.text = if (isSub) itemView.context.getString(R.string.subscribing_ellipsis) else itemView.context.getString(R.string.purchasing_ellipsis)
                         onLocked(post)
                     }
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= 31) {
+                            val blur = android.graphics.RenderEffect.createBlurEffect(24f, 24f, android.graphics.Shader.TileMode.CLAMP)
+                            itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(blur)
+                            itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(blur)
+                        }
+                    } catch (_: Exception) {}
                 } else {
                     mediaPager.visibility = View.VISIBLE
                     postDetails.visibility = View.VISIBLE
                     overlay.visibility = View.GONE
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= 31) {
+                            itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(null)
+                            itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(null)
+                        }
+                    } catch (_: Exception) {}
                     if ((post.media ?: emptyList()).size > 1) {
                         indicatorLayout.visibility = View.VISIBLE
                     }

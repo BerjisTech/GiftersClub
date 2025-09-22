@@ -10,8 +10,8 @@
         android:id="@+id/lockOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:alpha="0.9"
-        android:background="@drawable/bg_indigo_zinc_gradient">
+        android:alpha="1.0"
+        android:background="#80000000">
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -36,6 +36,38 @@
                 android:text="@string/subscribe_to_view"
                 android:textColor="@color/white"
                 android:textSize="16sp" />
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivCreatorAvatar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginTop="8dp"
+                android:contentDescription="@string/user_avatar"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
+
+            <TextView
+                android:id="@+id/tvCreatorName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:text="@string/creator" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLockCta"
+                style="@style/Widget.MaterialComponents.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/subscribe"
+                android:textAllCaps="false"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                app:backgroundTint="@color/white"
+                app:cornerRadius="20dp"
+                android:textColor="@color/black" />
         </LinearLayout>
     </FrameLayout>
 

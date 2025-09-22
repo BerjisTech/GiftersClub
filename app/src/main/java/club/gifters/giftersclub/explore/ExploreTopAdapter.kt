@@ -128,31 +128,48 @@ class ExploreTopAdapter(
                     }
                 }
                 if (!hasAccess) {
-                    mediaPager.visibility = View.GONE
+                    // Keep content visible so the frosted overlay shows blurred media behind
+                    mediaPager.visibility = View.VISIBLE
                     mediaIndicatorLayout.visibility = View.GONE
-                    itemView.findViewById<View>(R.id.postDetails).visibility = View.GONE
+                    itemView.findViewById<View>(R.id.postDetails).visibility = View.VISIBLE
                     val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
                     overlay.visibility = View.VISIBLE
                     val lockAction = itemView.findViewById<TextView>(R.id.tvLockAction)
-                    lockAction.text = if (post.accessType == "subscription")
+                    val btn = itemView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnLockCta)
+                    val isSub = post.accessType == "subscription"
+                    lockAction.text = if (isSub)
                         itemView.context.getString(R.string.subscribe_to_creator)
                     else
                         itemView.context.getString(R.string.purchase_access)
-                    overlay.isEnabled = true
-                    overlay.setOnClickListener {
-                        lockAction.text = if (post.accessType == "subscription")
-                            itemView.context.getString(R.string.subscribing_ellipsis)
-                        else
-                            itemView.context.getString(R.string.purchasing_ellipsis)
-                        overlay.isEnabled = false
+                    itemView.findViewById<TextView>(R.id.tvCreatorName)?.text = "@" + (post.profile?.username ?: "")
+                    btn.text = if (isSub) itemView.context.getString(R.string.subscribe) else itemView.context.getString(R.string.unlock)
+                    btn.isEnabled = true
+                    btn.setOnClickListener {
+                        btn.isEnabled = false
+                        lockAction.text = if (isSub) itemView.context.getString(R.string.subscribing_ellipsis) else itemView.context.getString(R.string.purchasing_ellipsis)
                         onLocked(post)
                     }
+                    // Blur the content underneath to mimic iOS material overlay when supported
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= 31) {
+                            val blur = android.graphics.RenderEffect.createBlurEffect(36f, 36f, android.graphics.Shader.TileMode.CLAMP)
+                            itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(blur)
+                            itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(blur)
+                        }
+                    } catch (_: Exception) {}
                     return@launch
                 }
                 mediaPager.visibility = View.VISIBLE
                 mediaIndicatorLayout.visibility = if (mediaPager.adapter?.itemCount ?: 0 > 1) View.VISIBLE else View.GONE
                 itemView.findViewById<View>(R.id.postDetails).visibility = View.VISIBLE
                 itemView.findViewById<FrameLayout>(R.id.lockOverlay).visibility = View.GONE
+                // Clear any previous blur
+                try {
+                    if (android.os.Build.VERSION.SDK_INT >= 31) {
+                        itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(null)
+                        itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(null)
+                    }
+                } catch (_: Exception) {}
             }
             // click navigates to full post view, paging through only posts in this mixed list
             val details = itemView.findViewById<View>(R.id.postDetails)
@@ -174,6 +191,7 @@ class ExploreTopAdapter(
             }
             timestampText.text = formatRelativeTime(post.createdAt)
             contentText.text = post.content.orEmpty()
+            makeHashtagsClickable(contentText)
             val mediaList = post.media ?: emptyList()
             val onCompleted = onVideoComplete?.let { cb -> { _: Int -> cb(bindingAdapterPosition) } }
             mediaPager.adapter = PostMediaAdapter(
@@ -214,6 +232,33 @@ class ExploreTopAdapter(
                 mediaPager.registerOnPageChangeCallback(callback)
                 pageChangeCallback = callback
             }
+        }
+
+        private fun makeHashtagsClickable(tv: TextView) {
+            val text = tv.text?.toString() ?: return
+            val spannable = android.text.SpannableString(text)
+            val pattern = java.util.regex.Pattern.compile("#([A-Za-z0-9_]+)")
+            val matcher = pattern.matcher(text)
+            while (matcher.find()) {
+                val tag = matcher.group(1) ?: continue
+                val start = matcher.start()
+                val end = matcher.end()
+                val span = object : android.text.style.ClickableSpan() {
+                    override fun onClick(widget: android.view.View) {
+                        val uri = android.net.Uri.parse("gifterclub://explore?query=%23$tag")
+                        widget.context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri))
+                    }
+                    override fun updateDrawState(ds: android.text.TextPaint) {
+                        super.updateDrawState(ds)
+                        ds.isUnderlineText = false
+                        ds.color = android.graphics.Color.CYAN
+                    }
+                }
+                spannable.setSpan(span, start, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            tv.text = spannable
+            tv.movementMethod = android.text.method.LinkMovementMethod.getInstance()
+            tv.highlightColor = android.graphics.Color.TRANSPARENT
         }
 
         private fun formatRelativeTime(iso: String?): String {

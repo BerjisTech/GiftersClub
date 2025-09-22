@@ -281,6 +281,7 @@ class FeedAdapter(
             }
             timestamp.text = formatRelativeTime(post.createdAt)
             content.text = post.content ?: ""
+            makeHashtagsClickable(content)
 
             // Default to not-following icon, then resolve actual state
             isFollowingAuthor = false
@@ -317,7 +318,9 @@ class FeedAdapter(
             val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
             val lockAction = itemView.findViewById<TextView>(R.id.tvLockAction)
             val indicatorLayout = itemView.findViewById<LinearLayout>(R.id.mediaIndicatorLayout)
+            val btnLock = itemView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnLockCta)
             val postDetails = itemView.findViewById<View>(R.id.postDetails)
+            // Default hidden until we decide based on access below
             mediaPager.visibility = View.GONE
             indicatorLayout.visibility = View.GONE
             postDetails.visibility = View.GONE
@@ -331,23 +334,36 @@ class FeedAdapter(
                 }
                 if (!hasAccess) {
                     overlay.visibility = View.VISIBLE
-                    lockAction.text = if (post.accessType == "subscription")
-                        itemView.context.getString(R.string.subscribe_to_creator)
-                    else
-                        itemView.context.getString(R.string.purchase_access)
-                    overlay.isEnabled = true
-                    overlay.setOnClickListener {
-                        lockAction.text = if (post.accessType == "subscription")
-                            itemView.context.getString(R.string.subscribing_ellipsis)
-                        else
-                            itemView.context.getString(R.string.purchasing_ellipsis)
-                        overlay.isEnabled = false
+                    // Keep media/details visible so blurred content is seen under translucent overlay
+                    mediaPager.visibility = View.VISIBLE
+                    postDetails.visibility = View.VISIBLE
+                    val isSub = post.accessType == "subscription"
+                    lockAction.text = if (isSub) itemView.context.getString(R.string.subscribe_to_creator) else itemView.context.getString(R.string.purchase_access)
+                    itemView.findViewById<TextView>(R.id.tvCreatorName)?.text = "@" + (post.profile?.username ?: "")
+                    btnLock.text = if (isSub) itemView.context.getString(R.string.subscribe) else itemView.context.getString(R.string.unlock)
+                    btnLock.isEnabled = true
+                    btnLock.setOnClickListener {
+                        btnLock.isEnabled = false
+                        lockAction.text = if (isSub) itemView.context.getString(R.string.subscribing_ellipsis) else itemView.context.getString(R.string.purchasing_ellipsis)
                         onLocked(post)
                     }
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= 31) {
+                            val blur = android.graphics.RenderEffect.createBlurEffect(36f, 36f, android.graphics.Shader.TileMode.CLAMP)
+                            itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(blur)
+                            itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(blur)
+                        }
+                    } catch (_: Exception) {}
                 } else {
                     mediaPager.visibility = View.VISIBLE
                     postDetails.visibility = View.VISIBLE
                     overlay.visibility = View.GONE
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= 31) {
+                            itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(null)
+                            itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(null)
+                        }
+                    } catch (_: Exception) {}
                 }
             }
             val mediaList = post.media ?: emptyList()
@@ -472,6 +488,32 @@ class FeedAdapter(
             val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
             pv?.player?.playWhenReady = true
         }
+    }
+    private fun makeHashtagsClickable(tv: TextView) {
+        val text = tv.text?.toString() ?: return
+        val spannable = android.text.SpannableString(text)
+        val pattern = java.util.regex.Pattern.compile("#([A-Za-z0-9_]+)")
+        val matcher = pattern.matcher(text)
+        while (matcher.find()) {
+            val tag = matcher.group(1) ?: continue
+            val start = matcher.start()
+            val end = matcher.end()
+            val span = object : android.text.style.ClickableSpan() {
+                override fun onClick(widget: android.view.View) {
+                    val uri = Uri.parse("gifterclub://explore?query=%23$tag")
+                    widget.context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                }
+                override fun updateDrawState(ds: android.text.TextPaint) {
+                    super.updateDrawState(ds)
+                    ds.isUnderlineText = false
+                    ds.color = android.graphics.Color.CYAN
+                }
+            }
+            spannable.setSpan(span, start, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        tv.text = spannable
+        tv.movementMethod = android.text.method.LinkMovementMethod.getInstance()
+        tv.highlightColor = android.graphics.Color.TRANSPARENT
     }
 
     private fun formatRelativeTime(iso: String?): String {

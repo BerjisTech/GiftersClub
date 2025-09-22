@@ -97,6 +97,14 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         tabLayout = view.findViewById(R.id.tabLayout)
         viewPager = view.findViewById(R.id.viewPager)
 
+        // If launched via deep link with an initial query, prefill and search
+        val initial = arguments?.getString("initial_query")
+        if (!initial.isNullOrBlank()) {
+            etSearch.setText(initial)
+            etSearch.setSelection(initial.length)
+            performSearch(initial)
+        }
+
         etSearch.doAfterTextChanged { editable ->
             val q = editable.toString().trim()
             if (q.length >= 2) {

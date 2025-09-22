@@ -21,6 +21,7 @@ class FullscreenPostPreviewActivity : AppCompatActivity() {
         val imagePath = intent.getStringExtra("image_path")
         val content = intent.getStringExtra("content_text") ?: ""
         val access = intent.getStringExtra("access_type") ?: "free"
+        val creator = intent.getStringExtra("creator_username")
         val price = intent.getStringExtra("price")
 
         // Show access overlay if not free
@@ -29,8 +30,22 @@ class FullscreenPostPreviewActivity : AppCompatActivity() {
         if (locked) {
             val tvLockAction = lockOverlay.findViewById<TextView>(R.id.tvLockAction)
             tvLockAction?.text = when (access) {
-                "paid" -> if (!price.isNullOrEmpty()) "Paid • $price tokens" else "Paid"
-                else -> getString(R.string.subscribe_to_view)
+                "paid" -> if (!price.isNullOrEmpty()) getString(R.string.purchase_access) else getString(R.string.purchase_access)
+                else -> getString(R.string.subscribe_to_creator)
+            }
+            lockOverlay.findViewById<TextView>(R.id.tvCreatorName)?.text = creator?.let { "@" + it } ?: ""
+            // Show blurred media behind overlay on Android 12+
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                try {
+                    val blur = android.graphics.RenderEffect.createBlurEffect(24f, 24f, android.graphics.Shader.TileMode.CLAMP)
+                    mediaPager.setRenderEffect(blur)
+                    findViewById<android.view.View>(R.id.postDetails)?.setRenderEffect(blur)
+                } catch (_: Exception) {}
+            }
+            // Disable CTA in preview (no purchase flow here)
+            lockOverlay.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnLockCta)?.apply {
+                isEnabled = false
+                text = if (access == "subscription") getString(R.string.subscribe) else getString(R.string.unlock)
             }
         }
 

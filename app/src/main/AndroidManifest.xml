@@ -156,6 +156,18 @@
                     android:host="g"
                     android:scheme="giftersclub" />
             </intent-filter>
+
+            <!-- Custom URI scheme for Explore deep link: gifterclub://explore?query=%23hashtag -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="explore"
+                    android:scheme="giftersclub" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".PostsActivity"

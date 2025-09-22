@@ -100,6 +100,19 @@ class MainActivity : BaseActivity() {
             return
         }
         setContentView(R.layout.activity_main)
+        // Handle explore deep link: gifterclub://explore?query=%23tag
+        intent.data?.let { data ->
+            if (data.scheme == "giftersclub" && data.host == "explore") {
+                val q = data.getQueryParameter("query") ?: ""
+                val frag = ExploreFragment().apply {
+                    arguments = Bundle().apply { putString("initial_query", q) }
+                }
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.mainContentContainer, frag)
+                    .addToBackStack(null)
+                    .commit()
+            }
+        }
         // If returning here after canceling live-stream setup, re-open create/go-live sheet
         if (intent.getBooleanExtra(EXTRA_SHOW_CREATE_SHEET, false)) {
             CreateOrGoLiveBottomSheetFragment()
