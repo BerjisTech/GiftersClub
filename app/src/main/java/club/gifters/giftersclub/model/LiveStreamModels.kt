@@ -13,6 +13,7 @@ data class LiveStream(
     val description: String,
     val status: String,
     @SerializedName("viewer_count") val viewerCount: Int,
+    @SerializedName("taps") val taps: Int? = null,
     @SerializedName("started_at") val startedAt: String?,
     @SerializedName("ended_at") val endedAt: String?,
     @SerializedName("created_at") val createdAt: String,

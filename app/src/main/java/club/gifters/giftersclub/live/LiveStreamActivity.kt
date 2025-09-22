@@ -88,6 +88,7 @@ class LiveStreamActivity : BaseActivity() {
     private lateinit var btnFollowStreamer: ImageView
     private lateinit var tvFollowerCount: TextView
     private lateinit var tvViewerCount: TextView
+    private var tvTapCount: TextView? = null
 
     private var currentStream: LiveStream? = null
     // LiveKit room instance for host controls and realtime
@@ -319,6 +320,28 @@ class LiveStreamActivity : BaseActivity() {
         }
         // Pending requests indicator for host (tap opens requests dialog)
         btnRequests = findViewById(R.id.btnRequests)
+        // Global tap counter capsule (visible to all viewers)
+        run {
+            val counter = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(16, 8, 16, 8)
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                    cornerRadius = 48f
+                    setColor(0x59000000)
+                }
+            }
+            val heart = TextView(this).apply { text = "❤"; textSize = 14f; setTextColor(0xFFFF0000.toInt()) }
+            val tv = TextView(this).apply { text = "0"; setTextColor(0xFFFFFFFF.toInt()); textSize = 12f; setPadding(8,0,0,0) }
+            counter.addView(heart); counter.addView(tv)
+            tvTapCount = tv
+            val params = ConstraintLayout.LayoutParams(ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT)
+            params.endToEnd = R.id.streamerDetails
+            params.topToTop = R.id.streamerDetails
+            params.setMargins(0,0,12,0)
+            counter.layoutParams = params
+            findViewById<ConstraintLayout>(R.id.liveTopBar).addView(counter)
+        }
         // Requests panel overlay (hidden until tapped) - inflate from XML for styling
         // Deprecated overlay panel replaced by bottom sheet dialog
         requestsPanel = LinearLayout(this) // placeholder; not used for UI anymore
@@ -1673,11 +1696,23 @@ class LiveStreamActivity : BaseActivity() {
                 while (isActive) {
                     delay(3000)
                     val rows = RetrofitClient.liveStreamApi.getLiveStreamById(
-                        "id,status,viewer_count", "eq.${live.id}"
+                        "id,status,viewer_count,taps", "eq.${live.id}"
                     )
                     val row = rows.firstOrNull() ?: break
                     withContext(Dispatchers.Main) {
                         tvViewerCount.text = row.viewerCount.toString()
+                        val prev = (tvTapCount?.text?.toString() ?: "0").toIntOrNull() ?: 0
+                        val taps = row.taps ?: 0
+                        tvTapCount?.text = taps.toString()
+                        val delta = taps - prev
+                        if (delta > 0) {
+                            val root = findViewById<FrameLayout>(R.id.flLiveStream)
+                            val startX = root.width - 48f
+                            val startY = root.height - 220f
+                            for (i in 0 until kotlin.math.min(6, delta)) {
+                                root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 60).toLong())
+                            }
+                        }
                         if (row.status != "live") {
                             isEnded = true
                             try { liveKitRoom?.disconnect() } catch (_: Exception) {}
@@ -2572,7 +2607,25 @@ class LiveStreamActivity : BaseActivity() {
         }
         // Simple explosion when reaching 300
         if (localTapCount == 300) {
-            Toast.makeText(this, "💥", Toast.LENGTH_SHORT).show()
+            // Hide local HUD and spawn chaff particles from its area (falling down)
+            tapHud?.visibility = View.GONE
+            val root = findViewById<FrameLayout>(R.id.flLiveStream)
+            val originX = (12 * resources.displayMetrics.density)
+            val originY = (48 * resources.displayMetrics.density) + 110f
+            for (i in 0 until 24) {
+                val dot = TextView(this).apply { text = "•"; textSize = 12f; setTextColor(0xFFFFFFFF.toInt()) }
+                dot.x = originX + (0..140).random()
+                dot.y = originY
+                root.addView(dot)
+                dot.animate()
+                    .translationYBy((120..220).random().toFloat())
+                    .translationXBy(((-30)..30).random().toFloat())
+                    .alpha(0f)
+                    .setDuration(1300)
+                    .withEndAction { root.removeView(dot) }
+                    .setStartDelay((i * 20).toLong())
+                    .start()
+            }
         }
     }
 
