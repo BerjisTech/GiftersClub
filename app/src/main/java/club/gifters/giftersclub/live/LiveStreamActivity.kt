@@ -2676,6 +2676,18 @@ class LiveStreamActivity : BaseActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try { RetrofitClient.liveStreamApi.incrementLiveTaps(mapOf("in_stream_id" to sid, "in_inc" to 1)) } catch (_: Exception) {}
         }
+        // Also broadcast a lightweight tap signal over LiveKit so hosts (incl. Android) update instantly
+        try {
+            val room = liveKitRoom
+            if (room != null) {
+                val json = JSONObject().apply {
+                    put("type", "tap"); put("ts", System.currentTimeMillis() / 1000)
+                }
+                lifecycleScope.launch {
+                    try { room.localParticipant.publishData(json.toString().toByteArray(Charsets.UTF_8)) } catch (_: Exception) {}
+                }
+            }
+        } catch (_: Exception) {}
         // Consume future server deltas for my own taps to avoid redundant bottom-right hearts
         pendingLocalTapIncrements += 1
         // Simple explosion when reaching 300
