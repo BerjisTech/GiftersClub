@@ -767,6 +767,10 @@ class LiveStreamActivity : BaseActivity() {
                                         for (i in 0 until 6) {
                                             root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 50).toLong())
                                         }
+                                        // Optimistically bump visible tap count
+                                        lastTapsValue += 1
+                                        tvTapCount?.text = formatCount(lastTapsValue)
+                                        tapsCountTv?.text = formatCount(lastTapsValue)
                                     }
                                 } catch (_: Exception) { }
                             }
@@ -802,21 +806,24 @@ class LiveStreamActivity : BaseActivity() {
                                     try {
                                         val txt = String(event.data, Charsets.UTF_8)
                                         val obj = org.json.JSONObject(txt)
-                                        if (obj.optString("type") == "hello") {
-                                            val helloUid = obj.optString("user_id")
-                                            val helloName = obj.optString("username")
-                                            if (helloUid.isNotEmpty()) {
-                                                userIdToStreamId["uname:" + helloUid] = if (helloName.isNotEmpty()) helloName else helloUid.take(6)
-                                                namePills[helloUid]?.text = "@" + (userIdToStreamId["uname:" + helloUid] ?: helloUid.take(6))
-                                            }
-                                        } else if (obj.optString("type") == "tap") {
-                                            val root = findViewById<FrameLayout>(R.id.flLiveStream)
-                                            val startX = root.width - 48f
-                                            val startY = root.height - 220f
-                                            for (i in 0 until 6) {
-                                                root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 50).toLong())
-                                            }
-                                        }
+                                if (obj.optString("type") == "hello") {
+                                    val helloUid = obj.optString("user_id")
+                                    val helloName = obj.optString("username")
+                                    if (helloUid.isNotEmpty()) {
+                                        userIdToStreamId["uname:" + helloUid] = if (helloName.isNotEmpty()) helloName else helloUid.take(6)
+                                        namePills[helloUid]?.text = "@" + (userIdToStreamId["uname:" + helloUid] ?: helloUid.take(6))
+                                    }
+                                } else if (obj.optString("type") == "tap") {
+                                    val root = findViewById<FrameLayout>(R.id.flLiveStream)
+                                    val startX = root.width - 48f
+                                    val startY = root.height - 220f
+                                    for (i in 0 until 6) {
+                                        root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 50).toLong())
+                                    }
+                                    lastTapsValue += 1
+                                    tvTapCount?.text = formatCount(lastTapsValue)
+                                    tapsCountTv?.text = formatCount(lastTapsValue)
+                                }
                                     } catch (_: Exception) { }
                                 }
                                 is RoomEvent.TrackUnsubscribed, is RoomEvent.ParticipantDisconnected -> {
@@ -1735,6 +1742,9 @@ class LiveStreamActivity : BaseActivity() {
                                     for (i in 0 until 6) {
                                         root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 50).toLong())
                                     }
+                                    lastTapsValue += 1
+                                    tvTapCount?.text = formatCount(lastTapsValue)
+                                    tapsCountTv?.text = formatCount(lastTapsValue)
                                 }
                             } catch (_: Exception) { }
                         }
