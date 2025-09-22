@@ -180,6 +180,7 @@ class LiveStreamActivity : BaseActivity() {
     private var tapsCountTv: TextView? = null
     private var tapsFractionTv: TextView? = null
     private var pendingLocalTapIncrements: Int = 0
+    private var lastTapsValue: Int = 0
 
     private fun startCommentsPolling(sid: String) {
         commentsJob?.cancel()
@@ -838,11 +839,12 @@ class LiveStreamActivity : BaseActivity() {
                                     if (row != null) {
                                         tvViewerCount.text = (row.viewerCount).toString()
                                         // Update taps and spawn remote hearts for others (consuming local pending increments)
-                                        val prev = (tvTapCount?.text?.toString() ?: "0").toIntOrNull() ?: 0
+                                        val prev = lastTapsValue
                                         val taps = row.taps ?: 0
                                         tvTapCount?.text = formatCount(taps)
                                         tapsCountTv?.text = formatCount(taps)
                                         var delta = taps - prev
+                                        lastTapsValue = taps
                                         if (delta > 0) {
                                             val consume = kotlin.math.min(delta, pendingLocalTapIncrements)
                                             pendingLocalTapIncrements -= consume
@@ -1751,9 +1753,10 @@ class LiveStreamActivity : BaseActivity() {
                     val row = rows.firstOrNull() ?: break
                     withContext(Dispatchers.Main) {
                         tvViewerCount.text = row.viewerCount.toString()
-                        val prev = (tvTapCount?.text?.toString() ?: "0").toIntOrNull() ?: 0
+                        val prev = lastTapsValue
                         val taps = row.taps ?: 0
                         tvTapCount?.text = taps.toString()
+                        lastTapsValue = taps
                         val delta = taps - prev
                         if (delta > 0) {
                             val root = findViewById<FrameLayout>(R.id.flLiveStream)
@@ -2657,8 +2660,9 @@ class LiveStreamActivity : BaseActivity() {
                 } catch (_: Exception) { }
             }
         }
-        // Increment taps counter (best effort)
+        // Increment taps counter (best effort) and bump last taps optimistic value
         val sid = currentStream?.id ?: return
+        lastTapsValue += 1
         lifecycleScope.launch(Dispatchers.IO) {
             try { RetrofitClient.liveStreamApi.incrementLiveTaps(mapOf("in_stream_id" to sid, "in_inc" to 1)) } catch (_: Exception) {}
         }
