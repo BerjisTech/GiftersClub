@@ -119,6 +119,15 @@ class ExplorePostAdapter(
                     val isSub = post.accessType == "subscription"
                     lockAction.text = if (isSub) itemView.context.getString(R.string.subscribe_to_creator) else itemView.context.getString(R.string.purchase_access)
                     itemView.findViewById<TextView>(R.id.tvCreatorName)?.text = "@" + (post.profile?.username ?: "")
+                    // Load creator avatar into overlay if available (non-blocking, safe default)
+                    itemView.findViewById<ImageView>(R.id.ivCreatorAvatar)?.let { iv ->
+                        val img = post.profile?.image.orEmpty()
+                        if (img.isNotBlank()) {
+                            iv.load(img)
+                        } else {
+                            iv.setImageResource(android.R.color.darker_gray)
+                        }
+                    }
                     btn.text = if (isSub) itemView.context.getString(R.string.subscribe) else itemView.context.getString(R.string.unlock)
                     btn.isEnabled = true
                     btn.setOnClickListener {

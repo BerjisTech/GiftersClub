@@ -157,7 +157,7 @@
                     android:scheme="giftersclub" />
             </intent-filter>
 
-            <!-- Custom URI scheme for Explore deep link: gifterclub://explore?query=%23hashtag -->
+            <!-- Custom URI scheme for Explore deep link: giftersclub://explore?query=%23hashtag -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -167,6 +167,17 @@
                 <data
                     android:host="explore"
                     android:scheme="giftersclub" />
+            </intent-filter>
+            <!-- Back-compat: accept older gifterclub://explore scheme -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="explore"
+                    android:scheme="gifterclub" />
             </intent-filter>
         </activity>
         <activity

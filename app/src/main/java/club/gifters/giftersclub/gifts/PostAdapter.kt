@@ -203,6 +203,11 @@ class PostAdapter(
                     else
                         itemView.context.getString(R.string.purchase_access)
                     itemView.findViewById<TextView>(R.id.tvCreatorName)?.text = "@" + (post.profile?.username ?: "")
+                    // Inject creator avatar into overlay if present
+                    itemView.findViewById<ImageView>(R.id.ivCreatorAvatar)?.let { iv ->
+                        val img = post.profile?.image.orEmpty()
+                        if (img.isNotBlank()) iv.load(img) else iv.setImageResource(android.R.color.darker_gray)
+                    }
                     val btn = itemView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnLockCta)
                     btn.text = if (isSub) itemView.context.getString(R.string.subscribe) else itemView.context.getString(R.string.unlock)
                     btn.isEnabled = true

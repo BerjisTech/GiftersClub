@@ -100,9 +100,9 @@ class MainActivity : BaseActivity() {
             return
         }
         setContentView(R.layout.activity_main)
-        // Handle explore deep link: gifterclub://explore?query=%23tag
+        // Handle explore deep link: giftersclub://explore?query=%23tag (also accept gifterclub:// for back-compat)
         intent.data?.let { data ->
-            if (data.scheme == "giftersclub" && data.host == "explore") {
+            if ((data.scheme == "giftersclub" || data.scheme == "gifterclub") && data.host == "explore") {
                 val q = data.getQueryParameter("query") ?: ""
                 val frag = ExploreFragment().apply {
                     arguments = Bundle().apply { putString("initial_query", q) }

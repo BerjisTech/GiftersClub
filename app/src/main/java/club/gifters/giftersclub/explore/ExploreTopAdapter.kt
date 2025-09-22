@@ -142,6 +142,11 @@ class ExploreTopAdapter(
                     else
                         itemView.context.getString(R.string.purchase_access)
                     itemView.findViewById<TextView>(R.id.tvCreatorName)?.text = "@" + (post.profile?.username ?: "")
+                    // Inject creator avatar into overlay safely
+                    itemView.findViewById<ImageView>(R.id.ivCreatorAvatar)?.let { iv ->
+                        val img = post.profile?.image.orEmpty()
+                        if (img.isNotBlank()) iv.load(img) else iv.setImageResource(android.R.color.darker_gray)
+                    }
                     btn.text = if (isSub) itemView.context.getString(R.string.subscribe) else itemView.context.getString(R.string.unlock)
                     btn.isEnabled = true
                     btn.setOnClickListener {
@@ -245,8 +250,14 @@ class ExploreTopAdapter(
                 val end = matcher.end()
                 val span = object : android.text.style.ClickableSpan() {
                     override fun onClick(widget: android.view.View) {
-                        val uri = android.net.Uri.parse("gifterclub://explore?query=%23$tag")
-                        widget.context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri))
+                        val ctx = widget.context
+                        val uri = android.net.Uri.parse("giftersclub://explore?query=%23$tag")
+                        try {
+                            ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri))
+                        } catch (_: Exception) {
+                            val web = android.net.Uri.parse("https://gifters.club/explore?query=%23$tag")
+                            ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, web))
+                        }
                     }
                     override fun updateDrawState(ds: android.text.TextPaint) {
                         super.updateDrawState(ds)
