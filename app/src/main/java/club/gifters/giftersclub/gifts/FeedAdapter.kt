@@ -354,7 +354,7 @@ class FeedAdapter(
                     }
                     try {
                         if (android.os.Build.VERSION.SDK_INT >= 31) {
-                            val blur = android.graphics.RenderEffect.createBlurEffect(36f, 36f, android.graphics.Shader.TileMode.CLAMP)
+                            val blur = android.graphics.RenderEffect.createBlurEffect(60f, 60f, android.graphics.Shader.TileMode.CLAMP)
                             itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(blur)
                             itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(blur)
                         }
@@ -490,6 +490,9 @@ class FeedAdapter(
             val innerRv = mediaPager.getChildAt(0) as? RecyclerView ?: return
             // Play only if the specified child is laid out
             val child = innerRv.getChildAt(index) ?: return
+            // Do not play if post is locked (overlay visible)
+            val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
+            if (overlay.visibility == View.VISIBLE) return
             val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
             pv?.player?.playWhenReady = true
         }
