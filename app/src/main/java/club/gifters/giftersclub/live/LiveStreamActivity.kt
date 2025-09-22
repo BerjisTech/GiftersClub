@@ -175,6 +175,9 @@ class LiveStreamActivity : BaseActivity() {
     private var localTapCount = 0
     private var tapHud: LinearLayout? = null
     private var tapHudProgress: ProgressBar? = null
+    private var isLocallyTapping = false
+    private var tapInlineProgress: ProgressBar? = null
+    private var tapInlineFraction: TextView? = null
 
     private fun startCommentsPolling(sid: String) {
         commentsJob?.cancel()
@@ -285,7 +288,7 @@ class LiveStreamActivity : BaseActivity() {
             val sheet = MatchSetupBottomSheetFragment.newInstance(sid, hostId)
             sheet.show(supportFragmentManager, "MatchSetupBottomSheet")
         }
-        // Add tap HUD (heart + progress) under top bar and capture taps
+        // Add tap HUD (legacy) and set up tap capture
         run {
             val root = findViewById<FrameLayout>(R.id.flLiveStream)
             tapHud = LinearLayout(this).apply {
@@ -332,9 +335,25 @@ class LiveStreamActivity : BaseActivity() {
                 }
             }
             val heart = TextView(this).apply { text = "❤"; textSize = 14f; setTextColor(0xFFFF0000.toInt()) }
+            val inlineProgress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+                max = 300
+                progress = 0
+                visibility = View.GONE
+                progressTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#ef4444"))
+                progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0x33FFFFFF)
+                layoutParams = LinearLayout.LayoutParams(180, LinearLayout.LayoutParams.WRAP_CONTENT).apply { setMargins(8, 0, 8, 0) }
+            }
+            val fraction = TextView(this).apply {
+                text = "0/300"; setTextColor(0xFFFFFFFF.toInt()); textSize = 11f; visibility = View.GONE
+            }
             val tv = TextView(this).apply { text = "0"; setTextColor(0xFFFFFFFF.toInt()); textSize = 12f; setPadding(8,0,0,0) }
-            counter.addView(heart); counter.addView(tv)
+            counter.addView(heart)
+            counter.addView(inlineProgress)
+            counter.addView(fraction)
+            counter.addView(tv)
             tvTapCount = tv
+            tapInlineProgress = inlineProgress
+            tapInlineFraction = fraction
             val params = ConstraintLayout.LayoutParams(ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT)
             params.endToEnd = R.id.streamerDetails
             params.topToTop = R.id.streamerDetails
@@ -808,7 +827,7 @@ class LiveStreamActivity : BaseActivity() {
                             }
                         }
                     }
-                    // Start status polling to exit when stream ends
+                    // Start status polling to update viewer/taps and exit when stream ends
                     val sid = currentStream?.id
                     if (sid != null) {
                         statusJob?.cancel()
@@ -816,10 +835,23 @@ class LiveStreamActivity : BaseActivity() {
                             while (isActive && !isEnded) {
                                 delay(3000)
                                 try {
-                                    val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,status,viewer_count", "eq.$sid")
+                                    val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,status,viewer_count,taps", "eq.$sid")
                                     val row = rows.firstOrNull()
                                     if (row != null) {
                                         tvViewerCount.text = (row.viewerCount).toString()
+                                        // Update taps and spawn remote hearts for others
+                                        val prev = (tvTapCount?.text?.toString() ?: "0").toIntOrNull() ?: 0
+                                        val taps = row.taps ?: 0
+                                        tvTapCount?.text = taps.toString()
+                                        val delta = taps - prev
+                                        if (delta > 0 && !isLocallyTapping) {
+                                            val root = findViewById<FrameLayout>(R.id.flLiveStream)
+                                            val startX = root.width - 48f
+                                            val startY = root.height - 220f
+                                            for (i in 0 until kotlin.math.min(6, delta)) {
+                                                root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 60).toLong())
+                                            }
+                                        }
                                         if (row.status != "live") {
                                             isEnded = true
                                             try { liveKitRoom?.disconnect() } catch (_: Exception) {}
@@ -2579,13 +2611,20 @@ class LiveStreamActivity : BaseActivity() {
     }
 
     private fun handleTap(x: Float, y: Float) {
+        // Host cannot tap
+        val me = AuthUtils.getCurrentUserId(this)
+        val host = currentStream?.hostId
+        if (me != null && host != null && me == host) return
         // Local floating heart
         spawnHeart(x, y)
         localTapCount += 1
-        if (localTapCount >= 10) {
-            tapHud?.visibility = View.VISIBLE
+        // Inline progress between heart and count in top bar, appears after 30 taps
+        if (localTapCount >= 30 && localTapCount < 300) {
+            tapInlineProgress?.visibility = View.VISIBLE
+            tapInlineFraction?.visibility = View.VISIBLE
         }
-        tapHudProgress?.progress = kotlin.math.min(300, localTapCount)
+        tapInlineProgress?.progress = kotlin.math.min(300, localTapCount)
+        tapInlineFraction?.text = "${kotlin.math.min(localTapCount, 300)}/300"
         // One-time auto-like comment
         if (!likeCommentSent) {
             likeCommentSent = true
@@ -2605,27 +2644,18 @@ class LiveStreamActivity : BaseActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try { RetrofitClient.liveStreamApi.incrementLiveTaps(mapOf("in_stream_id" to sid, "in_inc" to 1)) } catch (_: Exception) {}
         }
+        // Mark locally tapping for a short window to avoid duplicating remote hearts
+        isLocallyTapping = true
+        lifecycleScope.launch {
+            delay(1200)
+            isLocallyTapping = false
+        }
         // Simple explosion when reaching 300
         if (localTapCount == 300) {
-            // Hide local HUD and spawn chaff particles from its area (falling down)
-            tapHud?.visibility = View.GONE
-            val root = findViewById<FrameLayout>(R.id.flLiveStream)
-            val originX = (12 * resources.displayMetrics.density)
-            val originY = (48 * resources.displayMetrics.density) + 110f
-            for (i in 0 until 24) {
-                val dot = TextView(this).apply { text = "•"; textSize = 12f; setTextColor(0xFFFFFFFF.toInt()) }
-                dot.x = originX + (0..140).random()
-                dot.y = originY
-                root.addView(dot)
-                dot.animate()
-                    .translationYBy((120..220).random().toFloat())
-                    .translationXBy(((-30)..30).random().toFloat())
-                    .alpha(0f)
-                    .setDuration(1300)
-                    .withEndAction { root.removeView(dot) }
-                    .setStartDelay((i * 20).toLong())
-                    .start()
-            }
+            // Hide inline progress/fraction and spawn chaff particles near the counter
+            tapInlineProgress?.visibility = View.GONE
+            tapInlineFraction?.visibility = View.GONE
+            spawnChaffAtCounter()
         }
     }
 
@@ -2640,6 +2670,33 @@ class LiveStreamActivity : BaseActivity() {
         }
         root.addView(tv)
         tv.animate().translationYBy(-200f).alpha(0f).setDuration(1200).withEndAction { root.removeView(tv) }.start()
+    }
+
+    private fun spawnChaffAtCounter() {
+        val root = findViewById<FrameLayout>(R.id.flLiveStream)
+        val loc = IntArray(2)
+        // Fallback position if view not laid out
+        var originX = root.width - 160f
+        var originY = (64 * resources.displayMetrics.density)
+        try {
+            (tvTapCount as? View)?.getLocationOnScreen(loc)
+            originX = (loc[0]).toFloat()
+            originY = (loc[1]).toFloat()
+        } catch (_: Exception) {}
+        for (i in 0 until 24) {
+            val dot = TextView(this).apply { text = "•"; textSize = 12f; setTextColor(0xFFFFFFFF.toInt()) }
+            dot.x = originX + (0..80).random()
+            dot.y = originY
+            root.addView(dot)
+            dot.animate()
+                .translationYBy((140..260).random().toFloat())
+                .translationXBy(((-30)..30).random().toFloat())
+                .alpha(0f)
+                .setDuration(1300)
+                .withEndAction { root.removeView(dot) }
+                .setStartDelay((i * 20).toLong())
+                .start()
+        }
     }
 
     private fun initiateTopup(userId: String, amount: Int) {
