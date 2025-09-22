@@ -33,6 +33,24 @@ object E2EEKeyManager {
         ) as EncryptedSharedPreferences
     }
 
+    // Export/import helpers to move key across app flavors (dev/prod) on the same device
+    fun exportKey(ctx: Context): String? {
+        val p = prefs(ctx)
+        val priv = p.getString(KEY_PRIV, null) ?: return null
+        val pub = getOrCreatePublicKeyBase64(ctx)
+        val json = "{" + "\"v\":1,\"pub\":\"$pub\",\"priv\":\"$priv\"}"
+        return Base64.encodeToString(json.toByteArray(), Base64.NO_WRAP)
+    }
+    fun importKey(ctx: Context, blobBase64: String): Boolean {
+        return try {
+            val json = String(Base64.decode(blobBase64, Base64.NO_WRAP))
+            val priv = Regex("\"priv\":\"([^\"]+)\"").find(json)?.groupValues?.getOrNull(1) ?: return false
+            val p = prefs(ctx)
+            p.edit().putString(KEY_PRIV, priv).apply()
+            true
+        } catch (_: Exception) { false }
+    }
+
     fun getOrCreatePublicKeyBase64(ctx: Context): String {
         val pr = getOrCreatePrivate(ctx)
         val pubBytes = ByteArray(32)
