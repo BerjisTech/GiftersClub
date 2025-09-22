@@ -105,6 +105,7 @@ class LiveStreamActivity : BaseActivity() {
     private var invitePollJob: Job? = null
     private var statusJob: Job? = null
     private var giftsJob: Job? = null
+    private var trackPollJob: Job? = null
     private var isEnded: Boolean = false
     private var lastGiftAt: String? = null
     private val giftCombos = mutableMapOf<String, Pair<Int, Int>>() // key -> (count, commentIndex)
@@ -778,6 +779,18 @@ class LiveStreamActivity : BaseActivity() {
                     }
                     // Attach already-subscribed remote videos into static tiles
                     updateStaticTiles(container, includeLocal = false)
+                    // Poll briefly for initial tracks to reduce first-frame delay on Android
+                    trackPollJob?.cancel()
+                    trackPollJob = launch {
+                        repeat(30) { // ~15s max
+                            try {
+                                val hasRemote = room.remoteParticipants.values.any { p -> p.videoTrackPublications.isNotEmpty() }
+                                updateStaticTiles(container, includeLocal = false)
+                                if (hasRemote) return@launch
+                            } catch (_: Exception) {}
+                            delay(500)
+                        }
+                    }
                     // Send a 'hello' identity message so viewers can label tiles accurately
                     try {
                         val uid = AuthUtils.getCurrentUserId(this@LiveStreamActivity) ?: ""
@@ -1750,6 +1763,18 @@ class LiveStreamActivity : BaseActivity() {
                         }
                         else -> Unit
                     }
+                }
+            }
+            // Also poll briefly after connect to ensure local and any early remote tracks attach promptly
+            trackPollJob?.cancel()
+            trackPollJob = lifecycleScope.launch {
+                repeat(20) { // ~10s max
+                    try {
+                        updateStaticTiles(container, includeLocal = true)
+                        val hasLocal = try { room.localParticipant.videoTrackPublications.isNotEmpty() } catch (_: Exception) { false }
+                        if (hasLocal) return@launch
+                    } catch (_: Exception) {}
+                    delay(500)
                 }
             }
             // status polling to end when stream ends
