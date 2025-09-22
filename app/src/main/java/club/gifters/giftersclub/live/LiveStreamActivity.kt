@@ -222,7 +222,7 @@ class LiveStreamActivity : BaseActivity() {
                 if (ordered.isNotEmpty()) rvLiveComments.scrollToPosition(ordered.size - 1)
                 // Spawn hearts for other users' like comment
                 ordered.lastOrNull()?.let { last ->
-                    if (last.content.trim().equals("liked the live", ignoreCase = true)) {
+                    if (last.content.trim().equals("liked this live", ignoreCase = true)) {
                         // burst hearts from bottom-right
                         val root = this@LiveStreamActivity.findViewById<FrameLayout>(R.id.flLiveStream)
                         val startX = root.width - 48f
@@ -2665,7 +2665,7 @@ class LiveStreamActivity : BaseActivity() {
                 try {
                     RetrofitClient.liveStreamApi.createLiveStreamComment(
                         select = "*,profile:profiles(*)",
-                        comment = LiveStreamCommentRequest(streamId, null, userId, "liked the live")
+                        comment = LiveStreamCommentRequest(streamId, null, userId, "liked this live")
                     )
                 } catch (_: Exception) { }
             }
