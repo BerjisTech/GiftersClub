@@ -148,6 +148,12 @@ interface LiveStreamApi {
         @Query("order", encoded = true) order: String = "is_featured.desc,min_tokens.desc,combo_count.desc"
     ): List<Map<String, Any?>>
 
+    /** Increment live taps counter atomically via RPC. */
+    @POST("rpc/increment_live_taps")
+    suspend fun incrementLiveTaps(
+        @Body params: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
     // Battles
     @GET("battle_sessions")
     suspend fun getActiveBattleForStream(

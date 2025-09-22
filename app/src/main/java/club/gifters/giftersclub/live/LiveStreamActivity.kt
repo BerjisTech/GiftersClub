@@ -169,6 +169,12 @@ class LiveStreamActivity : BaseActivity() {
     // stash the target stream here and continue after the user grants.
     private var pendingResumeLive: LiveStream? = null
 
+    // Likes/Taps
+    private var likeCommentSent = false
+    private var localTapCount = 0
+    private var tapHud: LinearLayout? = null
+    private var tapHudProgress: ProgressBar? = null
+
     private fun startCommentsPolling(sid: String) {
         commentsJob?.cancel()
         commentsJob = lifecycleScope.launch {
@@ -207,6 +213,18 @@ class LiveStreamActivity : BaseActivity() {
                 val ordered = merged.sortedBy { it.createdAt }
                 commentsAdapter.submitList(ordered)
                 if (ordered.isNotEmpty()) rvLiveComments.scrollToPosition(ordered.size - 1)
+                // Spawn hearts for other users' like comment
+                ordered.lastOrNull()?.let { last ->
+                    if (last.content.trim().equals("liked the live", ignoreCase = true)) {
+                        // burst hearts from bottom-right
+                        val root = this@LiveStreamActivity.findViewById<FrameLayout>(R.id.flLiveStream)
+                        val startX = root.width - 48f
+                        val startY = root.height - 220f
+                        for (i in 0 until 6) {
+                            root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 60).toLong())
+                        }
+                    }
+                }
             }
         }
     }
@@ -265,6 +283,39 @@ class LiveStreamActivity : BaseActivity() {
             val hostId = AuthUtils.getCurrentUserId(this) ?: return@setOnClickListener
             val sheet = MatchSetupBottomSheetFragment.newInstance(sid, hostId)
             sheet.show(supportFragmentManager, "MatchSetupBottomSheet")
+        }
+        // Add tap HUD (heart + progress) under top bar and capture taps
+        run {
+            val root = findViewById<FrameLayout>(R.id.flLiveStream)
+            tapHud = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(16, 8, 16, 8)
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                    cornerRadius = 48f
+                    setColor(0x59000000) // black with alpha
+                }
+                alpha = 0.95f
+                visibility = View.GONE
+                val heart = TextView(this@LiveStreamActivity).apply { text = "❤"; textSize = 16f; setTextColor(0xFFFF0000.toInt()) }
+                val progress = ProgressBar(this@LiveStreamActivity, null, android.R.attr.progressBarStyleHorizontal).apply {
+                    max = 300
+                    progress = 0
+                    layoutParams = LinearLayout.LayoutParams(200, LinearLayout.LayoutParams.WRAP_CONTENT).apply { setMargins(12, 0, 0, 0) }
+                }
+                addView(heart)
+                addView(progress)
+                tapHudProgress = progress
+            }
+            val hudParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
+            hudParams.topMargin = (48 * resources.displayMetrics.density).toInt()
+            hudParams.leftMargin = (12 * resources.displayMetrics.density).toInt()
+            tapHud?.layoutParams = hudParams
+            root.addView(tapHud)
+            root.setOnTouchListener { _, ev ->
+                if (ev.action == android.view.MotionEvent.ACTION_DOWN) { handleTap(ev.x, ev.y) }
+                false
+            }
         }
         // Pending requests indicator for host (tap opens requests dialog)
         btnRequests = findViewById(R.id.btnRequests)
@@ -2490,6 +2541,52 @@ class LiveStreamActivity : BaseActivity() {
                 }
             } catch (_: Exception) {}
         }
+    }
+
+    private fun handleTap(x: Float, y: Float) {
+        // Local floating heart
+        spawnHeart(x, y)
+        localTapCount += 1
+        if (localTapCount >= 10) {
+            tapHud?.visibility = View.VISIBLE
+        }
+        tapHudProgress?.progress = kotlin.math.min(300, localTapCount)
+        // One-time auto-like comment
+        if (!likeCommentSent) {
+            likeCommentSent = true
+            val userId = AuthUtils.getCurrentUserId(this) ?: return
+            val streamId = currentStream?.id ?: return
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    RetrofitClient.liveStreamApi.createLiveStreamComment(
+                        select = "*,profile:profiles(*)",
+                        comment = LiveStreamCommentRequest(streamId, null, userId, "liked the live")
+                    )
+                } catch (_: Exception) { }
+            }
+        }
+        // Increment taps counter (best effort)
+        val sid = currentStream?.id ?: return
+        lifecycleScope.launch(Dispatchers.IO) {
+            try { RetrofitClient.liveStreamApi.incrementLiveTaps(mapOf("in_stream_id" to sid, "in_inc" to 1)) } catch (_: Exception) {}
+        }
+        // Simple explosion when reaching 300
+        if (localTapCount == 300) {
+            Toast.makeText(this, "💥", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun spawnHeart(x: Float, y: Float) {
+        val root = this@LiveStreamActivity.findViewById<FrameLayout>(R.id.flLiveStream)
+        val tv = TextView(this).apply {
+            text = "❤"
+            textSize = 24f
+            setTextColor(0xFFFF0000.toInt())
+            x.also { this.x = it }
+            y.also { this.y = it }
+        }
+        root.addView(tv)
+        tv.animate().translationYBy(-200f).alpha(0f).setDuration(1200).withEndAction { root.removeView(tv) }.start()
     }
 
     private fun initiateTopup(userId: String, amount: Int) {
