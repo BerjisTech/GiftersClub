@@ -176,8 +176,10 @@ class LiveStreamActivity : BaseActivity() {
     private var tapHud: LinearLayout? = null
     private var tapHudProgress: ProgressBar? = null
     private var isLocallyTapping = false
-    private var tapInlineProgress: ProgressBar? = null
-    private var tapInlineFraction: TextView? = null
+    private var tapsProgressBar: ProgressBar? = null
+    private var tapsCountTv: TextView? = null
+    private var tapsFractionTv: TextView? = null
+    private var pendingLocalTapIncrements: Int = 0
 
     private fun startCommentsPolling(sid: String) {
         commentsJob?.cancel()
@@ -323,43 +325,25 @@ class LiveStreamActivity : BaseActivity() {
         }
         // Pending requests indicator for host (tap opens requests dialog)
         btnRequests = findViewById(R.id.btnRequests)
-        // Global tap counter capsule (visible to all viewers)
+        // Bind tapsDetails group from layout (heart + progress + count under streamer box)
         run {
-            val counter = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setPadding(16, 8, 16, 8)
-                background = android.graphics.drawable.GradientDrawable().apply {
-                    shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-                    cornerRadius = 48f
-                    setColor(0x59000000)
-                }
-            }
-            val heart = TextView(this).apply { text = "❤"; textSize = 14f; setTextColor(0xFFFF0000.toInt()) }
-            val inlineProgress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-                max = 300
-                progress = 0
+            val tapsRow = findViewById<LinearLayout>(R.id.tapsDetails)
+            tapsProgressBar = findViewById(R.id.tapsProgress)
+            tapsCountTv = findViewById(R.id.tapsCount)
+            tapsProgressBar?.max = 300
+            tapsProgressBar?.progress = 0
+            tapsProgressBar?.visibility = View.GONE
+            tapsCountTv?.text = formatCount(0)
+            // Add fraction text after progress (local-only visibility)
+            tapsFractionTv = TextView(this).apply {
+                setTextColor(0xFFFFFFFF.toInt()); textSize = 11f; text = ""
                 visibility = View.GONE
-                progressTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#ef4444"))
-                progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0x33FFFFFF)
-                layoutParams = LinearLayout.LayoutParams(180, LinearLayout.LayoutParams.WRAP_CONTENT).apply { setMargins(8, 0, 8, 0) }
             }
-            val fraction = TextView(this).apply {
-                text = "0/300"; setTextColor(0xFFFFFFFF.toInt()); textSize = 11f; visibility = View.GONE
-            }
-            val tv = TextView(this).apply { text = "0"; setTextColor(0xFFFFFFFF.toInt()); textSize = 12f; setPadding(8,0,0,0) }
-            counter.addView(heart)
-            counter.addView(inlineProgress)
-            counter.addView(fraction)
-            counter.addView(tv)
-            tvTapCount = tv
-            tapInlineProgress = inlineProgress
-            tapInlineFraction = fraction
-            val params = ConstraintLayout.LayoutParams(ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT)
-            params.endToEnd = R.id.streamerDetails
-            params.topToTop = R.id.streamerDetails
-            params.setMargins(0,0,12,0)
-            counter.layoutParams = params
-            findViewById<ConstraintLayout>(R.id.liveTopBar).addView(counter)
+            // Insert fraction view right after progress bar
+            val progIndex = tapsRow?.indexOfChild(tapsProgressBar) ?: -1
+            if (tapsRow != null && progIndex >= 0) tapsRow.addView(tapsFractionTv, progIndex + 1)
+            // Use tapsCount view as the total taps display
+            tvTapCount = tapsCountTv
         }
         // Requests panel overlay (hidden until tapped) - inflate from XML for styling
         // Deprecated overlay panel replaced by bottom sheet dialog
@@ -775,6 +759,13 @@ class LiveStreamActivity : BaseActivity() {
                                         val inc = obj.optInt("tokens_used", 0)
                                         tokenTallies[rid] = (tokenTallies[rid] ?: 0) + inc
                                         renderMatchOverlay()
+                                    } else if (obj.optString("type") == "tap") {
+                                        val root = findViewById<FrameLayout>(R.id.flLiveStream)
+                                        val startX = root.width - 48f
+                                        val startY = root.height - 220f
+                                        for (i in 0 until 6) {
+                                            root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 50).toLong())
+                                        }
                                     }
                                 } catch (_: Exception) { }
                             }
@@ -817,6 +808,13 @@ class LiveStreamActivity : BaseActivity() {
                                                 userIdToStreamId["uname:" + helloUid] = if (helloName.isNotEmpty()) helloName else helloUid.take(6)
                                                 namePills[helloUid]?.text = "@" + (userIdToStreamId["uname:" + helloUid] ?: helloUid.take(6))
                                             }
+                                        } else if (obj.optString("type") == "tap") {
+                                            val root = findViewById<FrameLayout>(R.id.flLiveStream)
+                                            val startX = root.width - 48f
+                                            val startY = root.height - 220f
+                                            for (i in 0 until 6) {
+                                                root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 50).toLong())
+                                            }
                                         }
                                     } catch (_: Exception) { }
                                 }
@@ -839,17 +837,23 @@ class LiveStreamActivity : BaseActivity() {
                                     val row = rows.firstOrNull()
                                     if (row != null) {
                                         tvViewerCount.text = (row.viewerCount).toString()
-                                        // Update taps and spawn remote hearts for others
+                                        // Update taps and spawn remote hearts for others (consuming local pending increments)
                                         val prev = (tvTapCount?.text?.toString() ?: "0").toIntOrNull() ?: 0
                                         val taps = row.taps ?: 0
-                                        tvTapCount?.text = taps.toString()
-                                        val delta = taps - prev
-                                        if (delta > 0 && !isLocallyTapping) {
-                                            val root = findViewById<FrameLayout>(R.id.flLiveStream)
-                                            val startX = root.width - 48f
-                                            val startY = root.height - 220f
-                                            for (i in 0 until kotlin.math.min(6, delta)) {
-                                                root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 60).toLong())
+                                        tvTapCount?.text = formatCount(taps)
+                                        tapsCountTv?.text = formatCount(taps)
+                                        var delta = taps - prev
+                                        if (delta > 0) {
+                                            val consume = kotlin.math.min(delta, pendingLocalTapIncrements)
+                                            pendingLocalTapIncrements -= consume
+                                            delta -= consume
+                                            if (delta > 0) {
+                                                val root = findViewById<FrameLayout>(R.id.flLiveStream)
+                                                val startX = root.width - 48f
+                                                val startY = root.height - 220f
+                                                for (i in 0 until kotlin.math.min(6, delta)) {
+                                                    root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 60).toLong())
+                                                }
                                             }
                                         }
                                         if (row.status != "live") {
@@ -1717,6 +1721,20 @@ class LiveStreamActivity : BaseActivity() {
                         is RoomEvent.ParticipantConnected,
                         is RoomEvent.TrackUnsubscribed, is RoomEvent.ParticipantDisconnected -> {
                             updateStaticTiles(container, includeLocal = true)
+                        }
+                        is RoomEvent.DataReceived -> {
+                            try {
+                                val txt = String(evt.data, Charsets.UTF_8)
+                                val obj = org.json.JSONObject(txt)
+                                if (obj.optString("type") == "tap") {
+                                    val root = findViewById<FrameLayout>(R.id.flLiveStream)
+                                    val startX = root.width - 48f
+                                    val startY = root.height - 220f
+                                    for (i in 0 until 6) {
+                                        root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 50).toLong())
+                                    }
+                                }
+                            } catch (_: Exception) { }
                         }
                         else -> Unit
                     }
@@ -2618,13 +2636,13 @@ class LiveStreamActivity : BaseActivity() {
         // Local floating heart
         spawnHeart(x, y)
         localTapCount += 1
-        // Inline progress between heart and count in top bar, appears after 30 taps
+        // tapsDetails: show progress after 30, hide at 300; show fraction in tapsCount
         if (localTapCount >= 30 && localTapCount < 300) {
-            tapInlineProgress?.visibility = View.VISIBLE
-            tapInlineFraction?.visibility = View.VISIBLE
+            tapsProgressBar?.visibility = View.VISIBLE
+            tapsFractionTv?.visibility = View.VISIBLE
         }
-        tapInlineProgress?.progress = kotlin.math.min(300, localTapCount)
-        tapInlineFraction?.text = "${kotlin.math.min(localTapCount, 300)}/300"
+        tapsProgressBar?.progress = kotlin.math.min(300, localTapCount)
+        tapsFractionTv?.text = "${kotlin.math.min(localTapCount, 300)}/300"
         // One-time auto-like comment
         if (!likeCommentSent) {
             likeCommentSent = true
@@ -2644,17 +2662,13 @@ class LiveStreamActivity : BaseActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try { RetrofitClient.liveStreamApi.incrementLiveTaps(mapOf("in_stream_id" to sid, "in_inc" to 1)) } catch (_: Exception) {}
         }
-        // Mark locally tapping for a short window to avoid duplicating remote hearts
-        isLocallyTapping = true
-        lifecycleScope.launch {
-            delay(1200)
-            isLocallyTapping = false
-        }
+        // Consume future server deltas for my own taps to avoid redundant bottom-right hearts
+        pendingLocalTapIncrements += 1
         // Simple explosion when reaching 300
         if (localTapCount == 300) {
-            // Hide inline progress/fraction and spawn chaff particles near the counter
-            tapInlineProgress?.visibility = View.GONE
-            tapInlineFraction?.visibility = View.GONE
+            // Hide tapsDetails progress/fraction and spawn chaff particles near the counter
+            tapsProgressBar?.visibility = View.GONE
+            tapsFractionTv?.visibility = View.GONE
             spawnChaffAtCounter()
         }
     }

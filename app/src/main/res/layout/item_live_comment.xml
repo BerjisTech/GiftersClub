@@ -46,7 +46,7 @@
                 android:paddingBottom="2dp"
                 android:textSize="11sp"
                 android:textColor="@android:color/white"
-                android:background="@android:color/darker_gray"
+                android:background="@drawable/bg_pill_translucent"
                 android:visibility="gone" />
         </LinearLayout>
 
@@ -60,4 +60,3 @@
     </LinearLayout>
 
 </LinearLayout>
-
