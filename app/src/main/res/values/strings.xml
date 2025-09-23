@@ -163,7 +163,7 @@
     <string name="permission_denied">Camera &amp; audio permissions are required</string>
     <string name="stream_title_required">Please enter a stream title</string>
     <string name="failed_start_stream">Unable to start stream</string>
-    <string name="stream_title">Stream Title</string>
+    <string name="stream_title">Welcome to my live</string>
     <string name="stream_description_optional">Description (optional)</string>
     <!-- Error messages for deep-link loading -->
     <string name="stream_not_found">Live stream not found.</string>
