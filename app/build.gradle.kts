@@ -18,8 +18,8 @@ android {
         applicationId = "club.gifters.giftersclub"
         minSdk = 24
         targetSdk = 35
-        versionCode = 38
-        versionName = "1.0.38"
+        versionCode = 39
+        versionName = "1.0.39"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -96,16 +96,29 @@ android {
         description =
             "Prints page size info for merged native libs using scripts/scan_so_pagesize.sh"
         doLast {
-            val script = rootProject.file("scripts/scan_so_pagesize.sh")
-            if (!script.exists()) {
-                println("scripts/scan_so_pagesize.sh not found")
+            val isWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
+            val shScript = rootProject.file("scripts/scan_so_pagesize.sh")
+            val psScript = rootProject.file("scripts/scan_so_pagesize.ps1")
+            val pb = if (isWindows && psScript.exists()) {
+                ProcessBuilder(
+                    "powershell",
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    psScript.absolutePath
+                )
+            } else if (shScript.exists()) {
+                ProcessBuilder("bash", shScript.absolutePath)
             } else {
-                val pb = ProcessBuilder("bash", script.absolutePath)
-                    .directory(rootProject.projectDir)
-                    .inheritIO()
-                val proc = pb.start()
+                null
+            }
+            if (pb == null) {
+                println("scan script not found (neither .ps1 nor .sh)")
+            } else {
+                val proc = pb.directory(rootProject.projectDir).inheritIO().start()
                 val exit = proc.waitFor()
-                if (exit != 0) error("scan_so_pagesize.sh exited with $exit")
+                if (exit != 0) error("scan_so_pagesize script exited with $exit")
             }
         }
         // Ensure we have something to scan
@@ -120,21 +133,37 @@ android {
                 file("$projectDir/build/intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib")
             if (!out.exists()) error("Merged native libs not found. Run :app:assembleRelease first.")
             // Try to run the scan script and then grep for suspicious page size values
-            val script = rootProject.file("scripts/scan_so_pagesize.sh")
-            if (script.exists()) {
-                val scan = ProcessBuilder("bash", script.absolutePath)
+            val isWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
+            val shScript = rootProject.file("scripts/scan_so_pagesize.sh")
+            val psScript = rootProject.file("scripts/scan_so_pagesize.ps1")
+            val pb = if (isWindows && psScript.exists()) {
+                ProcessBuilder(
+                    "powershell",
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    psScript.absolutePath
+                )
+            } else if (shScript.exists()) {
+                ProcessBuilder("bash", shScript.absolutePath)
+            } else {
+                null
+            }
+            if (pb != null) {
+                val scan = pb
                     .directory(rootProject.projectDir)
                     .redirectErrorStream(true)
                     .start()
                 val output = scan.inputStream.bufferedReader().use { it.readText() }
                 val exit = scan.waitFor()
                 println(output)
-                if (exit != 0) error("scan_so_pagesize.sh exited with $exit")
+                if (exit != 0) error("scan_so_pagesize script exited with $exit")
                 // Heuristic: flag if any line mentions 4096 as a MaxPageSize/Page size value
                 val has4k = Regex("(?i)(MaxPageSize|Page size).*(4096|4k)").containsMatchIn(output)
                 if (has4k) error("Detected native libraries built for 4 KB pages. Update dependencies to 16 KB-compatible builds.")
             } else {
-                println("scan_so_pagesize.sh not found; performing naive check for .so presence under $out")
+                println("scan script not found; performing naive check for .so presence under $out")
                 val anySo = out.walk().any { it.isFile && it.extension == "so" }
                 if (anySo) {
                     println("Found native libraries but could not verify page size. Install NDK (for llvm-readelf) and rerun.")
@@ -231,6 +260,39 @@ dependencies {
 }
 
 // Run verification automatically after building release artifacts
-tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }.configureEach {
-    finalizedBy(":app:verify16kPageSupport")
+// Also copy artifacts into a stable folder under the module directory (without
+// overriding AGP's output directories, which must remain under build/outputs).
+// Use a non-conflicting path that won't collide with Studio's injected APK location.
+val releaseDropDir = file("$projectDir/artifacts/release")
+
+tasks.register<Copy>("copyReleaseApk") {
+    from(layout.buildDirectory.dir("outputs/apk/release"))
+    include("*.apk")
+    into(releaseDropDir)
+    // If Studio injects a custom apk location, skip this mirror copy to avoid any path check confusion
+    onlyIf { !project.hasProperty("android.injected.apk.location") }
+}
+
+tasks.register<Copy>("copyReleaseBundle") {
+    from(layout.buildDirectory.dir("outputs/bundle/release"))
+    include("*.aab")
+    into(releaseDropDir)
+    onlyIf { !project.hasProperty("android.injected.apk.location") }
+}
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    finalizedBy(":app:verify16kPageSupport", ":app:copyReleaseApk")
+}
+
+tasks.matching { it.name == "bundleRelease" }.configureEach {
+    finalizedBy(":app:verify16kPageSupport", ":app:copyReleaseBundle")
+}
+
+// IDE wizard workaround: when Android Studio injects a custom APK destination under
+// the module directory, its internal task 'produceReleaseBundleIdeListingFile' may
+// read files produced by ':app:packageRelease' without declaring a dependency,
+// which Gradle flags as a validation error. Ensure proper ordering/dependency.
+tasks.matching { it.name == "produceReleaseBundleIdeListingFile" }.configureEach {
+    // Ensure the APK is packaged before the IDE listing task tries to read it.
+    dependsOn(":app:packageRelease")
 }
