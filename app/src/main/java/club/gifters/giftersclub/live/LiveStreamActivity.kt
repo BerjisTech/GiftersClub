@@ -10,6 +10,7 @@ import android.util.Base64
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
@@ -188,6 +189,8 @@ class LiveStreamActivity : BaseActivity() {
     private var realtime: club.gifters.giftersclub.network.SupabaseRealtime? = null
     // Queue taps that happen before stream/session is ready; flushed once ready
     private var queuedTapCount: Int = 0
+
+    
 
     private fun startCommentsPolling(sid: String) {
         commentsJob?.cancel()
@@ -2663,12 +2666,16 @@ class LiveStreamActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Keep the screen on while hosting or viewing a live session to prevent sleep.
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         currentStream?.id?.let { sid -> startCommentsPolling(sid) }
     }
 
     override fun onPause() {
-        super.onPause()
+        // Allow normal power behavior when leaving the live session.
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         commentsJob?.cancel()
+        super.onPause()
     }
 
     private fun sendLiveComment() {

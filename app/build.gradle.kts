@@ -6,6 +6,8 @@ plugins {
     id("com.google.gms.google-services")
 }
 android.buildFeatures.buildConfig = true
+// Toggle to try candidate library versions believed to support 16 KB page sizes
+val use16kCandidates = (project.findProperty("use16kCandidates")?.toString()?.toBoolean() == true)
 android {
     namespace = "club.gifters.giftersclub"
     compileSdk = 35
@@ -16,8 +18,8 @@ android {
         applicationId = "club.gifters.giftersclub"
         minSdk = 24
         targetSdk = 35
-        versionCode = 37
-        versionName = "1.0.37"
+        versionCode = 38
+        versionName = "1.0.38"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -43,7 +45,11 @@ android {
         // Expose token to manifest as a placeholder so you can use docs' manifest-based init
         manifestPlaceholders["ROLLBAR_ACCESS_TOKEN"] = rollbarClientToken
 
-        // ABI selection moved to productFlavors below to allow x86_64 for dev/debug
+        // Restrict packaged ABIs to 64-bit only to avoid bundling outdated 32-bit .so
+        // and reduce the surface area for page-size incompatibilities.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "x86_64")
+        }
     }
 
     buildTypes {
@@ -66,6 +72,18 @@ android {
         // Keep Kotlin JVM target aligned with Java toolchain
         jvmTarget = "17"
     }
+
+    // Use modern jniLibs packaging; required for proper native lib handling in recent AGP
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+            // Defense-in-depth: ensure no 32-bit ABIs slip in via transitive AARs
+            excludes += listOf("**/armeabi/**", "**/armeabi-v7a/**", "**/x86/**")
+        }
+    }
+
+    // Note: Do not enable ABI splits when using ndk { abiFilters }.
+    // App Bundles will respect abiFilters without splits; enabling both conflicts.
 
     // Optional: helper tasks to inspect native .so page sizes after a build
     // Usage:
@@ -152,17 +170,18 @@ dependencies {
     // Color picker dialog for custom color selection
     // Full‑range color‑picker for text/background: AmbilWarna via JitPack
     implementation("com.github.yukuku:ambilwarna:2.0.1")
-    // Image cropping UI via uCrop (JitPack)
-    // Image cropping UI via uCrop (Maven Central, non-native artifact)
-    implementation("com.yalantis:ucrop:2.2.0")
+    // Image cropping UI (uCrop). Switch to candidate version with -Puse16kCandidates=true
+    val ucropVersion = if (use16kCandidates) "2.3.0" else "2.2.0"
+    implementation("com.yalantis:ucrop:$ucropVersion")
     // Circular zoom control (rotary seekbar) via Maven Central
     implementation("com.akaita.android:circular-seek-bar:1.0")
     // CameraX for live camera preview and capture
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
-    // LiveKit Android SDK for WebRTC SFU streaming (pinned)
-    implementation("io.livekit:livekit-android:2.20.1")
+    // LiveKit Android SDK for WebRTC SFU streaming
+    val livekitVersion = if (use16kCandidates) "2.30.0" else "2.20.1"
+    implementation("io.livekit:livekit-android:$livekitVersion")
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     // Google Play Billing library (adds BILLING permission via manifest)
@@ -209,4 +228,9 @@ dependencies {
     implementation("org.bouncycastle:bcprov-jdk15to18:1.76")
     // EncryptedSharedPreferences for secure key storage
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+}
+
+// Run verification automatically after building release artifacts
+tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }.configureEach {
+    finalizedBy(":app:verify16kPageSupport")
 }
