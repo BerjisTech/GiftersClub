@@ -185,6 +185,7 @@ class LiveStreamActivity : BaseActivity() {
     private var tapsFractionTv: TextView? = null
     private var pendingLocalTapIncrements: Int = 0
     private var lastTapsValue: Int = 0
+    private var realtime: club.gifters.giftersclub.network.SupabaseRealtime? = null
     // Queue taps that happen before stream/session is ready; flushed once ready
     private var queuedTapCount: Int = 0
 
@@ -678,11 +679,11 @@ class LiveStreamActivity : BaseActivity() {
                 btnFollowStreamer.visibility = View.GONE
                 btnRequestToJoin.visibility = View.GONE
             }
-            // Host: tap viewerCount to open pending requests dialog
+            // Host: tap viewerCount to open viewers list
             if (currentId != null && currentId == hostId) {
                 // Always show requests icon for host; tint red when there are pending requests
                 btnRequests.visibility = View.VISIBLE
-                tvViewerCount.setOnClickListener { openRequestsBottomSheet() }
+                tvViewerCount.setOnClickListener { showViewerListDialog() }
                 // Poll pending requests and show indicator
                 lifecycleScope.launch {
                     while (isActive && !isEnded) {
@@ -706,6 +707,16 @@ class LiveStreamActivity : BaseActivity() {
                 }
                 // Show invite icon for host always (start/manage match)
                 btnInvite.visibility = View.VISIBLE
+            }
+            // Realtime taps for instant total updates
+            currentStream?.id?.let { sid ->
+                try { realtime?.close() } catch (_: Exception) {}
+                realtime = club.gifters.giftersclub.network.SupabaseRealtime(this@LiveStreamActivity)
+                realtime?.subscribeToLiveTaps(sid) { taps ->
+                    lastTapsValue = taps
+                    tvTapCount?.text = formatCount(taps)
+                    tapsCountTv?.text = formatCount(taps)
+                }
             }
             // Load and show comments
             currentStream?.id?.let { sid ->
@@ -1587,7 +1598,8 @@ class LiveStreamActivity : BaseActivity() {
             // Host: show requests icon and polling for pending join requests
             btnRequests.visibility = View.VISIBLE
             btnRequests.setOnClickListener { openRequestsBottomSheet() }
-            tvViewerCount.setOnClickListener { openRequestsBottomSheet() }
+            // Viewer count shows the current viewers list
+            tvViewerCount.setOnClickListener { showViewerListDialog() }
             launch {
                 while (isActive && !isEnded) {
                     delay(3000)
@@ -1627,6 +1639,15 @@ class LiveStreamActivity : BaseActivity() {
                 }
             }
         }
+        // Start Realtime taps subscription for host
+        try { realtime?.close() } catch (_: Exception) {}
+        realtime = club.gifters.giftersclub.network.SupabaseRealtime(this)
+        realtime?.subscribeToLiveTaps(live.id) { taps ->
+            lastTapsValue = taps
+            tvTapCount?.text = formatCount(taps)
+            tapsCountTv?.text = formatCount(taps)
+        }
+
         // host camera preview & controls
         if (!USE_LIVEKIT_CAMERA_PREVIEW) startCamera()
         btnToggleMic.visibility = View.VISIBLE
@@ -2139,6 +2160,8 @@ class LiveStreamActivity : BaseActivity() {
         try { window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) } catch (_: Exception) {}
         try { liveKitRoom?.disconnect() } catch (_: Exception) {}
         liveKitRoom = null
+        try { realtime?.close() } catch (_: Exception) {}
+        realtime = null
         try {
             videoViews.values.forEach { it.release() }
             videoViews.clear()
@@ -2715,7 +2738,17 @@ class LiveStreamActivity : BaseActivity() {
             queuedTapCount += 1
             return
         }
-        // Increment taps in DB, then broadcast a LiveKit 'tap' only on success
+        // Immediate UI feedback and broadcast via LiveKit; server RPC reconciles shortly after
+        lastTapsValue += 1
+        tvTapCount?.text = formatCount(lastTapsValue)
+        tapsCountTv?.text = formatCount(lastTapsValue)
+        try {
+            liveKitRoom?.let { room ->
+                val json = JSONObject().apply { put("type", "tap"); put("ts", System.currentTimeMillis() / 1000) }
+                lifecycleScope.launch { try { room.localParticipant.publishData(json.toString().toByteArray(Charsets.UTF_8)) } catch (_: Exception) {} }
+            }
+        } catch (_: Exception) {}
+        // Increment taps in DB (best effort), and attempt to fetch authoritative total
         lifecycleScope.launch(Dispatchers.IO) {
             var ok = false
             try {
@@ -2739,12 +2772,6 @@ class LiveStreamActivity : BaseActivity() {
                 } catch (_: Exception) { ok = false }
             }
             if (ok) {
-                // Bump local total immediately
-                withContext(Dispatchers.Main) {
-                    lastTapsValue += 1
-                    tvTapCount?.text = formatCount(lastTapsValue)
-                    tapsCountTv?.text = formatCount(lastTapsValue)
-                }
                 // Fetch authoritative taps to reconcile quickly
                 try {
                     val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,taps", "eq.$sid")
@@ -2755,15 +2782,6 @@ class LiveStreamActivity : BaseActivity() {
                         tapsCountTv?.text = formatCount(taps)
                     }
                 } catch (_: Exception) { }
-                try {
-                    val room = liveKitRoom
-                    if (room != null) {
-                        val json = JSONObject().apply { put("type", "tap"); put("ts", System.currentTimeMillis() / 1000) }
-                        withContext(Dispatchers.Main) {
-                            try { room.localParticipant.publishData(json.toString().toByteArray(Charsets.UTF_8)) } catch (_: Exception) {}
-                        }
-                    }
-                } catch (_: Exception) {}
             }
         }
         // Consume future server deltas for my own taps to avoid redundant bottom-right hearts
