@@ -2692,7 +2692,7 @@ class LiveStreamActivity : BaseActivity() {
         }
         tapsProgressBar?.progress = kotlin.math.min(300, localTapCount)
         tapsFractionTv?.text = "${kotlin.math.min(localTapCount, 300)}/300"
-        // Do not change the total taps label locally; show server-authoritative total via polling
+        // Show immediate feedback via local label and LiveKit; server polling reconciles
         // One-time auto-like comment – only if we have a stream id available; else defer
         if (!likeCommentSent) {
             val userId = AuthUtils.getCurrentUserId(this)
