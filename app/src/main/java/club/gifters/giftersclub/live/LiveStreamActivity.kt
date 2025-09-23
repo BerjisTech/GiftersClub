@@ -66,6 +66,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.text.NumberFormat
 
 /**
@@ -106,6 +108,7 @@ class LiveStreamActivity : BaseActivity() {
     private var statusJob: Job? = null
     private var giftsJob: Job? = null
     private var trackPollJob: Job? = null
+    // Host aggregation disabled for simplicity; each tap writes directly via RPC
     private var isEnded: Boolean = false
     private var lastGiftAt: String? = null
     private val giftCombos = mutableMapOf<String, Pair<Int, Int>>() // key -> (count, commentIndex)
@@ -182,6 +185,8 @@ class LiveStreamActivity : BaseActivity() {
     private var tapsFractionTv: TextView? = null
     private var pendingLocalTapIncrements: Int = 0
     private var lastTapsValue: Int = 0
+    // Queue taps that happen before stream/session is ready; flushed once ready
+    private var queuedTapCount: Int = 0
 
     private fun startCommentsPolling(sid: String) {
         commentsJob?.cancel()
@@ -767,11 +772,11 @@ class LiveStreamActivity : BaseActivity() {
                                         val startY = root.height - 220f
                                         for (i in 0 until 6) {
                                             root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 50).toLong())
-                                        }
-                                        // Optimistically bump visible tap count
+                                        // Near-instant total bump for all clients (authoritative reconciliation via polling)
                                         lastTapsValue += 1
                                         tvTapCount?.text = formatCount(lastTapsValue)
                                         tapsCountTv?.text = formatCount(lastTapsValue)
+                                    }
                                     }
                                 } catch (_: Exception) { }
                             }
@@ -833,7 +838,9 @@ class LiveStreamActivity : BaseActivity() {
                                     for (i in 0 until 6) {
                                         root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 50).toLong())
                                     }
-                                    lastTapsValue += 1
+                                    // Near-instant total bump; prefer provided total if present
+                                    val t = obj.optInt("t", -1)
+                                    if (t >= 0) lastTapsValue = t else lastTapsValue += 1
                                     tvTapCount?.text = formatCount(lastTapsValue)
                                     tapsCountTv?.text = formatCount(lastTapsValue)
                                 }
@@ -1403,6 +1410,8 @@ class LiveStreamActivity : BaseActivity() {
                 fetchedLive = ls
                 // set current stream for viewer flows
                 currentStream = ls
+                // If user tapped before we loaded, flush queued taps now that we have a stream id
+                flushQueuedTaps()
                 // hydrate options
                 commentScope = (ls.commentScope ?: "shared").lowercase()
                 // Access gating before joining (host bypass)
@@ -1708,7 +1717,9 @@ class LiveStreamActivity : BaseActivity() {
                 null
             )
             val room = LiveKit.create(this@LiveStreamActivity, roomOptions, LiveKitOverrides())
-            liveKitRoom = room
+                    liveKitRoom = room
+                    // Now that realtime is connected, flush any queued taps for immediate propagation
+                    flushQueuedTaps()
             lifecycleScope.launch {
                 try {
                     room.connect(
@@ -1755,9 +1766,7 @@ class LiveStreamActivity : BaseActivity() {
                                     for (i in 0 until 6) {
                                         root.postDelayed({ spawnHeart(startX - (0..40).random(), startY - (0..20).random()) }, (i * 50).toLong())
                                     }
-                                    lastTapsValue += 1
-                                    tvTapCount?.text = formatCount(lastTapsValue)
-                                    tapsCountTv?.text = formatCount(lastTapsValue)
+                                    // Host no longer aggregates; DB increments are done per-tap by viewers.
                                 }
                             } catch (_: Exception) { }
                         }
@@ -1815,6 +1824,7 @@ class LiveStreamActivity : BaseActivity() {
                     }
                 }
             }
+            // Host no-op: viewers write taps via RPC per tap.
         }
     }
 
@@ -2681,38 +2691,80 @@ class LiveStreamActivity : BaseActivity() {
         }
         tapsProgressBar?.progress = kotlin.math.min(300, localTapCount)
         tapsFractionTv?.text = "${kotlin.math.min(localTapCount, 300)}/300"
-        // One-time auto-like comment
+        // Do not change the total taps label locally; show server-authoritative total via polling
+        // One-time auto-like comment – only if we have a stream id available; else defer
         if (!likeCommentSent) {
-            likeCommentSent = true
-            val userId = AuthUtils.getCurrentUserId(this) ?: return
-            val streamId = currentStream?.id ?: return
-            lifecycleScope.launch(Dispatchers.IO) {
-                try {
-                    RetrofitClient.liveStreamApi.createLiveStreamComment(
-                        select = "*,profile:profiles(*)",
-                        comment = LiveStreamCommentRequest(streamId, null, userId, "liked this live")
-                    )
-                } catch (_: Exception) { }
+            val userId = AuthUtils.getCurrentUserId(this)
+            val streamId = currentStream?.id
+            if (userId != null && !streamId.isNullOrEmpty()) {
+                likeCommentSent = true
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        RetrofitClient.liveStreamApi.createLiveStreamComment(
+                            select = "*,profile:profiles(*)",
+                            comment = LiveStreamCommentRequest(streamId, null, userId, "liked this live")
+                        )
+                    } catch (_: Exception) { }
+                }
             }
         }
-        // Increment taps counter (best effort) and bump last taps optimistic value
-        val sid = currentStream?.id ?: return
-        lastTapsValue += 1
+        // If stream id isn't ready yet, queue the tap to flush later atomically with server update
+        val sid = currentStream?.id
+        if (sid.isNullOrEmpty()) {
+            queuedTapCount += 1
+            return
+        }
+        // Increment taps in DB, then broadcast a LiveKit 'tap' only on success
         lifecycleScope.launch(Dispatchers.IO) {
-            try { RetrofitClient.liveStreamApi.incrementLiveTaps(mapOf("in_stream_id" to sid, "in_inc" to 1)) } catch (_: Exception) {}
-        }
-        // Also broadcast a lightweight tap signal over LiveKit so hosts (incl. Android) update instantly
-        try {
-            val room = liveKitRoom
-            if (room != null) {
-                val json = JSONObject().apply {
-                    put("type", "tap"); put("ts", System.currentTimeMillis() / 1000)
-                }
-                lifecycleScope.launch {
-                    try { room.localParticipant.publishData(json.toString().toByteArray(Charsets.UTF_8)) } catch (_: Exception) {}
-                }
+            var ok = false
+            try {
+                val resp = RetrofitClient.liveStreamApi.incrementLiveTaps(mapOf("in_stream_id" to sid, "in_inc" to 1))
+                ok = resp.isSuccessful
+            } catch (_: Exception) {
+                try {
+                    val url = club.gifters.giftersclub.SupabaseConfig.SUPABASE_URL + "/rest/v1/rpc/increment_live_taps"
+                    val body = org.json.JSONObject().apply { put("in_stream_id", sid); put("in_inc", 1) }.toString()
+                    val req = okhttp3.Request.Builder()
+                        .url(url)
+                        .post(body.toRequestBody("application/json".toMediaTypeOrNull()))
+                        .addHeader("apikey", club.gifters.giftersclub.SupabaseConfig.SUPABASE_ANON_KEY)
+                        .addHeader("Authorization", "Bearer " + (getSharedPreferences("supabase", Context.MODE_PRIVATE).getString("access_token", null) ?: club.gifters.giftersclub.SupabaseConfig.SUPABASE_ANON_KEY))
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("Accept", "application/json")
+                        .addHeader("Prefer", "params=single-object,return=representation")
+                        .build()
+                    val client = okhttp3.OkHttpClient()
+                    client.newCall(req).execute().use { ok = it.isSuccessful }
+                } catch (_: Exception) { ok = false }
             }
-        } catch (_: Exception) {}
+            if (ok) {
+                // Bump local total immediately
+                withContext(Dispatchers.Main) {
+                    lastTapsValue += 1
+                    tvTapCount?.text = formatCount(lastTapsValue)
+                    tapsCountTv?.text = formatCount(lastTapsValue)
+                }
+                // Fetch authoritative taps to reconcile quickly
+                try {
+                    val rows = RetrofitClient.liveStreamApi.getLiveStreamById("id,taps", "eq.$sid")
+                    val taps = rows.firstOrNull()?.taps ?: -1
+                    if (taps >= 0) withContext(Dispatchers.Main) {
+                        lastTapsValue = taps
+                        tvTapCount?.text = formatCount(taps)
+                        tapsCountTv?.text = formatCount(taps)
+                    }
+                } catch (_: Exception) { }
+                try {
+                    val room = liveKitRoom
+                    if (room != null) {
+                        val json = JSONObject().apply { put("type", "tap"); put("ts", System.currentTimeMillis() / 1000) }
+                        withContext(Dispatchers.Main) {
+                            try { room.localParticipant.publishData(json.toString().toByteArray(Charsets.UTF_8)) } catch (_: Exception) {}
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        }
         // Consume future server deltas for my own taps to avoid redundant bottom-right hearts
         pendingLocalTapIncrements += 1
         // Simple explosion when reaching 300
@@ -2762,6 +2814,46 @@ class LiveStreamActivity : BaseActivity() {
                 .setStartDelay((i * 20).toLong())
                 .start()
         }
+    }
+
+    /** Flush any queued taps that happened before LiveKit was ready: write to DB and emit hearts. */
+    private fun flushQueuedTaps() {
+        val count = queuedTapCount
+        val sid = currentStream?.id
+        if (count <= 0 || sid.isNullOrEmpty()) return
+        queuedTapCount = 0
+        // Increment DB by the queued count (single RPC)
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val resp = RetrofitClient.liveStreamApi.incrementLiveTaps(mapOf("in_stream_id" to sid, "in_inc" to count))
+                if (!resp.isSuccessful) throw Exception("rpc failed")
+            } catch (_: Exception) {
+                try {
+                    val url = club.gifters.giftersclub.SupabaseConfig.SUPABASE_URL + "/rest/v1/rpc/increment_live_taps"
+                    val body = org.json.JSONObject().apply { put("in_stream_id", sid); put("in_inc", count) }.toString()
+                    val req = okhttp3.Request.Builder()
+                        .url(url)
+                        .post(body.toRequestBody("application/json".toMediaTypeOrNull()))
+                        .addHeader("apikey", club.gifters.giftersclub.SupabaseConfig.SUPABASE_ANON_KEY)
+                        .addHeader("Authorization", "Bearer " + (getSharedPreferences("supabase", Context.MODE_PRIVATE).getString("access_token", null) ?: club.gifters.giftersclub.SupabaseConfig.SUPABASE_ANON_KEY))
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("Accept", "application/json")
+                        .addHeader("Prefer", "params=single-object,return=representation")
+                        .build()
+                    val client = okhttp3.OkHttpClient()
+                    client.newCall(req).execute().use { }
+                } catch (_: Exception) { }
+            }
+        }
+        // If connected, publish `count` tap signals so others animate hearts
+        val room = liveKitRoom
+        if (room != null) {
+            repeat(count) {
+                val json = JSONObject().apply { put("type", "tap"); put("ts", System.currentTimeMillis() / 1000) }
+                lifecycleScope.launch { try { room.localParticipant.publishData(json.toString().toByteArray(Charsets.UTF_8)) } catch (_: Exception) {} }
+            }
+        }
+        // No local counter changes; server updates drive the UI.
     }
 
     private fun initiateTopup(userId: String, amount: Int) {

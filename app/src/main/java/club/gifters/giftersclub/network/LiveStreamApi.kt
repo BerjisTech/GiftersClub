@@ -149,10 +149,14 @@ interface LiveStreamApi {
     ): List<Map<String, Any?>>
 
     /** Increment live taps counter atomically via RPC. */
+    @Headers(
+        // Ensure PostgREST treats the JSON body as a single-object params payload and returns result
+        "Prefer: params=single-object,return=representation"
+    )
     @POST("rpc/increment_live_taps")
     suspend fun incrementLiveTaps(
         @Body params: Map<String, @JvmSuppressWildcards Any>
-    ): Response<Unit>
+    ): Response<Int>
 
     // Battles
     @GET("battle_sessions")
