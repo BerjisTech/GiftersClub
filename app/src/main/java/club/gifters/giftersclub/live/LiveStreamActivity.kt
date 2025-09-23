@@ -2837,30 +2837,10 @@ class LiveStreamActivity : BaseActivity() {
     }
 
     private fun showViewerListDialog() {
+        // Show modern bottom sheet instead of basic alert dialog
         val sid = currentStream?.id ?: return
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val rows = RetrofitClient.liveStreamApi.getLiveStreamViewers("viewer_id", "eq.$sid")
-                val ids = rows.mapNotNull { it.viewerId }
-                val profs = if (ids.isNotEmpty()) RetrofitClient.profileApi.getProfilesByUserIds("*", "in.(${ids.joinToString(",")})") else emptyList()
-                val names = profs.map { p -> (p.username ?: p.name ?: p.userId.take(6)) }
-                withContext(Dispatchers.Main) {
-                    AlertDialog.Builder(this@LiveStreamActivity)
-                        .setTitle(R.string.viewers)
-                        .setItems(names.toTypedArray(), null)
-                        .setPositiveButton(android.R.string.ok, null)
-                        .show()
-                }
-            } catch (_: Exception) {
-                withContext(Dispatchers.Main) {
-                    AlertDialog.Builder(this@LiveStreamActivity)
-                        .setTitle(R.string.viewers)
-                        .setMessage(R.string.no_viewers)
-                        .setPositiveButton(android.R.string.ok, null)
-                        .show()
-                }
-            }
-        }
+        val sheet = LiveViewersBottomSheetFragment.newInstance(sid)
+        sheet.show(supportFragmentManager, LiveViewersBottomSheetFragment.TAG)
     }
 
     /** Flush any queued taps that happened before LiveKit was ready: write to DB and emit hearts. */
