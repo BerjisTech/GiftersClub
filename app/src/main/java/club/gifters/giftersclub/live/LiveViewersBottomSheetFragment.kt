@@ -60,6 +60,7 @@ class LiveViewersBottomSheetFragment : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
         val rv = view.findViewById<RecyclerView>(R.id.rvViewers)
         val empty = view.findViewById<TextView>(R.id.tvEmpty)
+        val title = view.findViewById<TextView>(R.id.tvTitleViewers)
         val close = view.findViewById<TextView>(R.id.btnCloseViewers)
         val adapter = ViewerAdapter()
         rv.layoutManager = LinearLayoutManager(requireContext())
@@ -78,6 +79,7 @@ class LiveViewersBottomSheetFragment : BottomSheetDialogFragment() {
                 withContext(Dispatchers.Main) {
                     empty.isVisible = profiles.isEmpty()
                     adapter.submit(profiles)
+                    title.text = view.context.getString(R.string.viewers) + if (profiles.isNotEmpty()) " (" + profiles.size + ")" else ""
                 }
             } catch (_: Exception) {
                 withContext(Dispatchers.Main) {
