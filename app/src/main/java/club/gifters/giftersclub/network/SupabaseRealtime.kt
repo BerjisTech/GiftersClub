@@ -38,7 +38,12 @@ class SupabaseRealtime(private val context: Context) {
             urlBuilder.addQueryParameter("authorization", "Bearer%20$jwt")
         }
         val url = urlBuilder.build().toString()
-        val req = Request.Builder().url(url).build()
+        val reqBuilder = Request.Builder().url(url)
+            .addHeader("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
+        if (!jwt.isNullOrEmpty()) {
+            reqBuilder.addHeader("Authorization", "Bearer $jwt")
+        }
+        val req = reqBuilder.build()
         val client = OkHttpClient.Builder()
             .pingInterval(15, TimeUnit.SECONDS)
             .build()

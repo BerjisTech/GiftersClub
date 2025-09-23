@@ -2376,7 +2376,8 @@ class LiveStreamActivity : BaseActivity() {
                             btnFollowStreamer.visibility = View.GONE
                             btnRequests.visibility = View.VISIBLE
                             btnRequests.setOnClickListener { showRequestsPanel() }
-                            tvViewerCount.setOnClickListener { showRequestsPanel() }
+                            // Viewer count shows current viewers list
+                            tvViewerCount.setOnClickListener { showViewerListDialog() }
                             launch {
                                 while (isActive && !isEnded) {
                                     delay(3000)
