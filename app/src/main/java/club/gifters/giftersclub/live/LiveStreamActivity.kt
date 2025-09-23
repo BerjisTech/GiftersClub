@@ -274,6 +274,7 @@ class LiveStreamActivity : BaseActivity() {
         // follower count & follow button
         tvFollowerCount = findViewById(R.id.tvFollowerCount)
         tvViewerCount = findViewById(R.id.tvViewerCount)
+        tvViewerCount.setOnClickListener { showViewerListDialog() }
         btnFollowStreamer = findViewById(R.id.btnFollowStreamer)
         btnSwitchCamera = findViewById(R.id.btnSwitchCamera)
         btnToggleMic = findViewById(R.id.btnToggleMic)
@@ -2813,6 +2814,33 @@ class LiveStreamActivity : BaseActivity() {
                 .withEndAction { root.removeView(dot) }
                 .setStartDelay((i * 20).toLong())
                 .start()
+        }
+    }
+
+    private fun showViewerListDialog() {
+        val sid = currentStream?.id ?: return
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val rows = RetrofitClient.liveStreamApi.getLiveStreamViewers("viewer_id", "eq.$sid")
+                val ids = rows.mapNotNull { it.viewerId }
+                val profs = if (ids.isNotEmpty()) RetrofitClient.profileApi.getProfilesByUserIds("*", "in.(${ids.joinToString(",")})") else emptyList()
+                val names = profs.map { p -> (p.username ?: p.name ?: p.userId.take(6)) }
+                withContext(Dispatchers.Main) {
+                    AlertDialog.Builder(this@LiveStreamActivity)
+                        .setTitle(R.string.viewers)
+                        .setItems(names.toTypedArray(), null)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show()
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) {
+                    AlertDialog.Builder(this@LiveStreamActivity)
+                        .setTitle(R.string.viewers)
+                        .setMessage(R.string.no_viewers)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show()
+                }
+            }
         }
     }
 
