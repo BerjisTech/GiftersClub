@@ -128,7 +128,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             rvMessages.layoutManager = LinearLayoutManager(requireContext()).apply {
                 stackFromEnd = true
             }
-            val msgAdapter = MessageAdapter(userId)
+            val msgAdapter = MessageAdapter(userId, partnerNameArg ?: "User")
             rvMessages.adapter = msgAdapter
 
             val etMessage = chatPane.findViewById<EditText>(R.id.etMessage)
@@ -164,7 +164,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 rvMsgs.layoutManager = LinearLayoutManager(requireContext()).apply {
                     stackFromEnd = true
                 }
-                val innerMsgAdapter = MessageAdapter(userId)
+                val innerMsgAdapter = MessageAdapter(userId, ui.partner.username ?: "User")
                 rvMsgs.adapter = innerMsgAdapter
 
                 val etMsg = chatPane.findViewById<EditText>(R.id.etMessage)
@@ -391,6 +391,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             val chatPane = requireView().findViewById<ConstraintLayout>(R.id.chatPane)
             val tvPartnerUserName = chatPane.findViewById<TextView>(R.id.tvPartnerName)
             tvPartnerUserName.text = partnerUserName
+            // Update adapter with the resolved username for system note text
+            try { msgAdapter.setPartnerLabel(partnerUserName ?: partnerName) } catch (_: Exception) {}
             tvPartnerUserName.setOnClickListener {
                 // Open partner profile when tapped
                 requireActivity().supportFragmentManager.beginTransaction()
