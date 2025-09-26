@@ -480,13 +480,18 @@ class FeedAdapter(
         }
 
         private fun playVideoAt(index: Int) {
-            val innerRv = mediaPager.getChildAt(0) as? RecyclerView ?: return
-            // Play only if the specified child is laid out
-            val child = innerRv.getChildAt(index) ?: return
-            // Do not play if post is locked (overlay visible)
             if (overlay.visibility == View.VISIBLE) return
+            val innerRv = mediaPager.getChildAt(0) as? RecyclerView ?: return
+            val holder = innerRv.findViewHolderForAdapterPosition(index) as? PostMediaAdapter.MediaViewHolder
+            if (holder != null) {
+                holder.startPlayback()
+                return
+            }
+            // Fallback to the first attached child when the targeted holder has not yet been laid out
+            val child = innerRv.getChildAt(0) ?: return
             val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
             pv?.player?.playWhenReady = true
+            pv?.player?.play()
         }
 
         private fun configureMedia(mediaList: List<PostMedia>, locked: Boolean) {
@@ -533,8 +538,22 @@ class FeedAdapter(
             if (locked) {
                 pauseAllVideos()
             } else {
-                itemView.post { playVideoAt(0) }
+                pauseAllVideos()
+                itemView.post {
+                    if (isCurrentPagerItem()) {
+                        val target = mediaPager.currentItem
+                        playVideoAt(target)
+                    }
+                }
             }
+        }
+
+        private fun isCurrentPagerItem(): Boolean {
+            val pos = bindingAdapterPosition
+            if (pos == RecyclerView.NO_POSITION) return false
+            val parentRv = itemView.parent as? RecyclerView ?: return false
+            val parentPager = parentRv.parent as? ViewPager2 ?: return false
+            return pos == parentPager.currentItem && parentPager.scrollState == ViewPager2.SCROLL_STATE_IDLE
         }
 
         private fun updateIndicatorSelection(position: Int) {

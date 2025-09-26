@@ -230,6 +230,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             val pos = arguments?.getInt(ARG_START_POSITION) ?: 0
             pager.setCurrentItem(pos, false)
             swipeRefresh.isEnabled = false
+            pager.post { playFirstVideoInItem(pager.currentItem) }
             return
         }
 
@@ -282,8 +283,18 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             }
 
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
-            override fun onPageScrollStateChanged(state: Int) {}
+            override fun onPageScrollStateChanged(state: Int) {
+                when (state) {
+                    ViewPager2.SCROLL_STATE_DRAGGING -> pauseVideosInItem(pager.currentItem)
+                    ViewPager2.SCROLL_STATE_IDLE -> playFirstVideoInItem(pager.currentItem)
+                }
+            }
         })
+    }
+
+    override fun onResume() {
+        super.onResume()
+        pager.post { playFirstVideoInItem(pager.currentItem) }
     }
 
     override fun onPause() {
@@ -301,6 +312,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     }
 
     private fun pauseVideosInItem(position: Int) {
+        if (position < 0) return
         val rv = (pager.getChildAt(0) as? RecyclerView) ?: return
         val vh = rv.findViewHolderForAdapterPosition(position) ?: return
         val innerPager = vh.itemView.findViewById<ViewPager2>(R.id.mediaPager) ?: return
@@ -314,13 +326,28 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     }
 
     private fun playFirstVideoInItem(position: Int) {
+        if (position < 0) return
+        if (pager.scrollState != ViewPager2.SCROLL_STATE_IDLE) return
         val rv = (pager.getChildAt(0) as? RecyclerView) ?: return
         val vh = rv.findViewHolderForAdapterPosition(position) ?: return
+        val overlay = vh.itemView.findViewById<View>(R.id.lockOverlay)
+        if (overlay?.visibility == View.VISIBLE) return
         val innerPager = vh.itemView.findViewById<ViewPager2>(R.id.mediaPager) ?: return
+        val targetIndex = innerPager.currentItem
         val innerRv = innerPager.getChildAt(0) as? RecyclerView ?: return
-        val child = innerRv.getChildAt(0) ?: return
+        val holder = innerRv.findViewHolderForAdapterPosition(targetIndex) as? PostMediaAdapter.MediaViewHolder
+        if (holder != null) {
+            holder.startPlayback()
+            return
+        }
+        if (innerRv.childCount == 0) {
+            innerRv.post { playFirstVideoInItem(position) }
+            return
+        }
+        val child = innerRv.getChildAt(0)
         val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
         pv?.player?.playWhenReady = true
+        pv?.player?.play()
     }
 
     private fun onLocked(post: Post) {
@@ -446,6 +473,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 }
                 if (clear) {
                     adapter.submitList(interleaveWithLives(items))
+                    pager.post { playFirstVideoInItem(pager.currentItem) }
                 } else {
                     val merged = (adapter.currentList.mapNotNull { (it as? FeedItem.PostItem)?.post } + items)
                     adapter.submitList(interleaveWithLives(merged))
@@ -523,6 +551,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 val list = api.getPostById("eq.$postId")
                 val post = list.firstOrNull() ?: return@launch
                 adapter.submitList(listOf(FeedItem.PostItem(post)))
+                pager.post { playFirstVideoInItem(pager.currentItem) }
                 // Now load the rest of the posts
                 page = 0
                 isLastPage = false

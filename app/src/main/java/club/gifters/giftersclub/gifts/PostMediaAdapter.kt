@@ -110,7 +110,8 @@ class PostMediaAdapter(
                 player?.setMediaItem(mediaItem)
                 player?.repeatMode = Player.REPEAT_MODE_ALL
                 player?.prepare()
-                player?.playWhenReady = !playOnHover
+                // Always start paused; the parent view will explicitly decide when to play
+                player?.playWhenReady = false
 
                 // Wire custom controls
                 bindControls()
@@ -243,7 +244,8 @@ class PostMediaAdapter(
          * Manually start playback of a video, if bound to a video media item.
          */
         fun startPlayback() {
-            if (playerView.visibility == View.VISIBLE) player?.playWhenReady = true
+            player?.playWhenReady = true
+            player?.play()
         }
 
         fun release() {

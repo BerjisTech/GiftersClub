@@ -73,6 +73,7 @@ import club.gifters.giftersclub.model.CreatePostRequest
 import club.gifters.giftersclub.model.PostTagUpsertRequest
 import club.gifters.giftersclub.model.TagUpsertRequest
 import club.gifters.giftersclub.network.RetrofitClient
+import club.gifters.giftersclub.util.MimeUtils
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.tabs.TabLayout
 import com.yalantis.ucrop.UCrop
@@ -2635,8 +2636,7 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         } catch (_: Exception) {
         }
         val uriStrings = finalUris.map { it.toString() }
-        val types =
-            finalUris.map { appCtx.contentResolver.getType(it) ?: "application/octet-stream" }
+        val types = finalUris.map { MimeUtils.resolveMimeType(appCtx, it) }
         val data = UploadPostWorker.buildInput(postId, uriStrings, types)
         val work = androidx.work.OneTimeWorkRequestBuilder<UploadPostWorker>()
             .setInputData(data)

@@ -22,9 +22,12 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 
+import club.gifters.giftersclub.util.MimeUtils
+
 class UploadPostWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
 
     companion object {
+        private const val DEFAULT_MIME = "application/octet-stream"
         const val KEY_POST_ID = "post_id"
         const val KEY_URIS = "uris"
         const val KEY_TYPES = "types" // optional pre-resolved MIME types
@@ -76,13 +79,33 @@ class UploadPostWorker(appContext: Context, params: WorkerParameters) : Coroutin
         try {
             uriStrings.forEachIndexed { index, us ->
                 val uri = Uri.parse(us)
-                val resolvedType = typeStrings?.getOrNull(index)
-                    ?: applicationContext.contentResolver.getType(uri)
-                    ?: "application/octet-stream"
-                val isVideo = resolvedType.startsWith("video/") || us.endsWith(".mp4")
-                val ext = resolvedType.substringAfterLast('/', "bin")
+                var resolvedType = typeStrings?.getOrNull(index)
+                    ?.takeUnless { it.isBlank() }
+                if (resolvedType.isNullOrBlank() || resolvedType.equals(DEFAULT_MIME, true)) {
+                    resolvedType = MimeUtils.resolveMimeType(applicationContext, uri)
+                }
+                if (resolvedType.isNullOrBlank() || resolvedType.equals(DEFAULT_MIME, true)) {
+                    val lower = us.lowercase()
+                    resolvedType = when {
+                        lower.endsWith(".mp4") -> "video/mp4"
+                        lower.endsWith(".mov") -> "video/quicktime"
+                        lower.endsWith(".mkv") -> "video/x-matroska"
+                        lower.endsWith(".webm") -> "video/webm"
+                        lower.endsWith(".jpg") || lower.endsWith(".jpeg") -> "image/jpeg"
+                        lower.endsWith(".png") -> "image/png"
+                        lower.endsWith(".webp") -> "image/webp"
+                        else -> DEFAULT_MIME
+                    }
+                }
+                val mime = resolvedType.substringBefore(';')
+                val isVideo = mime.startsWith("video/") || us.endsWith(".mp4", ignoreCase = true)
+                val uploadMime = mime.takeUnless { it.equals(DEFAULT_MIME, true) }
+                    ?: if (isVideo) "video/mp4" else "image/jpeg"
+                val ext = MimeUtils.canonicalExtensionForMime(uploadMime).ifBlank { if (isVideo) "mp4" else "bin" }
                 val ts = System.currentTimeMillis()
                 val filename = "${postId}-$ts-$index.$ext"
+                val mediaType = uploadMime.toMediaTypeOrNull()
+                var tempFile: java.io.File? = null
                 val body: RequestBody = if (isVideo) {
                     // Many cloud providers (S3/GCS) require a fixed Content-Length for pre-signed PUTs.
                     // Ensure we upload with a known length by copying to a temp file when necessary.
@@ -90,6 +113,7 @@ class UploadPostWorker(appContext: Context, params: WorkerParameters) : Coroutin
                         "file" -> java.io.File(uri.path!!)
                         else -> {
                             val tmp = java.io.File(applicationContext.cacheDir, "UP_${System.currentTimeMillis()}_${index}.bin")
+                            tempFile = tmp
                             withContext(Dispatchers.IO) {
                                 applicationContext.contentResolver.openInputStream(uri)?.use { ins ->
                                     java.io.FileOutputStream(tmp).use { outs -> ins.copyTo(outs) }
@@ -98,16 +122,16 @@ class UploadPostWorker(appContext: Context, params: WorkerParameters) : Coroutin
                             tmp
                         }
                     }
-                    srcFile.asRequestBody(resolvedType.toMediaTypeOrNull())
+                    srcFile.asRequestBody(mediaType)
                 } else {
                     val bytes = withContext(Dispatchers.IO) {
                         applicationContext.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     } ?: throw Exception("Failed to read media data")
-                    bytes.toRequestBody(resolvedType.toMediaTypeOrNull())
+                    bytes.toRequestBody(mediaType)
                 }
 
                 val presignResp = RetrofitClient.functionsApi.uploadMedia(
-                    PresignRequest(fileName = filename, fileType = resolvedType, bucket = "post", overwrite = false)
+                    PresignRequest(fileName = filename, fileType = uploadMime, bucket = "post", overwrite = false)
                 )
                 if (!presignResp.isSuccessful) throw HttpException(presignResp)
                 val presignData = presignResp.body()!!
@@ -117,6 +141,7 @@ class UploadPostWorker(appContext: Context, params: WorkerParameters) : Coroutin
                 val code = putResp.code
                 val errBody = try { putResp.body?.string() } catch (_: Exception) { null }
                 putResp.close()
+                tempFile?.let { if (it.exists()) try { it.delete() } catch (_: Exception) {} }
                 if (!ok) throw Exception("Upload failed: $code ${errBody ?: ""}")
                 val publicUrl = presignData.publicUrl
                 val mediaResp = RetrofitClient.postApi.createPostMedia(
