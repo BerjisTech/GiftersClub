@@ -20,6 +20,7 @@ import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.LiveStream
 import club.gifters.giftersclub.model.Post
+import club.gifters.giftersclub.model.PostMedia
 import club.gifters.giftersclub.social.SubscriptionApiHolder
 import club.gifters.giftersclub.gifts.FollowApiHolder
 import coil.load
@@ -40,6 +41,8 @@ import io.livekit.android.room.Room
 import io.livekit.android.room.track.LocalAudioTrackOptions
 import io.livekit.android.room.track.LocalVideoTrackOptions
 import io.livekit.android.room.track.RemoteVideoTrack
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.imageview.ShapeableImageView
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -111,14 +114,19 @@ class FeedAdapter(
         private val viewers: TextView = view.findViewById(R.id.tvViewerCount)
         private val host: TextView = view.findViewById(R.id.tvLiveHost)
         private val previewContainer: FrameLayout = view.findViewById(R.id.previewContainer)
+        private val lockOverlay: FrameLayout = view.findViewById(R.id.liveLockOverlay)
+        private val lockTitle: TextView = view.findViewById(R.id.tvLiveLockTitle)
+        private val lockAction: TextView = view.findViewById(R.id.tvLiveLockAction)
+        private val lockButton: MaterialButton = view.findViewById(R.id.btnLiveLockCta)
         private var preview: SurfaceViewRenderer? = null
         private var room: Room? = null
         private var bindJob: Job? = null
         private var eventsJob: Job? = null
+        private var accessJob: Job? = null
+
         init {
             view.setOnClickListener {
                 val item = (getItem(bindingAdapterPosition) as? FeedItem.LiveItem)?.live ?: return@setOnClickListener
-                // Stop preview first to avoid overlapping audio
                 stopPreview()
                 val ctx = itemView.context
                 val uri = Uri.parse("https://gifters.club/live/${item.id}")
@@ -126,8 +134,14 @@ class FeedAdapter(
                 intent.setClassName(ctx, "club.gifters.giftersclub.live.LiveStreamActivity")
                 ctx.startActivity(intent)
             }
+            lockOverlay.setOnClickListener { view.performClick() }
+            lockButton.setOnClickListener { view.performClick() }
         }
+
         fun bind(live: LiveStream) {
+            accessJob?.cancel(); accessJob = null
+            stopPreview()
+
             title.text = live.title
             viewers.text = "${live.viewerCount} watching"
             host.text = ""
@@ -137,7 +151,51 @@ class FeedAdapter(
                     withContext(Dispatchers.Main) { host.text = prof?.username ?: prof?.name ?: "" }
                 } catch (_: Exception) { }
             }
-            startPreview(live)
+
+            val ctx = itemView.context
+            val accessType = (live.accessType ?: "free").lowercase()
+            val currentUser = AuthUtils.getCurrentUserId(ctx)
+            val isHost = currentUser != null && currentUser == live.hostId
+            val requiresAccess = !isHost && (accessType == "paid" || accessType == "subscription")
+
+            if (requiresAccess) {
+                showLockedOverlay(accessType)
+                if (accessType == "subscription") {
+                    val boundId = live.id
+                    accessJob = scope.launch(Dispatchers.IO) {
+                        val hasSub = try { SubscriptionApiHolder.hasSubscription(live.hostId) } catch (_: Exception) { false }
+                        withContext(Dispatchers.Main) {
+                            val current = (getItem(bindingAdapterPosition) as? FeedItem.LiveItem)?.live
+                            if (current?.id != boundId) return@withContext
+                            if (hasSub) {
+                                hideLockedOverlay()
+                                startPreview(live)
+                            }
+                        }
+                    }
+                }
+            } else {
+                hideLockedOverlay()
+                startPreview(live)
+            }
+        }
+
+        private fun showLockedOverlay(accessType: String) {
+            lockOverlay.visibility = View.VISIBLE
+            lockTitle.text = itemView.context.getString(R.string.access_required)
+            if (accessType == "subscription") {
+                lockAction.text = itemView.context.getString(R.string.live_paywall_feed_sub)
+                lockButton.text = itemView.context.getString(R.string.subscribe)
+            } else {
+                lockAction.text = itemView.context.getString(R.string.live_paywall_feed_paid)
+                lockButton.text = itemView.context.getString(R.string.unlock)
+            }
+            lockButton.isEnabled = true
+        }
+
+        private fun hideLockedOverlay() {
+            lockOverlay.visibility = View.GONE
+            lockButton.isEnabled = false
         }
 
         private fun startPreview(live: LiveStream) {
@@ -189,6 +247,7 @@ class FeedAdapter(
         }
 
         fun stopPreview() {
+            accessJob?.cancel(); accessJob = null
             bindJob?.cancel(); bindJob = null
             eventsJob?.cancel(); eventsJob = null
             try { room?.disconnect() } catch (_: Exception) {}
@@ -221,6 +280,14 @@ class FeedAdapter(
         }
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private var current: Post? = null
+        private val indicatorLayout: LinearLayout = itemView.findViewById(R.id.mediaIndicatorLayout)
+        private val overlay: FrameLayout = itemView.findViewById(R.id.lockOverlay)
+        private val lockActionText: TextView = itemView.findViewById(R.id.tvLockAction)
+        private val lockButton: MaterialButton = itemView.findViewById(R.id.btnLockCta)
+        private val postDetails: View = itemView.findViewById(R.id.postDetails)
+        private val creatorAvatar: ShapeableImageView = itemView.findViewById(R.id.ivCreatorAvatar)
+        private val creatorName: TextView = itemView.findViewById(R.id.tvCreatorName)
+        private var accessJob: Job? = null
 
         init {
             val doubleTap = GestureDetector(itemView.context,
@@ -315,110 +382,36 @@ class FeedAdapter(
                     } catch (_: Exception) { }
                 }
             }
-            val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
-            val lockAction = itemView.findViewById<TextView>(R.id.tvLockAction)
-            val indicatorLayout = itemView.findViewById<LinearLayout>(R.id.mediaIndicatorLayout)
-            val btnLock = itemView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnLockCta)
-            val postDetails = itemView.findViewById<View>(R.id.postDetails)
-            // Default hidden until we decide based on access below
-            mediaPager.visibility = View.GONE
-            indicatorLayout.visibility = View.GONE
-            postDetails.visibility = View.GONE
-            overlay.visibility = View.GONE
-            scope.launch {
-                val currentUser = AuthUtils.getCurrentUserId(itemView.context)
-                val hasAccess = if (currentUser == post.userId) true else when (post.accessType) {
-                    "subscription" -> SubscriptionApiHolder.hasSubscription(post.userId)
-                    "paid" -> SubscriptionApiHolder.hasPostAccess(post.id)
-                    else -> true
-                }
-                if (!hasAccess) {
-                    overlay.visibility = View.VISIBLE
-                    // Keep media/details visible so blurred content is seen under translucent overlay
-                    mediaPager.visibility = View.VISIBLE
-                    postDetails.visibility = View.VISIBLE
-                    val isSub = post.accessType == "subscription"
-                    lockAction.text = if (isSub) itemView.context.getString(R.string.subscribe_to_creator) else itemView.context.getString(R.string.purchase_access)
-                    itemView.findViewById<TextView>(R.id.tvCreatorName)?.text = "@" + (post.profile?.username ?: "")
-                    // Inject creator avatar into overlay safely
-                    itemView.findViewById<ImageView>(R.id.ivCreatorAvatar)?.let { iv ->
-                        val img = post.profile?.image.orEmpty()
-                        if (img.isNotBlank()) iv.load(img) else iv.setImageResource(android.R.color.darker_gray)
-                    }
-                    btnLock.text = if (isSub) itemView.context.getString(R.string.subscribe) else itemView.context.getString(R.string.unlock)
-                    btnLock.isEnabled = true
-                    btnLock.setOnClickListener {
-                        btnLock.isEnabled = false
-                        lockAction.text = if (isSub) itemView.context.getString(R.string.subscribing_ellipsis) else itemView.context.getString(R.string.purchasing_ellipsis)
-                        onLocked(post)
-                    }
-                    try {
-                        if (android.os.Build.VERSION.SDK_INT >= 31) {
-                            val blur = android.graphics.RenderEffect.createBlurEffect(60f, 60f, android.graphics.Shader.TileMode.CLAMP)
-                            itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(blur)
-                            itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(blur)
-                        }
-                    } catch (_: Exception) {}
-                } else {
-                    mediaPager.visibility = View.VISIBLE
-                    postDetails.visibility = View.VISIBLE
-                    overlay.visibility = View.GONE
-                    try {
-                        if (android.os.Build.VERSION.SDK_INT >= 31) {
-                            itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(null)
-                            itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(null)
-                        }
-                    } catch (_: Exception) {}
-                }
-            }
+            // Paywall state handled below
+            accessJob?.cancel()
             val mediaList = post.media ?: emptyList()
-            mediaPager.adapter = PostMediaAdapter(
-                mediaList = mediaList,
-                playOnHover = false
-            )
-            // Auto-control video playback based on inner page visibility
-            pageChangeCallback?.let { mediaPager.unregisterOnPageChangeCallback(it) }
-            val callback = object : ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(position: Int) {
-                    pauseAllVideos()
-                    playVideoAt(position)
+            val currentUserId = AuthUtils.getCurrentUserId(itemView.context)
+            val accessType = (post.accessType ?: "free").lowercase()
+            val requiresAccess = currentUserId != post.userId && (accessType == "subscription" || accessType == "paid")
+
+            applyLockVisual(post, accessType, requiresAccess)
+            configureMedia(mediaList, requiresAccess)
+
+            if (requiresAccess) {
+                accessJob = scope.launch {
+                    val hasAccess = try {
+                        when (accessType) {
+                            "subscription" -> SubscriptionApiHolder.hasSubscription(post.userId)
+                            "paid" -> SubscriptionApiHolder.hasPostAccess(post.id)
+                            else -> true
+                        }
+                    } catch (_: Exception) { false }
+                    withContext(Dispatchers.Main) {
+                        val currentPost = current
+                        if (currentPost != null && currentPost.id == post.id) {
+                            val stillLocked = !hasAccess
+                            applyLockVisual(post, accessType, stillLocked)
+                            configureMedia(mediaList, stillLocked)
+                        }
+                    }
                 }
-            }
-            mediaPager.registerOnPageChangeCallback(callback)
-            pageChangeCallback = callback
-            // Ensure only the first page’s video (if any) plays
-            itemView.post { playVideoAt(0) }
-            // Touch handling is done in init with directional logic to avoid blocking vertical feed scroll
-            indicatorLayout.removeAllViews()
-            if (mediaList.size <= 1) {
-                indicatorLayout.visibility = View.GONE
             } else {
-                indicatorLayout.visibility = View.VISIBLE
-                pageChangeCallback?.let { mediaPager.unregisterOnPageChangeCallback(it) }
-                mediaList.forEachIndexed { idx, _ ->
-                    val dot = ImageView(itemView.context).apply {
-                        setImageResource(if (idx == 0) R.drawable.dot_active else R.drawable.dot_inactive)
-                        val size = (6 * context.resources.displayMetrics.density).toInt()
-                        val params = LinearLayout.LayoutParams(size, size).apply {
-                            val margin = (4 * context.resources.displayMetrics.density).toInt()
-                            marginStart = margin; marginEnd = margin
-                        }
-                        layoutParams = params
-                    }
-                    indicatorLayout.addView(dot)
-                }
-                val callback = object : ViewPager2.OnPageChangeCallback() {
-                    override fun onPageSelected(position: Int) {
-                        for (i in 0 until indicatorLayout.childCount) {
-                            val iv = indicatorLayout.getChildAt(i) as ImageView
-                            iv.setImageResource(
-                                if (i == position) R.drawable.dot_active else R.drawable.dot_inactive
-                            )
-                        }
-                    }
-                }
-                mediaPager.registerOnPageChangeCallback(callback)
-                pageChangeCallback = callback
+                accessJob = null
             }
             btnLike.setOnClickListener { onLike(post) }
             btnComment.setOnClickListener { onComment(post) }
@@ -491,10 +484,100 @@ class FeedAdapter(
             // Play only if the specified child is laid out
             val child = innerRv.getChildAt(index) ?: return
             // Do not play if post is locked (overlay visible)
-            val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
             if (overlay.visibility == View.VISIBLE) return
             val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
             pv?.player?.playWhenReady = true
+        }
+
+        private fun configureMedia(mediaList: List<PostMedia>, locked: Boolean) {
+            pageChangeCallback?.let { mediaPager.unregisterOnPageChangeCallback(it) }
+            pageChangeCallback = null
+            mediaPager.adapter = PostMediaAdapter(
+                mediaList = mediaList,
+                playOnHover = false,
+                onVideoCompleted = null,
+                locked = locked
+            )
+            mediaPager.visibility = View.VISIBLE
+            postDetails.visibility = View.VISIBLE
+            indicatorLayout.removeAllViews()
+            if (mediaList.size <= 1) {
+                indicatorLayout.visibility = View.GONE
+            } else {
+                indicatorLayout.visibility = View.VISIBLE
+                val density = itemView.context.resources.displayMetrics.density
+                mediaList.forEachIndexed { idx, _ ->
+                    val dot = ImageView(itemView.context).apply {
+                        setImageResource(if (idx == 0) R.drawable.dot_active else R.drawable.dot_inactive)
+                        val size = (6 * density).toInt()
+                        layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                            val margin = (4 * density).toInt()
+                            marginStart = margin; marginEnd = margin
+                        }
+                    }
+                    indicatorLayout.addView(dot)
+                }
+                val callback = object : ViewPager2.OnPageChangeCallback() {
+                    override fun onPageSelected(position: Int) {
+                        updateIndicatorSelection(position)
+                        if (!locked) {
+                            pauseAllVideos()
+                            playVideoAt(position)
+                        }
+                    }
+                }
+                mediaPager.registerOnPageChangeCallback(callback)
+                pageChangeCallback = callback
+                updateIndicatorSelection(0)
+            }
+            if (locked) {
+                pauseAllVideos()
+            } else {
+                itemView.post { playVideoAt(0) }
+            }
+        }
+
+        private fun updateIndicatorSelection(position: Int) {
+            for (i in 0 until indicatorLayout.childCount) {
+                val dot = indicatorLayout.getChildAt(i) as ImageView
+                dot.setImageResource(if (i == position) R.drawable.dot_active else R.drawable.dot_inactive)
+            }
+        }
+
+        private fun applyLockVisual(post: Post, accessType: String, locked: Boolean) {
+            if (locked) {
+                overlay.visibility = View.VISIBLE
+                val isSubscription = accessType == "subscription"
+                lockActionText.text = if (isSubscription) itemView.context.getString(R.string.subscribe_to_creator) else itemView.context.getString(R.string.purchase_access)
+                creatorName.text = "@" + (post.profile?.username ?: "")
+                val avatarUrl = post.profile?.image.orEmpty()
+                if (avatarUrl.isNotBlank()) {
+                    creatorAvatar.load(avatarUrl)
+                } else {
+                    creatorAvatar.setImageResource(android.R.color.darker_gray)
+                }
+                lockButton.text = if (isSubscription) itemView.context.getString(R.string.subscribe) else itemView.context.getString(R.string.unlock)
+                lockButton.isEnabled = true
+                lockButton.setOnClickListener {
+                    lockButton.isEnabled = false
+                    lockActionText.text = if (isSubscription) itemView.context.getString(R.string.subscribing_ellipsis) else itemView.context.getString(R.string.purchasing_ellipsis)
+                    onLocked(post)
+                }
+                pauseAllVideos()
+                if (android.os.Build.VERSION.SDK_INT >= 31) {
+                    val blur = android.graphics.RenderEffect.createBlurEffect(60f, 60f, android.graphics.Shader.TileMode.CLAMP)
+                    mediaPager.setRenderEffect(blur)
+                    postDetails.setRenderEffect(blur)
+                }
+            } else {
+                overlay.visibility = View.GONE
+                lockButton.setOnClickListener(null)
+                lockButton.isEnabled = false
+                if (android.os.Build.VERSION.SDK_INT >= 31) {
+                    mediaPager.setRenderEffect(null)
+                    postDetails.setRenderEffect(null)
+                }
+            }
         }
     }
     private fun makeHashtagsClickable(tv: TextView) {

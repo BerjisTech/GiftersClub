@@ -41,12 +41,14 @@ import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.CreateLiveStreamRequest
 import club.gifters.giftersclub.model.Gift
 import club.gifters.giftersclub.model.LiveStream
+import club.gifters.giftersclub.model.SubscriptionPlan
 import club.gifters.giftersclub.model.LiveStreamCommentRequest
 import club.gifters.giftersclub.model.LiveStreamViewerRequest
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.payments.BillingManager
 import coil.load
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.imageview.ShapeableImageView
 import io.livekit.android.ConnectOptions
 import io.livekit.android.LiveKit
@@ -87,11 +89,22 @@ class LiveStreamActivity : BaseActivity() {
     }
 
     private lateinit var rvLiveComments: RecyclerView
+    private lateinit var unlockedCommentsList: RecyclerView
+    private lateinit var rvLockedComments: RecyclerView
     private lateinit var commentsAdapter: CommentsAdapter
     private lateinit var btnFollowStreamer: ImageView
     private lateinit var tvFollowerCount: TextView
     private lateinit var tvViewerCount: TextView
     private var tvTapCount: TextView? = null
+
+    private lateinit var liveBottomBar: LinearLayout
+    private lateinit var livePaywallOverlay: View
+    private lateinit var paywallTitle: TextView
+    private lateinit var paywallMessage: TextView
+    private lateinit var paywallHint: TextView
+    private lateinit var paywallActionButton: MaterialButton
+    private lateinit var paywallAvatar: ShapeableImageView
+    private lateinit var paywallCreatorLabel: TextView
 
     private var currentStream: LiveStream? = null
     // LiveKit room instance for host controls and realtime
@@ -126,6 +139,11 @@ class LiveStreamActivity : BaseActivity() {
     }
     private var paywallPlanId: String? = null
     private var paywallPlanTokens: Int = 0
+    private var paywallPriceTokens: Int? = null
+    private var paywallMode: String? = null
+    private var paywallStreamId: String? = null
+    private var paywallPlanName: String? = null
+    private var paywallPlanDescription: String? = null
     // Multi-host: map participant/track to its renderer for tiling
     private val videoViews: MutableMap<String, SurfaceViewRenderer> = mutableMapOf()
     private val tileViews: MutableMap<String, View> = mutableMapOf()
@@ -243,7 +261,197 @@ class LiveStreamActivity : BaseActivity() {
                     }
                 }
             }
+    }
+}
+
+    private fun useLockedCommentsList() {
+        if (rvLiveComments === rvLockedComments) return
+        rvLiveComments.adapter = null
+        rvLockedComments.adapter = commentsAdapter
+        rvLiveComments = rvLockedComments
+        if (commentsAdapter.itemCount > 0) {
+            rvLiveComments.scrollToPosition(commentsAdapter.itemCount - 1)
         }
+    }
+
+    private fun useUnlockedCommentsList() {
+        if (rvLiveComments === unlockedCommentsList) return
+        rvLockedComments.adapter = null
+        unlockedCommentsList.adapter = commentsAdapter
+        rvLiveComments = unlockedCommentsList
+        rvLiveComments.bringToFront()
+        if (commentsAdapter.itemCount > 0) {
+            rvLiveComments.scrollToPosition(commentsAdapter.itemCount - 1)
+        }
+    }
+
+    private fun hydrateComments(streamId: String) {
+        commentsJob?.cancel()
+        lifecycleScope.launch {
+            try {
+                val initial = RetrofitClient.liveStreamApi.getLiveStreamComments(
+                    select = "*,profile:profiles(*)",
+                    streamFilter = "eq.$streamId"
+                )
+                val ordered = initial.sortedBy { it.createdAt }
+                commentsAdapter.submitList(ordered)
+                if (ordered.isNotEmpty()) {
+                    rvLiveComments.scrollToPosition(ordered.size - 1)
+                }
+            } catch (_: Exception) {
+            }
+            startCommentsPolling(streamId)
+        }
+    }
+
+    private fun showLivePaywall(
+        stream: LiveStream,
+        mode: String,
+        priceTokens: Int?,
+        requiredPlanName: String?,
+        requiredPlanTokens: Int?,
+        planDescription: String?
+    ) {
+        paywallMode = mode
+        paywallStreamId = stream.id
+        livePaywallOverlay.visibility = View.VISIBLE
+        livePaywallOverlay.bringToFront()
+        liveBottomBar.visibility = View.GONE
+        useLockedCommentsList()
+
+        paywallTitle.text = getString(R.string.access_required)
+        paywallCreatorLabel.text = ""
+        when (mode.lowercase()) {
+            "paid" -> {
+                val tokens = priceTokens ?: 0
+                paywallMessage.text = getString(R.string.live_paywall_paid_message, tokens)
+                paywallHint.text = getString(R.string.live_paywall_paid_hint)
+                paywallActionButton.text = getString(R.string.unlock)
+            }
+            "subscription" -> {
+                val planName = requiredPlanName ?: getString(R.string.subscribe)
+                val tokenSuffix = requiredPlanTokens?.takeIf { it > 0 }?.let { " ($it)" } ?: ""
+                paywallMessage.text = getString(R.string.live_paywall_subscription_message, planName + tokenSuffix)
+                val desc = planDescription?.takeIf { it.isNotBlank() }?.trim()
+                if (!desc.isNullOrBlank()) {
+                    val formatted = "• " + desc.replace("\n", "\n• ")
+                    paywallHint.text = formatted
+                } else {
+                    paywallHint.text = getString(R.string.live_paywall_sub_hint)
+                }
+                paywallActionButton.text = getString(R.string.subscribe)
+            }
+            else -> {
+                paywallMessage.text = getString(R.string.live_paywall_paid_hint)
+                paywallHint.text = ""
+                paywallActionButton.text = getString(R.string.unlock)
+            }
+        }
+        paywallHint.visibility = if (paywallHint.text.isNullOrBlank()) View.GONE else View.VISIBLE
+        paywallActionButton.isEnabled = true
+
+        val hostId = stream.hostId
+        lifecycleScope.launch(Dispatchers.IO) {
+            val profile = try {
+                RetrofitClient.profileApi.getProfileByUserId("*", "eq.$hostId").firstOrNull()
+            } catch (_: Exception) { null }
+            withContext(Dispatchers.Main) {
+                paywallCreatorLabel.text = profile?.username?.takeIf { it.isNotBlank() }?.let { "@" + it } ?: ""
+                val avatarUrl = profile?.image
+                if (!avatarUrl.isNullOrBlank()) {
+                    paywallAvatar.load(avatarUrl)
+                } else {
+                    paywallAvatar.setImageResource(android.R.color.darker_gray)
+                }
+            }
+        }
+
+        hydrateComments(stream.id)
+    }
+
+    private fun hideLivePaywall() {
+        if (livePaywallOverlay.visibility == View.GONE) return
+        paywallMode = null
+        paywallStreamId = null
+        paywallPriceTokens = null
+        paywallPlanId = null
+        paywallPlanTokens = 0
+        paywallPlanName = null
+        paywallPlanDescription = null
+        livePaywallOverlay.visibility = View.GONE
+        liveBottomBar.visibility = View.VISIBLE
+        liveBottomBar.bringToFront()
+        useUnlockedCommentsList()
+    }
+
+    private fun handlePaywallAction() {
+        val mode = paywallMode ?: return
+        val stream = currentStream ?: return
+        when (mode.lowercase()) {
+            "paid" -> openPaidAccessSheet(stream)
+            "subscription" -> openSubscriptionAccessSheet(stream)
+        }
+    }
+
+    private fun openPaidAccessSheet(stream: LiveStream) {
+        val price = paywallPriceTokens ?: stream.price ?: 0
+        LiveAccessBottomSheetFragment.newInstance(
+            mode = "paid",
+            message = getString(R.string.live_paywall_paid_message, price),
+            benefits = arrayListOf(),
+            price = price,
+            streamId = stream.id,
+            creatorId = stream.hostId,
+            planId = null,
+            planTokens = null
+        ).setListener(object : LiveAccessBottomSheetFragment.Listener {
+            override fun onPurchase(streamId: String) {
+                lifecycleScope.launch {
+                    paywallActionButton.isEnabled = false
+                    val success = try {
+                        RetrofitClient.functionsApi.purchaseLiveAccessRpc(mapOf("liveStreamId" to streamId)).isSuccessful
+                    } catch (_: Exception) {
+                        false
+                    }
+                    paywallActionButton.isEnabled = true
+                    if (success) {
+                        hideLivePaywall()
+                        handleDeepLinkStream(streamId)
+                    } else {
+                        Toast.makeText(this@LiveStreamActivity, R.string.failed_to_unlock_live, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            override fun onSubscribe(creatorId: String, planId: String, planTokens: Int) { }
+        }).show(supportFragmentManager, "LiveAccessBottomSheet")
+    }
+
+    private fun openSubscriptionAccessSheet(stream: LiveStream) {
+        val planId = paywallPlanId ?: return
+        val tokens = paywallPlanTokens
+        val planName = paywallPlanName ?: ""
+        val benefits = ArrayList(paywallPlanDescription?.split('\n')?.filter { it.isNotBlank() } ?: emptyList())
+        val messagePlan = if (planName.isNotBlank()) {
+            val suffix = if (tokens > 0) " ($tokens)" else ""
+            planName + suffix
+        } else {
+            getString(R.string.subscribe)
+        }
+        LiveAccessBottomSheetFragment.newInstance(
+            mode = "subscription",
+            message = getString(R.string.live_paywall_subscription_message, messagePlan),
+            benefits = benefits,
+            price = null,
+            streamId = stream.id,
+            creatorId = stream.hostId,
+            planId = planId,
+            planTokens = tokens
+        ).setListener(object : LiveAccessBottomSheetFragment.Listener {
+            override fun onPurchase(streamId: String) { }
+            override fun onSubscribe(creatorId: String, planId: String, planTokens: Int) {
+                lifecycleScope.launch { attemptSubscribeWithTopup(creatorId, planId, planTokens) }
+            }
+        }).show(supportFragmentManager, "LiveAccessBottomSheet")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -252,24 +460,41 @@ class LiveStreamActivity : BaseActivity() {
         // Deep-link support: if URL is https://gifters.club/live/{streamId}
         val deepId = intent.data?.lastPathSegment?.takeIf { it.isNotEmpty() }
         deepId?.let { handleDeepLinkStream(it) }
-        // comments list overlay (bottom-up) – max half-screen height, bring above video
-        rvLiveComments = findViewById<RecyclerView>(R.id.rvLiveComments).also { rv ->
-            commentsAdapter = CommentsAdapter()
+        commentsAdapter = CommentsAdapter()
+        unlockedCommentsList = findViewById<RecyclerView>(R.id.rvLiveComments).also { rv ->
             rv.layoutManager = LinearLayoutManager(this).apply {
                 reverseLayout = false
                 stackFromEnd = true
             }
             rv.adapter = commentsAdapter
-            // limit height to half screen
             val half = resources.displayMetrics.heightPixels / 2
             rv.layoutParams.height = half
             rv.bringToFront()
         }
+        rvLiveComments = unlockedCommentsList
+        rvLockedComments = findViewById<RecyclerView>(R.id.rvLockedLiveComments).also { rv ->
+            rv.layoutManager = LinearLayoutManager(this).apply {
+                reverseLayout = false
+                stackFromEnd = true
+            }
+        }
+
+        livePaywallOverlay = findViewById(R.id.livePaywallOverlay)
+        paywallTitle = livePaywallOverlay.findViewById(R.id.tvLivePaywallTitle)
+        paywallMessage = livePaywallOverlay.findViewById(R.id.tvLivePaywallMessage)
+        paywallHint = livePaywallOverlay.findViewById(R.id.tvLivePaywallHint)
+        paywallActionButton = livePaywallOverlay.findViewById(R.id.btnLivePaywallAction)
+        paywallAvatar = livePaywallOverlay.findViewById(R.id.ivLivePaywallAvatar)
+        paywallCreatorLabel = livePaywallOverlay.findViewById(R.id.tvLivePaywallCreator)
+        livePaywallOverlay.visibility = View.GONE
+        paywallActionButton.setOnClickListener { handlePaywallAction() }
+
         // Top bar for streamer details (hidden until stream starts)
         liveTopBar = findViewById(R.id.liveTopBar)
         liveTopBar.bringToFront()
         liveTopBar.visibility = View.GONE
-        findViewById<LinearLayout>(R.id.liveBottomBar).bringToFront()
+        liveBottomBar = findViewById(R.id.liveBottomBar)
+        liveBottomBar.bringToFront()
 
         ivStreamerImage = findViewById(R.id.ivStreamerImage)
         tvStreamerName = findViewById(R.id.tvStreamerName)
@@ -624,6 +849,8 @@ class LiveStreamActivity : BaseActivity() {
      * Initialize viewer mode: show host info, comments, and subscribe to live video.
      */
     private fun initViewer() {
+        hideLivePaywall()
+        useUnlockedCommentsList()
         btnSwitchCamera.visibility = View.GONE
         btnToggleCamera.visibility = View.GONE
         btnToggleMic.visibility = View.GONE
@@ -722,16 +949,7 @@ class LiveStreamActivity : BaseActivity() {
                 }
             }
             // Load and show comments
-            currentStream?.id?.let { sid ->
-                val initial = RetrofitClient.liveStreamApi.getLiveStreamComments(
-                    select = "*,profile:profiles(*)",
-                    streamFilter = "eq.$sid"
-                )
-                val initialSorted = initial.sortedBy { it.createdAt }
-                commentsAdapter.submitList(initialSorted)
-                if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(initialSorted.size - 1)
-                startCommentsPolling(sid)
-            }
+            currentStream?.id?.let { hydrateComments(it) }
         }
 
         // Prepare video container
@@ -1433,6 +1651,7 @@ class LiveStreamActivity : BaseActivity() {
                 val currentUser = AuthUtils.getCurrentUserId(this@LiveStreamActivity)
                 val isHost = (currentUser != null && currentUser == ls.hostId)
                 if (!isHost) {
+                    hideLivePaywall()
                     val ok = ensureLiveAccess(ls)
                     if (!ok) {
                         // if user declined or failed, stop here
@@ -1469,84 +1688,98 @@ class LiveStreamActivity : BaseActivity() {
 
     /** Ensure viewer has access to the live stream; shows dialogs for purchase/subscribe/upgrade when needed. */
     private suspend fun ensureLiveAccess(ls: LiveStream): Boolean {
-        // Free streams require no action
         val type = (ls.accessType ?: "free").lowercase()
-        if (type == "free") return true
-        val hostId = ls.hostId
+        if (type == "free") {
+            hideLivePaywall()
+            return true
+        }
         val userId = AuthUtils.getCurrentUserId(this) ?: return false
-        if (userId == hostId) return true
+        if (userId == ls.hostId) {
+            hideLivePaywall()
+            return true
+        }
         return when (type) {
             "paid" -> {
-                // Attempt purchase-live-access; on failure, prompt
-                try {
-                    val ok = RetrofitClient.functionsApi.purchaseLiveAccessRpc(mapOf("liveStreamId" to ls.id)).isSuccessful
-                    if (ok) true else {
-                        LiveAccessBottomSheetFragment.newInstance(
-                            mode = "paid",
-                            message = getString(R.string.purchase_live_access_for_tokens) + " " + (ls.price ?: 0),
-                            benefits = arrayListOf(),
-                            price = ls.price ?: 0,
-                            streamId = ls.id,
-                            creatorId = ls.hostId,
-                            planId = null,
-                            planTokens = null
-                        ).setListener(object: LiveAccessBottomSheetFragment.Listener {
-                            override fun onPurchase(streamId: String) {
-                                lifecycleScope.launch {
-                                    RetrofitClient.functionsApi.purchaseLiveAccessRpc(mapOf("liveStreamId" to streamId))
-                                    handleDeepLinkStream(streamId)
-                                }
-                            }
-                            override fun onSubscribe(creatorId: String, planId: String, planTokens: Int) { /* no-op */ }
-                        }).show(supportFragmentManager, "LiveAccessBottomSheet")
-                        false
-                    }
-                } catch (e: Exception) {
+                val unlocked = try {
+                    RetrofitClient.functionsApi.purchaseLiveAccessRpc(mapOf("liveStreamId" to ls.id)).isSuccessful
+                } catch (_: Exception) {
+                    false
+                }
+                if (unlocked) {
+                    hideLivePaywall()
+                    true
+                } else {
+                    paywallPriceTokens = ls.price
+                    showLivePaywall(
+                        stream = ls,
+                        mode = "paid",
+                        priceTokens = ls.price,
+                        requiredPlanName = null,
+                        requiredPlanTokens = null,
+                        planDescription = null
+                    )
                     false
                 }
             }
             "subscription" -> {
                 try {
-                    val plans = RetrofitClient.subscriptionPlanApi.getSubscriptionPlans("eq.$hostId")
+                    val plans = RetrofitClient.subscriptionPlanApi.getSubscriptionPlans("eq.${ls.hostId}")
                     if (plans.isEmpty()) {
                         Toast.makeText(this, R.string.no_plans_available, Toast.LENGTH_SHORT).show()
-                        return false
-                    }
-                    val sorted = plans.sortedBy { it.tokens }
-                    val required = ls.requiredPlanId?.let { id -> sorted.find { it.id == id } } ?: sorted.first()
-                    // Check current user's subscription tokens
-                    val nowIso = java.time.Instant.now().toString()
-                    val subs = RetrofitClient.subscriptionsApiExt.getActiveSubscriptions(
-                        creatorFilter = "eq.$hostId",
-                        subscriberFilter = "eq.$userId",
-                        orFilter = "end_date.is.null,end_date.gt.$nowIso"
-                    )
-                    val currentTokens = subs.maxOfOrNull { it.tokens } ?: 0
-                    if (currentTokens >= required.tokens) return true
-                    // Show custom subscribe/upgrade bottom sheet
-                    paywallPlanId = required.id
-                    paywallPlanTokens = required.tokens
-                    LiveAccessBottomSheetFragment.newInstance(
-                        mode = "subscription",
-                        message = getString(R.string.live_requires_plan_and_above) + " " + required.name + " (" + required.tokens + ")",
-                        benefits = ArrayList((required.description ?: "").split('\n').filter { it.isNotBlank() }),
-                        price = null,
-                        streamId = ls.id,
-                        creatorId = hostId,
-                        planId = required.id,
-                        planTokens = required.tokens
-                    ).setListener(object: LiveAccessBottomSheetFragment.Listener {
-                        override fun onPurchase(streamId: String) { /* no-op */ }
-                        override fun onSubscribe(creatorId: String, planId: String, planTokens: Int) {
-                            lifecycleScope.launch { attemptSubscribeWithTopup(creatorId, planId, planTokens) }
+                        showLivePaywall(
+                            stream = ls,
+                            mode = "subscription",
+                            priceTokens = null,
+                            requiredPlanName = null,
+                            requiredPlanTokens = null,
+                            planDescription = null
+                        )
+                        false
+                    } else {
+                        val sorted = plans.sortedBy { it.tokens }
+                        val required = ls.requiredPlanId?.let { id -> sorted.find { it.id == id } } ?: sorted.first()
+                        val nowIso = java.time.Instant.now().toString()
+                        val subs = RetrofitClient.subscriptionsApiExt.getActiveSubscriptions(
+                            creatorFilter = "eq.${ls.hostId}",
+                            subscriberFilter = "eq.$userId",
+                            orFilter = "end_date.is.null,end_date.gt.$nowIso"
+                        )
+                        val currentTokens = subs.maxOfOrNull { it.tokens } ?: 0
+                        if (currentTokens >= required.tokens) {
+                            hideLivePaywall()
+                            true
+                        } else {
+                            paywallPlanId = required.id
+                            paywallPlanTokens = required.tokens
+                            paywallPlanName = required.name
+                            paywallPlanDescription = required.description
+                            showLivePaywall(
+                                stream = ls,
+                                mode = "subscription",
+                                priceTokens = null,
+                                requiredPlanName = required.name,
+                                requiredPlanTokens = required.tokens,
+                                planDescription = required.description
+                            )
+                            false
                         }
-                    }).show(supportFragmentManager, "LiveAccessBottomSheet")
-                    false
-                } catch (e: Exception) {
+                    }
+                } catch (_: Exception) {
+                    showLivePaywall(
+                        stream = ls,
+                        mode = "subscription",
+                        priceTokens = null,
+                        requiredPlanName = null,
+                        requiredPlanTokens = null,
+                        planDescription = null
+                    )
                     false
                 }
             }
-            else -> true
+            else -> {
+                hideLivePaywall()
+                true
+            }
         }
     }
 
@@ -1582,6 +1815,8 @@ class LiveStreamActivity : BaseActivity() {
             return
         }
         currentStream = live
+        hideLivePaywall()
+        useUnlockedCommentsList()
         commentScope = (live.commentScope ?: "shared").lowercase()
         liveTopBar.visibility = View.VISIBLE
         liveTopBar.bringToFront()
@@ -1619,28 +1854,7 @@ class LiveStreamActivity : BaseActivity() {
                     } catch (_: Exception) {}
                 }
             }
-            // load comments and poll
-            live.id.let { sid ->
-                val initial = RetrofitClient.liveStreamApi.getLiveStreamComments(
-                    select = "*,profile:profiles(*)",
-                    streamFilter = "eq.$sid"
-                )
-                val initialSorted = initial.sortedBy { it.createdAt }
-                commentsAdapter.submitList(initialSorted)
-                if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(initialSorted.size - 1)
-                commentsJob = launch {
-                    while (isActive) {
-                        delay(3000)
-                        val updated = RetrofitClient.liveStreamApi.getLiveStreamComments(
-                            select = "*,profile:profiles(*)",
-                            streamFilter = "eq.$sid"
-                        )
-                        val updatedSorted = updated.sortedBy { it.createdAt }
-                        commentsAdapter.submitList(updatedSorted)
-                        if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(updatedSorted.size - 1)
-                    }
-                }
-            }
+            hydrateComments(live.id)
         }
         // Start Realtime taps subscription for host
         try { realtime?.close() } catch (_: Exception) {}
@@ -2285,26 +2499,77 @@ class LiveStreamActivity : BaseActivity() {
                 val errorBody = resp.errorBody()?.string().orEmpty()
                 
                 if (resp.isSuccessful) {
-                    currentStream = resp.body()
-                    // Ensure stream is marked live (in case backend defaulted to 'scheduled')
-                    currentStream?.let { ls ->
-                        if (ls.status.lowercase() != "live") {
-                            try {
-                                val nowIso = java.time.Instant.now().toString()
-                                val updates = mutableMapOf<String, Any>(
-                                    "status" to "live",
-                                    "started_at" to nowIso
+                    val created = resp.body()
+                    if (created == null) {
+                        Toast.makeText(
+                            this@LiveStreamActivity,
+                            getString(R.string.failed_to_start_live_stream_generic),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        finish()
+                        return@launch
+                    }
+                    val normalizedAccess = when (accessType?.lowercase()) {
+                        "paid" -> "paid"
+                        "subscription" -> "subscription"
+                        else -> "free"
+                    }
+                    val updates = mutableMapOf<String, Any>(
+                        "access_type" to normalizedAccess
+                    )
+                    if (normalizedAccess == "paid" && priceTokens != null) {
+                        updates["price"] = priceTokens
+                    }
+                    if (normalizedAccess == "subscription" && !requiredPlanId.isNullOrBlank()) {
+                        updates["required_plan_id"] = requiredPlanId
+                    }
+                    val shouldForceLive = created.status.lowercase() != "live"
+                    if (shouldForceLive) {
+                        val nowIso = java.time.Instant.now().toString()
+                        updates["status"] = "live"
+                        updates["started_at"] = nowIso
+                    }
+
+                    var updated: LiveStream? = created
+                    if (updates.isNotEmpty()) {
+                        try {
+                            val respUpdate = RetrofitClient.functionsApi.updateLiveSession(
+                                id = created.id,
+                                updates = updates
+                            )
+                            if (respUpdate.isSuccessful) {
+                                updated = respUpdate.body() ?: updated
+                            } else if (shouldForceLive) {
+                                // fall back to created object with client-side fields when PATCH failed
+                                updated = created.copy(
+                                    accessType = normalizedAccess,
+                                    price = if (normalizedAccess == "paid") priceTokens else null,
+                                    requiredPlanId = if (normalizedAccess == "subscription") requiredPlanId else null,
+                                    status = "live",
+                                    startedAt = java.time.Instant.now().toString()
                                 )
-                                accessType?.let { updates["access_type"] = it }
-                                priceTokens?.let { updates["price"] = it }
-                                requiredPlanId?.let { updates["required_plan_id"] = it }
-                                RetrofitClient.functionsApi.updateLiveSession(
-                                    id = ls.id,
-                                    updates = updates
+                            }
+                        } catch (_: Exception) {
+                            if (shouldForceLive) {
+                                updated = created.copy(
+                                    accessType = normalizedAccess,
+                                    price = if (normalizedAccess == "paid") priceTokens else null,
+                                    requiredPlanId = if (normalizedAccess == "subscription") requiredPlanId else null,
+                                    status = "live",
+                                    startedAt = java.time.Instant.now().toString()
                                 )
-                            } catch (_: Exception) { }
+                            } else {
+                                updated = created.copy(
+                                    accessType = normalizedAccess,
+                                    price = if (normalizedAccess == "paid") priceTokens else null,
+                                    requiredPlanId = if (normalizedAccess == "subscription") requiredPlanId else null
+                                )
+                            }
                         }
                     }
+                    currentStream = updated
+                    hideLivePaywall()
+                    useUnlockedCommentsList()
                     liveTopBar.visibility = View.VISIBLE
                     liveTopBar.bringToFront()
                     if (isMatch) {
@@ -2399,27 +2664,7 @@ class LiveStreamActivity : BaseActivity() {
                             }
                         }
                         // Load and show initial comments and start polling for new comments
-                        currentStream?.id?.let { sid ->
-                            val initial = RetrofitClient.liveStreamApi.getLiveStreamComments(
-                                select = "*,profile:profiles(*)",
-                                streamFilter = "eq.$sid"
-                            )
-                val initialSorted = initial.sortedBy { it.createdAt }
-                commentsAdapter.submitList(initialSorted)
-                if (initialSorted.isNotEmpty()) rvLiveComments.scrollToPosition(initialSorted.size - 1)
-                        commentsJob = lifecycleScope.launch {
-                            while (isActive) {
-                                delay(3000)
-                                val updated = RetrofitClient.liveStreamApi.getLiveStreamComments(
-                                    select = "*,profile:profiles(*)",
-                                    streamFilter = "eq.$sid"
-                                )
-                        val updatedSorted = updated.sortedBy { it.createdAt }
-                        commentsAdapter.submitList(updatedSorted)
-                        if (updatedSorted.isNotEmpty()) rvLiveComments.scrollToPosition(updatedSorted.size - 1)
-                            }
-                        }
-                        }
+                        currentStream?.id?.let { hydrateComments(it) }
                     }
                     // Prefer LiveKit-managed camera; skip CameraX preview to avoid camera conflicts
                     if (!USE_LIVEKIT_CAMERA_PREVIEW) {

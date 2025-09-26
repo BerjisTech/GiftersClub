@@ -168,6 +168,14 @@
     <!-- Error messages for deep-link loading -->
     <string name="stream_not_found">Live stream not found.</string>
     <string name="error_loading_stream">Failed to load the live stream.</string>
+    <string name="failed_to_start_live_stream_generic">Failed to start live stream.</string>
+    <string name="live_paywall_paid_message">Unlock this live stream for %1$d tokens.</string>
+    <string name="live_paywall_subscription_message">This live stream requires the %1$s plan.</string>
+    <string name="live_paywall_paid_hint">Unlock this live stream to watch and listen.</string>
+    <string name="live_paywall_sub_hint">Subscribe to join and support the creator.</string>
+    <string name="live_paywall_feed_paid">Unlock with tokens to watch this live stream.</string>
+    <string name="live_paywall_feed_sub">Subscribe to watch this live stream.</string>
+    <string name="failed_to_unlock_live">Unable to unlock the live stream.</string>
     <string name="live_host_banner_text">You are live – tap to return to your stream</string>
 
     <!-- Live stream controls -->

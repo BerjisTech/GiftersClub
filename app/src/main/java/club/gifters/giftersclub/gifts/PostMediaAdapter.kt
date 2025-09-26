@@ -31,7 +31,8 @@ import kotlinx.coroutines.launch
 class PostMediaAdapter(
     private val mediaList: List<PostMedia>,
     private val playOnHover: Boolean = false,
-    private val onVideoCompleted: ((Int) -> Unit)? = null
+    private val onVideoCompleted: ((Int) -> Unit)? = null,
+    private val locked: Boolean = false
 ) : ListAdapter<PostMedia, PostMediaAdapter.MediaViewHolder>(MediaDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MediaViewHolder {
@@ -67,6 +68,20 @@ class PostMediaAdapter(
 
         fun bind(media: PostMedia) {
             if (media.mediaType == "video") {
+                if (locked) {
+                    player?.release(); player = null
+                    playerView.player = null
+                    spinner.visibility = View.GONE
+                    imageView.visibility = View.VISIBLE
+                    playerView.visibility = View.GONE
+                    imageView.load(media.url) {
+                        crossfade(true)
+                        placeholder(android.R.color.darker_gray)
+                        error(android.R.color.darker_gray)
+                        videoFrameMillis(100)
+                    }
+                    return
+                }
                 spinner.visibility = View.VISIBLE
                 // Show a fast thumbnail using Coil's video frame decoder
                 imageView.visibility = View.VISIBLE
