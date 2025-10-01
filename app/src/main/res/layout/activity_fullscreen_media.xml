@@ -16,15 +16,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <VideoView
-        android:id="@+id/fullscreenVideo"
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/fullscreenPlayer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:use_controller="true"
+        app:resize_mode="fit" />
 
     <ImageView
         android:id="@+id/fullscreenClose"

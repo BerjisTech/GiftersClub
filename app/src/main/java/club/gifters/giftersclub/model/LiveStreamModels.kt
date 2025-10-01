@@ -13,6 +13,7 @@ data class LiveStream(
     val description: String,
     val status: String,
     @SerializedName("viewer_count") val viewerCount: Int,
+    @SerializedName("taps") val taps: Int? = null,
     @SerializedName("started_at") val startedAt: String?,
     @SerializedName("ended_at") val endedAt: String?,
     @SerializedName("created_at") val createdAt: String,
@@ -24,7 +25,19 @@ data class LiveStream(
     /**
      * LiveKit access token for connecting to SFU (via Edge Function)
      */
-    val token: String? = null
+    val token: String? = null,
+    /**
+     * Optional LiveKit room id to group multi-host sessions.
+     */
+    @SerializedName("room_id") val roomId: String? = null,
+    /**
+     * Optional mode and options to steer client behavior. Defaults preserved for old rows.
+     */
+    @SerializedName("mode") val mode: String? = null,                 // "solo" | "multi_host" | "match"
+    @SerializedName("comment_scope") val commentScope: String? = null, // "shared" | "isolated"
+    @SerializedName("layout_max_hosts") val layoutMaxHosts: Int? = null,
+    @SerializedName("match_scoring") val matchScoring: String? = null, // "tokens" | "likes"
+    @SerializedName("match_duration_sec") val matchDurationSec: Int? = null
 )
 
 /**
@@ -89,4 +102,20 @@ data class LiveGiftEvent(
     @SerializedName("created_at") val createdAt: String,
     val gift: Gift?,
     val gifter: Profile?
+)
+
+data class BattleSession(
+    val id: String,
+    @SerializedName("live_stream_id") val liveStreamId: String,
+    val status: String,
+    @SerializedName("started_at") val startedAt: String?,
+    @SerializedName("ends_at") val endsAt: String?
+)
+
+data class BattleParticipant(
+    val id: String,
+    @SerializedName("battle_id") val battleId: String,
+    @SerializedName("user_id") val userId: String,
+    @SerializedName("live_stream_id") val liveStreamId: String,
+    val team: Int?
 )

@@ -66,7 +66,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
     private var pollingJob: Job? = null
     private var convsPollingJob: Job? = null
     private lateinit var notificationApi: NotificationApi
-    private lateinit var chatListAdapter: ChatListAdapter
+    private var chatListAdapter: ChatListAdapter? = null
+    private var currentPartnerId: String? = null
 
 
     companion object {
@@ -101,6 +102,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 if (chatPane.isVisible) {
                     chatPane.isVisible = false
                     convoList.isVisible = true
+                    // Refresh conversation list so unread badges reflect latest state
+                    loadChatList()
                 } else {
                     isEnabled = false
                     requireActivity().onBackPressed()
@@ -122,8 +125,10 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             chatPane.visibility = View.VISIBLE
 
             val rvMessages = chatPane.findViewById<RecyclerView>(R.id.rvMessages)
-            rvMessages.layoutManager = LinearLayoutManager(requireContext())
-            val msgAdapter = MessageAdapter(userId)
+            rvMessages.layoutManager = LinearLayoutManager(requireContext()).apply {
+                stackFromEnd = true
+            }
+            val msgAdapter = MessageAdapter(userId, partnerNameArg ?: "User")
             rvMessages.adapter = msgAdapter
 
             val etMessage = chatPane.findViewById<EditText>(R.id.etMessage)
@@ -141,28 +146,14 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             )
             return
         }
-        // Initialize unified chat/notification list
+        // Initialize chat list (notifications now in accordion)
         val rvConvs = view.findViewById<RecyclerView>(R.id.rvConversations)
         rvConvs.layoutManager = LinearLayoutManager(requireContext())
         // Prepare APIs for notifications
         notificationApi = RetrofitClient.notificationApi
         // Adapter merging header entries and conversations
         chatListAdapter = ChatListAdapter(
-            onHeaderClick = { type ->
-                when (type) {
-                    HeaderType.NEW_FOLLOWERS -> parentFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, FriendsFragment.newInstance(0))
-                        .addToBackStack(null).commit()
-
-                    HeaderType.ACTIVITY -> parentFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, NotificationListFragment())
-                        .addToBackStack(null).commit()
-
-                    HeaderType.SYSTEM_NOTIFICATIONS -> parentFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer, SystemNotificationsFragment())
-                        .addToBackStack(null).commit()
-                }
-            },
+            onHeaderClick = { _ -> /* headers handled by accordion */ },
             onConversationClick = { ui ->
                 // user tapped a conversation: show its chat pane
                 rvConvs.visibility = View.GONE
@@ -170,8 +161,10 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 chatPane.visibility = View.VISIBLE
 
                 val rvMsgs = chatPane.findViewById<RecyclerView>(R.id.rvMessages)
-                rvMsgs.layoutManager = LinearLayoutManager(requireContext())
-                val innerMsgAdapter = MessageAdapter(userId)
+                rvMsgs.layoutManager = LinearLayoutManager(requireContext()).apply {
+                    stackFromEnd = true
+                }
+                val innerMsgAdapter = MessageAdapter(userId, ui.partner.username ?: "User")
                 rvMsgs.adapter = innerMsgAdapter
 
                 val etMsg = chatPane.findViewById<EditText>(R.id.etMessage)
@@ -190,30 +183,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             }
         )
         rvConvs.adapter = chatListAdapter
-        // show static headers + empty placeholder immediately for new users
-        chatListAdapter.submitList(
-            listOf(
-                ChatListItem.Header(
-                    HeaderType.NEW_FOLLOWERS,
-                    getString(R.string.new_followers),
-                    getString(R.string.new_followers_preview),
-                    0L
-                ),
-                ChatListItem.Header(
-                    HeaderType.ACTIVITY,
-                    getString(R.string.activity),
-                    getString(R.string.activity_preview),
-                    0L
-                ),
-                ChatListItem.Header(
-                    HeaderType.SYSTEM_NOTIFICATIONS,
-                    getString(R.string.system_notifications),
-                    getString(R.string.system_notifications_preview),
-                    0L
-                ),
-                ChatListItem.Empty
-            )
-        )
+        // initial placeholder
+        chatListAdapter?.submitList(listOf(ChatListItem.Empty))
         loadChatList()
 
         // Poll every few seconds to refresh chats and notifications
@@ -235,6 +206,39 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             uploadJob?.cancel()
             attachmentPreviewContainer.isVisible = false
             selectedAttachment = null
+        }
+
+        // Swipe-to-refresh
+        val swipe = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipeRefresh)
+        swipe.setOnRefreshListener { loadChatList { swipe.isRefreshing = false } }
+
+        // Accordion setup
+        val accordionHeader = view.findViewById<View>(R.id.accordionHeader)
+        val accordionCaret = view.findViewById<TextView>(R.id.tvAccordionCaret)
+        val accordionContent = view.findViewById<View>(R.id.accordionContent)
+        val rowFollowers = view.findViewById<View>(R.id.rowNewFollowers)
+        val rowActivity = view.findViewById<View>(R.id.rowActivity)
+        val rowSystem = view.findViewById<View>(R.id.rowSystem)
+        fun toggleAccordion() {
+            val showing = accordionContent.isVisible
+            accordionContent.isVisible = !showing
+            accordionCaret.text = if (showing) ">" else "v"
+        }
+        accordionHeader.setOnClickListener { toggleAccordion() }
+        rowFollowers.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, FriendsFragment.newInstance(0))
+                .addToBackStack(null).commit()
+        }
+        rowActivity.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, NotificationListFragment())
+                .addToBackStack(null).commit()
+        }
+        rowSystem.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.mainContentContainer, SystemNotificationsFragment())
+                .addToBackStack(null).commit()
         }
     }
 
@@ -259,7 +263,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         }
     }
 
-    private fun loadChatList() {
+    private fun loadChatList(done: (() -> Unit)? = null) {
         lifecycleScope.launch {
             // compute header timestamps, but never fail entire load
             val notes = try {
@@ -286,8 +290,30 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
 
             // fetch conversation overviews, but continue on error
             val sortedConvs = try {
-                chatApi.getConversationDetails().mapNotNull { detail ->
-                    detail.lastMessageContent?.let { content ->
+                val details = chatApi.getConversationDetails()
+                // Collect partnerIds that look encrypted and need keys
+                fun looksEncrypted(s: String?): Boolean =
+                    !s.isNullOrBlank() && s.trim().startsWith("{") && s.contains("\"ct\"")
+                val needKeys = details
+                    .filter { looksEncrypted(it.lastMessageContent) }
+                    .map { it.partnerId }
+                    .distinct()
+                val keysByUser: Map<String, String> = try {
+                    if (needKeys.isEmpty()) emptyMap() else {
+                        val inArg = "in.(" + needKeys.joinToString(",") + ")"
+                        RetrofitClient.userKeysApi.getKeys(userIdsInFilter = inArg)
+                            .associate { it.user_id to it.public_key }
+                    }
+                } catch (_: Exception) { emptyMap() }
+
+                details.mapNotNull { detail ->
+                    val contentRaw = detail.lastMessageContent
+                    val peerPub = keysByUser[detail.partnerId]
+                    val previewContent = if (peerPub != null && looksEncrypted(contentRaw)) {
+                        try { club.gifters.giftersclub.security.E2EEKeyManager.decrypt(requireContext(), peerPub, contentRaw!!) } catch (_: Exception) { null }
+                    } else null
+                    val finalContent = previewContent ?: contentRaw
+                    finalContent?.let { content ->
                         ConversationUi(
                             ConversationOverview(detail.userA, detail.userB, detail.lastMessageAt),
                             Profile(
@@ -328,40 +354,21 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 emptyList()
             }
 
-            // always show the static headers, then placeholder if no chats, then chats
-            val items = mutableListOf<ChatListItem>().apply {
-                add(
-                    ChatListItem.Header(
-                        HeaderType.NEW_FOLLOWERS,
-                        getString(R.string.new_followers),
-                        getString(R.string.new_followers_preview),
-                        lastFollow
-                    )
-                )
-                add(
-                    ChatListItem.Header(
-                        HeaderType.ACTIVITY,
-                        getString(R.string.activity),
-                        getString(R.string.activity_preview),
-                        lastActivity
-                    )
-                )
-                add(
-                    ChatListItem.Header(
-                        HeaderType.SYSTEM_NOTIFICATIONS,
-                        getString(R.string.system_notifications),
-                        getString(R.string.system_notifications_preview),
-                        lastSystem
-                    )
-                )
-                if (sortedConvs.isEmpty()) {
-                    // show placeholder when no chats
-                    add(ChatListItem.Empty)
-                }
-                sortedConvs.forEach { add(ChatListItem.Conversation(it)) }
-            }
-            items.sortByDescending { it.time }
-            chatListAdapter.submitList(items)
+            // Update accordion timestamps
+            fun rel(ts: Long): String = if (ts > 0L) {
+                android.text.format.DateUtils.getRelativeTimeSpanString(
+                    ts, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS
+                ).toString()
+            } else ""
+            view?.findViewById<TextView>(R.id.tvNewFollowersTime)?.text = rel(lastFollow)
+            view?.findViewById<TextView>(R.id.tvActivityTime)?.text = rel(lastActivity)
+            view?.findViewById<TextView>(R.id.tvSystemTime)?.text = rel(lastSystem)
+
+            // Only conversations in the list now
+            val items = if (sortedConvs.isEmpty()) listOf(ChatListItem.Empty)
+            else sortedConvs.map { ChatListItem.Conversation(it) }
+            chatListAdapter?.submitList(items)
+            done?.invoke()
         }
     }
 
@@ -374,6 +381,7 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
         msgAdapter: MessageAdapter,
         rvMessages: RecyclerView
     ) {
+        currentPartnerId = partnerId
         lifecycleScope.launch {
             val partnerProfile =
                 RetrofitClient.profileApi.getProfileByUserId("*", "eq.$partnerId").firstOrNull()
@@ -383,6 +391,8 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             val chatPane = requireView().findViewById<ConstraintLayout>(R.id.chatPane)
             val tvPartnerUserName = chatPane.findViewById<TextView>(R.id.tvPartnerName)
             tvPartnerUserName.text = partnerUserName
+            // Update adapter with the resolved username for system note text
+            try { msgAdapter.setPartnerLabel(partnerUserName ?: partnerName) } catch (_: Exception) {}
             tvPartnerUserName.setOnClickListener {
                 // Open partner profile when tapped
                 requireActivity().supportFragmentManager.beginTransaction()
@@ -391,13 +401,15 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             }
             // The rest of your logic that depends on partnerProfile should go here
         }
+        // Immediately mark any unread messages in this conversation as read and refresh list
+        markConversationAsRead(partnerId)
         pollingJob?.cancel()
         pollingJob = lifecycleScope.launch {
             // mark unread messages as read on first load
             try {
                 val resp = chatApi.markMessagesAsRead(
-                    senderFilter = "sender_id.eq.$partnerId",
-                    receiverFilter = "receiver_id.eq.$userId",
+                    senderFilter = "eq.$partnerId",
+                    receiverFilter = "eq.$userId",
                     readFilter = "is.null",
                     updates = mapOf("read_at" to Instant.now().toString())
                 )
@@ -408,17 +420,56 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 // Log.w("ChatFragment", "Error marking messages as read", e)
             }
 
+            var initialScrollDone = false
             while (isActive) {
                 try {
-                    val msgs = chatApi.getMessages(
+                    // Determine if user is currently at bottom before updating the list
+                    val lm = rvMessages.layoutManager as? LinearLayoutManager
+                    val lastVisible = lm?.findLastCompletelyVisibleItemPosition() ?: -1
+                    val wasAtBottom = !rvMessages.canScrollVertically(1) ||
+                            (lastVisible >= msgAdapter.itemCount - 1 && msgAdapter.itemCount > 0)
+
+                    var msgs = chatApi.getMessages(
                         select = "*",
                         orFilter = "(and(sender_id.eq.$userId,receiver_id.eq.$partnerId)," +
                                 "and(sender_id.eq.$partnerId,receiver_id.eq.$userId))",
                         order = "created_at.asc"
                     )
+                    // Attempt E2EE decrypt using partner's public key
+                    try {
+                        val keys = RetrofitClient.userKeysApi.getKey(userIdFilter = "eq.$partnerId")
+                        val peerPub = keys.firstOrNull()?.public_key
+                        if (!peerPub.isNullOrBlank()) {
+                            msgs = msgs.map { m ->
+                                val dec = club.gifters.giftersclub.security.E2EEKeyManager.decrypt(requireContext(), peerPub, m.content)
+                                if (dec != null) m.copy(content = dec) else m
+                            }
+                        }
+                    } catch (_: Exception) {}
                     msgAdapter.submitList(msgs)
                     if (msgs.isNotEmpty()) {
-                        // rvMessages.scrollToPosition(msgs.size - 1)
+                        if (!initialScrollDone) {
+                            rvMessages.scrollToPosition(msgs.size - 1)
+                            initialScrollDone = true
+                        } else if (wasAtBottom) {
+                            rvMessages.scrollToPosition(msgs.size - 1)
+                        }
+                        // Align with web: proactively mark partner->me messages as read while viewing
+                        val hasPartnerToMe = msgs.any { it.senderId == partnerId && it.receiverId == userId }
+                        if (hasPartnerToMe) {
+                            try {
+                                val resp = chatApi.markMessagesAsRead(
+                                    senderFilter = "eq.$partnerId",
+                                    receiverFilter = "eq.$userId",
+                                    readFilter = "is.null",
+                                    updates = mapOf("read_at" to Instant.now().toString())
+                                )
+                                if (resp.isSuccessful) {
+                                    clearUnreadBadgeLocal(partnerId)
+                                    loadChatList()
+                                }
+                            } catch (_: Exception) { }
+                        }
                     }
                 } catch (e: Exception) {
                     // Log.w("ChatFragment", "Error polling messages", e)
@@ -443,8 +494,59 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             data?.data?.let { uri ->
                 selectedAttachment = uri
                 view?.findViewById<FrameLayout>(R.id.attachmentPreviewContainer)?.isVisible = true
-                view?.findViewById<ImageView>(R.id.ivAttachmentPreview)?.setImageURI(uri)
+                setAttachmentPreview(uri)
             }
+        }
+    }
+
+    private fun markConversationAsRead(partnerId: String) {
+        lifecycleScope.launch {
+            try {
+                val resp = chatApi.markMessagesAsRead(
+                    senderFilter = "eq.$partnerId",
+                    receiverFilter = "eq.$userId",
+                    readFilter = "is.null",
+                    updates = mapOf("read_at" to Instant.now().toString())
+                )
+                if (resp.isSuccessful) {
+                    // Immediately reflect in UI, then refresh from server
+                    clearUnreadBadgeLocal(partnerId)
+                    loadChatList()
+                }
+            } catch (_: Exception) { }
+        }
+    }
+
+    private fun clearUnreadBadgeLocal(partnerId: String) {
+        val current = chatListAdapter?.currentList
+        if (current.isNullOrEmpty()) return
+        val updated = current.map { item ->
+            if (item is ChatListItem.Conversation && item.ui.partner.userId == partnerId) {
+                val ui = item.ui
+                ChatListItem.Conversation(
+                    ui.copy(unreadCount = 0)
+                )
+            } else item
+        }
+        chatListAdapter?.submitList(updated)
+    }
+
+    private fun setAttachmentPreview(uri: Uri) {
+        val iv = view?.findViewById<ImageView>(R.id.ivAttachmentPreview) ?: return
+        val type = try { requireContext().contentResolver.getType(uri) } catch (_: Exception) { null }
+        val isVideo = type?.startsWith("video/") == true || (uri.path?.endsWith(".mp4") == true)
+        if (!isVideo) {
+            iv.setImageURI(uri)
+            return
+        }
+        try {
+            val retriever = android.media.MediaMetadataRetriever()
+            retriever.setDataSource(requireContext(), uri)
+            val bmp = retriever.frameAtTime
+            retriever.release()
+            if (bmp != null) iv.setImageBitmap(bmp) else iv.setImageResource(android.R.drawable.ic_media_play)
+        } catch (_: Exception) {
+            iv.setImageResource(android.R.drawable.ic_media_play)
         }
     }
 
@@ -463,13 +565,30 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                     try {
                         val type = requireContext().contentResolver.getType(uri)
                             ?: "application/octet-stream"
+                        val isVideo = type.startsWith("video/") || (uri.path?.endsWith(".mp4") == true)
                         val ext = type.substringAfterLast('/', "bin")
                         val filename = "${System.currentTimeMillis()}-${UUID.randomUUID()}.$ext"
-                        val bytes = withContext(Dispatchers.IO) {
-                            requireContext().contentResolver.openInputStream(uri)
-                                ?.use { it.readBytes() }
-                        } ?: throw Exception("Failed to read attachment data")
-                        val body = bytes.toRequestBody(type.toMediaTypeOrNull())
+                        val body: okhttp3.RequestBody = if (isVideo) {
+                            object : okhttp3.RequestBody() {
+                                override fun contentType() = type.toMediaTypeOrNull()
+                                override fun contentLength(): Long = getContentLength(requireContext(), uri) ?: -1L
+                                override fun writeTo(sink: okio.BufferedSink) {
+                                    val input = requireContext().contentResolver.openInputStream(uri)
+                                        ?: throw Exception("Failed to open attachment stream")
+                                    input.use { ins ->
+                                        val out = sink.outputStream()
+                                        ins.copyTo(out)
+                                        out.flush()
+                                    }
+                                }
+                            }
+                        } else {
+                            val bytes = withContext(Dispatchers.IO) {
+                                requireContext().contentResolver.openInputStream(uri)
+                                    ?.use { it.readBytes() }
+                            } ?: throw Exception("Failed to read attachment data")
+                            bytes.toRequestBody(type.toMediaTypeOrNull())
+                        }
                         val presignResp = withContext(Dispatchers.IO) {
                             RetrofitClient.functionsApi.uploadMedia(
                                 PresignRequest(
@@ -504,17 +623,40 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
                 selectedAttachment = null
             }
             try {
+                var body = content
+                var peerPub: String? = null
+                // Encrypt if partner's public key exists
+                try {
+                    val keys = RetrofitClient.userKeysApi.getKey(userIdFilter = "eq.$partnerId")
+                    peerPub = keys.firstOrNull()?.public_key
+                    if (!peerPub.isNullOrBlank()) {
+                        club.gifters.giftersclub.security.E2EEKeyManager.encrypt(requireContext(), peerPub!!, content)?.let { enc ->
+                            body = enc
+                        }
+                    }
+                } catch (_: Exception) {}
                 val payload = mutableMapOf<String, Any>(
                     "sender_id" to userId,
                     "receiver_id" to partnerId,
-                    "content" to content
+                    "content" to body
                 )
                 if (attachmentsPayload.isNotEmpty()) payload["attachments"] = attachmentsPayload
                 val resp = chatApi.sendMessage(payload)
                 if (resp.isSuccessful) {
+                    // Only auto-scroll if user was already at the bottom
+                    val wasAtBottom = !rvMessages.canScrollVertically(1)
                     resp.body()?.firstOrNull()?.let { newMsg ->
-                        msgAdapter.addMessage(newMsg)
-                        rvMessages.scrollToPosition(msgAdapter.itemCount - 1)
+                        // Try to decrypt our just-sent message for immediate display
+                        val displayMsg = try {
+                            if (!peerPub.isNullOrBlank()) {
+                                val dec = club.gifters.giftersclub.security.E2EEKeyManager.decrypt(requireContext(), peerPub!!, newMsg.content)
+                                if (dec != null) newMsg.copy(content = dec) else newMsg
+                            } else newMsg
+                        } catch (_: Exception) { newMsg }
+                        msgAdapter.addMessage(displayMsg)
+                        if (wasAtBottom) {
+                            rvMessages.scrollToPosition(msgAdapter.itemCount - 1)
+                        }
                     }
                     etMessage.text.clear()
                 }
@@ -523,4 +665,24 @@ class ChatFragment : Fragment(R.layout.fragment_chat) {
             }
         }
     }
+
+    private fun getContentLength(ctx: Context, uri: Uri): Long? = try {
+        ctx.contentResolver.openAssetFileDescriptor(uri, "r")?.use { afd ->
+            val len = afd.length
+            if (len > 0) return len
+        }
+        val cursor = ctx.contentResolver.query(
+            uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null
+        )
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val idx = it.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                if (idx >= 0) {
+                    val size = it.getLong(idx)
+                    if (size > 0) return size
+                }
+            }
+        }
+        null
+    } catch (_: Exception) { null }
 }

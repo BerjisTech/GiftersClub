@@ -18,7 +18,7 @@ import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.model.WishlistItem
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.payments.PaymentWebViewActivity
+import club.gifters.giftersclub.payments.BillingManager
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.text.NumberFormat
@@ -214,52 +214,6 @@ class AccountFragment : Fragment(R.layout.fragment_account) {
     }
 
     private fun initiateTopup(amount: Int) {
-        val userId = this.userId
-        val email = profile?.email.orEmpty()
-        val txRef = "topup_${userId}_${System.currentTimeMillis()}"
-        lifecycleScope.launch {
-            var lastTxId: String? = null
-            try {
-                val resp = RetrofitClient.tokenApi.recordTokenTransaction(
-                    mapOf(
-                        "user_id" to userId,
-                        "transaction_type" to "purchase",
-                        "tokens" to amount,
-                        "kes_amount" to amount,
-                        "flutterwave_transaction_id" to txRef,
-                        "flutterwave_transaction_status" to "initiated"
-                    )
-                )
-                if (resp.isSuccessful) {
-                    lastTxId = resp.body()?.firstOrNull()?.id
-                } else {
-                    val errorBody = resp.errorBody()?.string().orEmpty()
-                    // Log.e(TAG, "Failed to record token transaction: HTTP ${resp.code()} body=$errorBody")
-                    Toast.makeText(
-                        requireContext(),
-                        "Failed to record transaction (${resp.code()}): $errorBody",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            } catch (e: Exception) {
-                // Log.e(TAG, "Error recording initial token transaction", e)
-            }
-            if (!lastTxId.isNullOrBlank()) {
-                PaymentWebViewActivity.start(
-                    requireContext(),
-                    userId,
-                    email,
-                    amount,
-                    txRef,
-                    lastTxId
-                )
-            } else {
-                Toast.makeText(
-                    requireContext(),
-                    "Failed to initiate token purchase",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
+        BillingManager.launchPurchase(requireActivity(), amount)
     }
 }

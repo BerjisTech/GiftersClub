@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layoutMedia"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Camera preview -->
+    <club.gifters.giftersclub.gifts.SafePreviewView
+        android:id="@+id/previewView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="MissingClass" />
+
+    <TextView
+        android:id="@+id/tvElapsedTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Top right controls: switch camera, flash, timer, filters -->
+    <LinearLayout
+        android:id="@+id/topControls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/btnSwitchCamera"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginVertical="5dp"
+            android:contentDescription="@string/switch_camera"
+            android:src="@drawable/switch_camera" />
+
+        <ImageView
+            android:id="@+id/btnToggleFlash"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginVertical="5dp"
+            android:contentDescription="@string/toggle_flash"
+            android:src="@drawable/toggle_light" />
+
+        <ImageView
+            android:id="@+id/btnSetTimer"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginVertical="5dp"
+            android:contentDescription="@string/set_recording_timer"
+            android:src="@drawable/timer" />
+
+        <ImageView
+            android:id="@+id/btnShowFilters"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginVertical="5dp"
+            android:contentDescription="@string/show_filters"
+            android:src="@drawable/filters" />
+    </LinearLayout>
+
+
+    <!-- Bottom filter and device picker row -->
+    <!-- Camera filter list and record spinner -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/bottomControlsBottom"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+
+        <!-- Bottom controls: timers, mode switches -->
+        <LinearLayout
+            android:id="@+id/bottomControlsTop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toTopOf="@id/captureButtonAndProgressBar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <TextView
+                android:id="@+id/btnTimer10m"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:text="@string/_10m"
+                android:textColor="@color/white" />
+
+            <TextView
+                android:id="@+id/btnTimer60s"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:text="@string/_60s"
+                android:textColor="@color/white" />
+
+            <TextView
+                android:id="@+id/btnTimer15s"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:text="@string/_15s"
+                android:textColor="@color/white" />
+
+            <TextView
+                android:id="@+id/btnTimer5s"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:text="@string/_5s"
+                android:textColor="@color/white" />
+
+
+        </LinearLayout>
+
+        <!-- Segmented recording progress bar (shows per-segment blocks) -->
+        <LinearLayout
+            android:id="@+id/segmentsBar"
+            android:layout_width="0dp"
+            android:layout_height="4dp"
+            android:layout_marginBottom="8dp"
+            android:background="#33000000"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toTopOf="@id/captureButtonAndProgressBar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Camera filter list and record spinner -->
+        <HorizontalScrollView
+            android:id="@+id/hsvFilters"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/captureButtonAndProgressBar"
+            app:layout_constraintEnd_toStartOf="@id/captureButtonAndProgressBar"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/captureButtonAndProgressBar">
+
+            <LinearLayout
+                android:id="@+id/layoutFilterOptions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <FrameLayout
+            android:id="@+id/captureButtonAndProgressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <ImageView
+                android:id="@+id/btnCapture"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/capture"
+                android:src="@drawable/record" />
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/pbRecordProgress"
+                android:layout_width="130dp"
+                android:layout_height="130dp"
+                android:layout_gravity="center"
+                android:indeterminate="false"
+                android:max="100"
+                android:progress="0"
+                android:visibility="gone"
+                app:indicatorColor="@color/pink_500"
+                app:indicatorDirectionCircular="clockwise"
+                app:indicatorSize="130dp"
+                app:trackThickness="10dp" />
+        </FrameLayout>
+
+        <ImageView
+            android:id="@+id/btnUndoSegment"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_round_button"
+            android:backgroundTint="@color/yellow_500"
+            android:contentDescription="Undo segment"
+            android:src="@android:drawable/ic_menu_revert"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/captureButtonAndProgressBar"
+            app:layout_constraintEnd_toStartOf="@id/btnModeToggle"
+            app:layout_constraintStart_toEndOf="@id/captureButtonAndProgressBar"
+            app:layout_constraintTop_toTopOf="@id/captureButtonAndProgressBar" />
+
+        <ImageView
+            android:id="@+id/btnModeToggle"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginHorizontal="10dp"
+            android:contentDescription="@string/toggle_photo_video"
+            android:src="@drawable/video"
+            app:layout_constraintBottom_toBottomOf="@id/captureButtonAndProgressBar"
+            app:layout_constraintEnd_toStartOf="@id/btnTextMode"
+            app:layout_constraintTop_toTopOf="@id/captureButtonAndProgressBar" />
+
+        <TextView
+            android:id="@+id/btnTextMode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="10dp"
+            android:text="Text"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@id/captureButtonAndProgressBar"
+            app:layout_constraintEnd_toStartOf="@id/btnSelectDevice"
+            app:layout_constraintTop_toTopOf="@id/captureButtonAndProgressBar" />
+
+        <ImageView
+            android:id="@+id/btnSelectDevice"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginHorizontal="10dp"
+            android:contentDescription="@string/select_from_device"
+            android:src="@drawable/images"
+            app:layout_constraintBottom_toBottomOf="@id/captureButtonAndProgressBar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/captureButtonAndProgressBar" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

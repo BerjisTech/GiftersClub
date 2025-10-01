@@ -9,6 +9,7 @@ import club.gifters.giftersclub.model.LiveStreamViewerRequest
 import club.gifters.giftersclub.model.GiftGalleryTemplate
 import club.gifters.giftersclub.model.LiveStreamGiftGallery
 import club.gifters.giftersclub.model.LiveGiftEvent
+import retrofit2.http.Path
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -28,6 +29,14 @@ interface LiveStreamApi {
         @Body createLiveStream: CreateLiveStreamRequest
     ): Response<List<LiveStream>>
 
+    /** Raw create for advanced scenarios like scheduling (status/started_at). */
+    @Headers("Prefer: return=representation")
+    @POST("live_streams")
+    suspend fun createLiveStreamRaw(
+        @Query("select", encoded = true) select: String = "*",
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
+    ): Response<List<LiveStream>>
+
     @Headers("Prefer: return=representation")
     @PATCH("live_streams")
     suspend fun endLiveStream(
@@ -40,6 +49,12 @@ interface LiveStreamApi {
     suspend fun getLiveStreamById(
         @Query("select", encoded = true) select: String = "*",
         @Query("id", encoded = true) idFilter: String
+    ): List<LiveStream>
+
+    @GET("live_streams")
+    suspend fun getLiveStreamsByRoomId(
+        @Query("select", encoded = true) select: String = "id",
+        @Query("room_id", encoded = true) roomFilter: String
     ): List<LiveStream>
 
     @GET("live_stream_comments")
@@ -121,4 +136,40 @@ interface LiveStreamApi {
         @Query("created_at", encoded = true) createdAfterFilter: String? = null,
         @Query("order", encoded = true) order: String = "created_at.asc"
     ): List<LiveGiftEvent>
+
+    /**
+     * Gift animation rules with embedded animation row.
+     */
+    @GET("gift_animation_rules")
+    suspend fun getGiftAnimationRules(
+        @Query("select", encoded = true) select: String = "*,animation:gift_animations(*)",
+        @Query("gift_id", encoded = true) giftIdFilter: String,
+        @Query("scope", encoded = true) scopeFilter: String = "in.(all,solo,multi_host,match)",
+        @Query("order", encoded = true) order: String = "is_featured.desc,min_tokens.desc,combo_count.desc"
+    ): List<Map<String, Any?>>
+
+    /** Increment live taps counter atomically via RPC. */
+    @Headers(
+        // Ensure PostgREST treats the JSON body as a single-object params payload and returns result
+        "Prefer: params=single-object,return=representation"
+    )
+    @POST("rpc/increment_live_taps")
+    suspend fun incrementLiveTaps(
+        @Body params: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Int>
+
+    // Battles
+    @GET("battle_sessions")
+    suspend fun getActiveBattleForStream(
+        @Query("select", encoded = true) select: String = "*",
+        @Query("live_stream_id", encoded = true) streamFilter: String,
+        @Query("status", encoded = true) statusFilter: String = "eq.active",
+        @Query("order", encoded = true) order: String = "started_at.desc"
+    ): List<club.gifters.giftersclub.model.BattleSession>
+
+    @GET("battle_participants")
+    suspend fun getBattleParticipants(
+        @Query("select", encoded = true) select: String = "*",
+        @Query("battle_id", encoded = true) battleFilter: String
+    ): List<club.gifters.giftersclub.model.BattleParticipant>
 }

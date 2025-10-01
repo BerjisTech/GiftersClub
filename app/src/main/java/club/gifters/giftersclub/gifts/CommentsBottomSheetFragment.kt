@@ -300,4 +300,16 @@ object CommentApiHolder {
         val header = resp.headers()["Content-Range"] ?: return@withContext false
         (header.substringAfterLast('/').toIntOrNull() ?: 0) > 0
     }
+
+    /** Generic helper to check if current user reacted to a post with a given type (e.g., repost). */
+    suspend fun isPostReactedByUser(postId: String, type: String): Boolean = withContext(Dispatchers.IO) {
+        val current = AuthUtils.getCurrentUserId(RetrofitClient.context) ?: return@withContext false
+        val resp = api.isPostLikedByUser(
+            postIdFilter = "eq.$postId",
+            userIdFilter = "eq.$current",
+            typeFilter = "eq.$type"
+        )
+        val header = resp.headers()["Content-Range"] ?: return@withContext false
+        (header.substringAfterLast('/').toIntOrNull() ?: 0) > 0
+    }
 }

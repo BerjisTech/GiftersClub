@@ -12,6 +12,7 @@ data class Post(
     @SerializedName("quote_post_id") val quotePostId: String?,
     @SerializedName("reply_comment_id") val replyCommentId: String?,
     @SerializedName("created_at") val createdAt: String?,
+    @SerializedName("is_explicit") val isExplicit: Boolean? = null,
     val profile: Profile?,
     val media: List<PostMedia>?,
     @SerializedName("reaction_counts") val reactionCounts: ReactionCounts?,
@@ -22,7 +23,11 @@ data class Post(
     /** Required plan for tiered subscriber access; null means all plans */
     @SerializedName("required_plan_id") val requiredPlanId: String?,
     /** Hashtags associated with this post */
-    val tags: List<Tag>?
+    val tags: List<Tag>?,
+    /** Optional reposter user id when this item is a repost entry in the feed */
+    @SerializedName("reposter_user_id") val reposterUserId: String? = null,
+    /** Optional timestamp for when the repost happened */
+    @SerializedName("repost_created_at") val repostCreatedAt: String? = null
 )
 
 /**

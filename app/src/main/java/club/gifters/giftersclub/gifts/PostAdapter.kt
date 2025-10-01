@@ -17,6 +17,7 @@ import androidx.viewpager2.widget.ViewPager2
 import club.gifters.giftersclub.AuthUtils
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
+import club.gifters.giftersclub.gifts.FollowApiHolder
 import club.gifters.giftersclub.social.SubscriptionApiHolder
 import coil.load
 import kotlinx.coroutines.CoroutineScope
@@ -69,6 +70,14 @@ class PostAdapter(
         private val tvCommentCount: TextView = itemView.findViewById(R.id.tvCommentCount)
         private val btnShare: TextView = itemView.findViewById(R.id.btnShare)
         private val tvShareCount: TextView = itemView.findViewById(R.id.tvShareCount)
+        private val directFollow: ImageView = itemView.findViewById(R.id.directFollowUser)
+        private var isFollowingAuthor: Boolean = false
+
+        private fun updateFollowIcon() {
+            directFollow.setImageResource(
+                if (isFollowingAuthor) android.R.drawable.ic_menu_send else R.drawable.ic_plus_white
+            )
+        }
         private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
         private var current: Post? = null
         private var startX = 0f
@@ -91,8 +100,24 @@ class PostAdapter(
             }
             // Also intercept touches on the mediaPager (video/image area) for double-tap
             mediaPager.post {
-                (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { _, ev ->
+                var startX = 0f
+                var startY = 0f
+                (mediaPager.getChildAt(0) as? RecyclerView)?.setOnTouchListener { v, ev ->
                     doubleTap.onTouchEvent(ev)
+                    when (ev.actionMasked) {
+                        MotionEvent.ACTION_DOWN -> {
+                            startX = ev.x; startY = ev.y
+                            v.parent?.requestDisallowInterceptTouchEvent(false)
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            val dx = kotlin.math.abs(ev.x - startX)
+                            val dy = kotlin.math.abs(ev.y - startY)
+                            v.parent?.requestDisallowInterceptTouchEvent(dx > dy)
+                        }
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            v.parent?.requestDisallowInterceptTouchEvent(false)
+                        }
+                    }
                     false
                 }
             }
@@ -112,6 +137,40 @@ class PostAdapter(
                     }
                 } else {
                     avatar.setImageResource(android.R.color.darker_gray)
+                }
+            }
+
+            // Default icon while we resolve status
+            isFollowingAuthor = false
+            updateFollowIcon()
+
+            // Hide follow for own posts; otherwise resolve follow status
+            scope.launch {
+                try {
+                    val currentUser = AuthUtils.getCurrentUserId(itemView.context)
+                    if (currentUser == post.userId) {
+                        directFollow.visibility = View.GONE
+                    } else {
+                        directFollow.visibility = View.VISIBLE
+                        isFollowingAuthor = FollowApiHolder.isFollowingUser(post.userId)
+                        updateFollowIcon()
+                    }
+                } catch (_: Exception) { }
+            }
+
+            // Toggle follow/unfollow on tap
+            directFollow.setOnClickListener {
+                scope.launch {
+                    try {
+                        val ok = if (isFollowingAuthor)
+                            FollowApiHolder.unfollowUser(post.userId)
+                        else
+                            FollowApiHolder.followUser(post.userId)
+                        if (ok) {
+                            isFollowingAuthor = !isFollowingAuthor
+                            updateFollowIcon()
+                        }
+                    } catch (_: Exception) { }
                 }
             }
             timestamp.text = formatRelativeTime(post.createdAt)
@@ -135,15 +194,48 @@ class PostAdapter(
                 }
                 if (!hasAccess) {
                     overlay.visibility = View.VISIBLE
-                    lockAction.text = if (post.accessType == "subscription")
+                    // Show blurred media behind frosted overlay
+                    mediaPager.visibility = View.VISIBLE
+                    postDetails.visibility = View.VISIBLE
+                    val isSub = post.accessType == "subscription"
+                    lockAction.text = if (isSub)
                         itemView.context.getString(R.string.subscribe_to_creator)
                     else
                         itemView.context.getString(R.string.purchase_access)
-                    overlay.setOnClickListener { onLocked(post) }
+                    itemView.findViewById<TextView>(R.id.tvCreatorName)?.text = "@" + (post.profile?.username ?: "")
+                    // Inject creator avatar into overlay if present
+                    itemView.findViewById<ImageView>(R.id.ivCreatorAvatar)?.let { iv ->
+                        val img = post.profile?.image.orEmpty()
+                        if (img.isNotBlank()) iv.load(img) else iv.setImageResource(android.R.color.darker_gray)
+                    }
+                    val btn = itemView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnLockCta)
+                    btn.text = if (isSub) itemView.context.getString(R.string.subscribe) else itemView.context.getString(R.string.unlock)
+                    btn.isEnabled = true
+                    btn.setOnClickListener {
+                        btn.isEnabled = false
+                        lockAction.text = if (isSub) itemView.context.getString(R.string.subscribing_ellipsis) else itemView.context.getString(R.string.purchasing_ellipsis)
+                        onLocked(post)
+                    }
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= 31) {
+                            val blur = android.graphics.RenderEffect.createBlurEffect(24f, 24f, android.graphics.Shader.TileMode.CLAMP)
+                            itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(blur)
+                            itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(blur)
+                        }
+                    } catch (_: Exception) {}
                 } else {
                     mediaPager.visibility = View.VISIBLE
                     postDetails.visibility = View.VISIBLE
                     overlay.visibility = View.GONE
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= 31) {
+                            itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(null)
+                            itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(null)
+                        }
+                    } catch (_: Exception) {}
+                    if ((post.media ?: emptyList()).size > 1) {
+                        indicatorLayout.visibility = View.VISIBLE
+                    }
                 }
             }
             // Setup media carousel (images/videos)
@@ -152,12 +244,13 @@ class PostAdapter(
                 mediaList = mediaList,
                 playOnHover = false
             )
+            // Remove any extra onTouch overrides here; handled in init with directional logic
 //            val indicatorLayout = itemView.findViewById<LinearLayout>(R.id.mediaIndicatorLayout)
             indicatorLayout.removeAllViews()
             if (mediaList.size <= 1) {
                 indicatorLayout.visibility = View.GONE
             } else {
-                indicatorLayout.visibility = View.VISIBLE
+                // Defer visibility until post details are visible
                 pageChangeCallback?.let { mediaPager.unregisterOnPageChangeCallback(it) }
                 mediaList.forEachIndexed { idx, _ ->
                     val dot = ImageView(itemView.context).apply {
@@ -195,6 +288,17 @@ class PostAdapter(
             scope.launch {
                 val likes = CommentApiHolder.getPostReactionCountValue(post.id, "like")
                 tvLikeCount.text = likes.toString()
+            }
+            // Set like button text based on liked state
+            scope.launch {
+                try {
+                    val liked = CommentApiHolder.isPostLikedByUser(post.id)
+                    btnLike.text = itemView.context.getString(
+                        if (liked) R.string._like_emoji_filled else R.string._like_emoji
+                    )
+                } catch (_: Exception) {
+                    btnLike.text = itemView.context.getString(R.string._like_emoji)
+                }
             }
             scope.launch {
                 val shares = CommentApiHolder.getPostReactionCountValue(post.id, "share")

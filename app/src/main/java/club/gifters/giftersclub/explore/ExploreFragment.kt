@@ -97,6 +97,14 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         tabLayout = view.findViewById(R.id.tabLayout)
         viewPager = view.findViewById(R.id.viewPager)
 
+        // If launched via deep link with an initial query, prefill and search
+        val initial = arguments?.getString("initial_query")
+        if (!initial.isNullOrBlank()) {
+            etSearch.setText(initial)
+            etSearch.setSelection(initial.length)
+            performSearch(initial)
+        }
+
         etSearch.doAfterTextChanged { editable ->
             val q = editable.toString().trim()
             if (q.length >= 2) {
@@ -173,14 +181,18 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
             try {
                 // Log.d(TAG, "→ RPC search_explore body={q=$query}")
                 val result = RetrofitClient.postApi.searchExploreRpc(mapOf("q" to query))
+                // Client-side safety filter for explicit posts
+                val safeTop = result.top.filter { it.isExplicit != true }
+                val safeVideos = result.videos.filter { it.isExplicit != true }
+                val safePhotos = result.photos.filter { it.isExplicit != true }
                 // Log.d(TAG, "← RPC search_explore result count: top=${result.top.size}, videos=${result.videos.size}, photos=${result.photos.size}")
                 // Populate tabs from unified result
                 viewPager.adapter = object : FragmentStateAdapter(this@ExploreFragment) {
                     override fun getItemCount() = tabTitles.size
                     override fun createFragment(position: Int) = when (position) {
-                        0 -> ExploreTopFragment.newInstance(result.top, result.users, result.live)
-                        1 -> ExplorePostsFragment.newInstanceFromList(result.videos)
-                        2 -> ExplorePostsFragment.newInstanceFromList(result.photos)
+                        0 -> ExploreTopFragment.newInstance(safeTop, result.users, result.live)
+                        1 -> ExplorePostsFragment.newInstanceFromList(safeVideos)
+                        2 -> ExplorePostsFragment.newInstanceFromList(safePhotos)
                         3 -> ExploreUsersFragment.newInstanceFromList(result.users)
                         4 -> ExploreLiveFragment.newInstanceFromList(result.live)
                         else -> ExploreTopFragment.newInstance(
@@ -347,10 +359,16 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val uid = getCurrentUserId()
-                
-                // Fetch raw queries and group locally to compute frequencies
-                val raw = RetrofitClient.searchQueriesApi.searchRecommendedQueries(
-                    userId = "not.eq.$uid",
+                // Build PostgREST filter for user_id
+                val userFilter = if (uid.isNullOrBlank()) "not.is.null" else "not.eq.$uid"
+                // Fetch raw queries (distinct), then group locally for top trends
+                val raw = RetrofitClient.searchQueriesApi.searchQueries(
+                    select = "query",
+                    distinct = "query",
+                    queryFilter = null,
+                    userIdFilter = userFilter,
+                    order = "created_at.desc",
+                    limit = 1000
                 )
                 val freq = raw.groupingBy { it.query }.eachCount()
                 val trending = freq.entries
@@ -361,6 +379,10 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                 recommendedAdapter.submitList(trending)
                 rvRecommendedQueries.visibility =
                     if (trending.isNotEmpty()) View.VISIBLE else View.GONE
+                // Also show initial container if any recommended exists
+                if (trending.isNotEmpty()) {
+                    initialSearchContainer.visibility = View.VISIBLE
+                }
             } catch (e: HttpException) {
                 val url = e.response()?.raw()?.request?.url
                 val code = e.code()

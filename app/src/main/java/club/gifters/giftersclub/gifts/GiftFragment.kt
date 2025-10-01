@@ -28,7 +28,7 @@ import club.gifters.giftersclub.model.Notification
 import club.gifters.giftersclub.model.Profile
 import club.gifters.giftersclub.network.GiftApi
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.payments.PaymentWebViewActivity
+import club.gifters.giftersclub.payments.BillingManager
 import coil.load
 import coil.transform.CircleCropTransformation
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -129,6 +129,12 @@ class GiftFragment : Fragment(R.layout.fragment_gifts) {
             if (items.size < limit) isLastPage = true else page++
             isLoading = false
         }
+    }
+
+    fun refresh() {
+        page = 0
+        isLastPage = false
+        loadGifts(clear = true)
     }
 
     private fun showConfirmDialog(gift: Gift) {
@@ -358,9 +364,7 @@ private fun Fragment.showTopUpPrompt(
         .setTitle("Insufficient tokens")
         .setMessage("You have insufficient tokens. You need $needed more to send this gift. Top up now?")
         .setPositiveButton("Buy Tokens") { _, _ ->
-            // Launch token purchase flow
-            val txRef = "topup_${userId}_${System.currentTimeMillis()}"
-            PaymentWebViewActivity.start(requireContext(), userId, email, needed, txRef, "")
+            BillingManager.launchPurchase(requireActivity(), needed)
         }
         .setNegativeButton(android.R.string.cancel, null)
         .show()

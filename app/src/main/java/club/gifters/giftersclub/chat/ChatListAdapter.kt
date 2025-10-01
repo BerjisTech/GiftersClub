@@ -15,6 +15,8 @@ import club.gifters.giftersclub.chat.ChatListItem
 import club.gifters.giftersclub.chat.ChatListItem.HeaderType
 import club.gifters.giftersclub.chat.ConversationUi
 import java.time.OffsetDateTime
+import android.graphics.Typeface
+import androidx.core.content.ContextCompat
 
 /**
  * Adapter to display a merged list of chat conversations and notification headers,
@@ -108,15 +110,29 @@ class ChatListAdapter(
         private val tvPreview: TextView = itemView.findViewById(R.id.tvConversationPreview)
         private val tvTime: TextView = itemView.findViewById(R.id.tvConversationTime)
         private val tvUnread: TextView = itemView.findViewById(R.id.tvConversationUnread)
+        private val defaultPreviewColor: Int = tvPreview.currentTextColor
+        private val defaultPreviewTypeface = tvPreview.typeface
+
+        private fun looksEncrypted(s: String?): Boolean =
+            !s.isNullOrBlank() && s.trim().startsWith("{") && s.contains("\"ct\"")
 
         fun bind(ui: ConversationUi) {
             itemView.setOnClickListener { onClick(ui) }
             ivAvatar.load(ui.partner.image) { placeholder(android.R.color.darker_gray) }
             tvName.text = ui.partner.name ?: ui.partner.username
-            tvPreview.text = ui.lastMessage?.let {
+            val previewRaw = ui.lastMessage?.let {
                 it.content.takeIf(String::isNotBlank)
                     ?: if (it.attachments?.firstOrNull()?.type == "image") "[PHOTO]" else "[VIDEO]"
             } ?: ""
+            if (looksEncrypted(previewRaw)) {
+                tvPreview.text = "${ui.partner.username}'s security keys changed"
+                tvPreview.setTypeface(defaultPreviewTypeface, Typeface.ITALIC)
+                try { tvPreview.setTextColor(ContextCompat.getColor(itemView.context, R.color.gray_500)) } catch (_: Exception) {}
+            } else {
+                tvPreview.typeface = defaultPreviewTypeface
+                tvPreview.setTextColor(defaultPreviewColor)
+                tvPreview.text = previewRaw
+            }
             tvTime.text = try {
                 val epoch = OffsetDateTime.parse(ui.overview.lastMessageAt)
                     .toInstant()

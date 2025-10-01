@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefreshProfile"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbarLayout"
@@ -24,6 +29,24 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <ImageView
+                        android:id="@+id/btnMore"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:contentDescription="@string/more"
+                        android:src="@android:drawable/ic_menu_more"
+                        app:tint="@color/sky_500" />
+                </LinearLayout>
 
                 <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/imageAvatar"
@@ -57,6 +80,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
+                    android:gravity="center"
+                    android:textAlignment="center"
                     android:textAppearance="?attr/textAppearanceBodyMedium" />
 
                 <LinearLayout
@@ -81,22 +106,25 @@
                 </LinearLayout>
 
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="8dp">
+
+
 
                     <androidx.cardview.widget.CardView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:cardCornerRadius="5dp">
+                        app:cardCornerRadius="5dp"
+                        android:layout_marginEnd="5dp">
 
                         <TextView
                             android:id="@+id/btnFollow"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/bg_cyan_sky_gradient"
+                            android:background="@drawable/bg_sky_blue_gradient"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="5dp"
                             android:text="@string/follow"
@@ -105,16 +133,24 @@
                             android:visibility="gone" />
                     </androidx.cardview.widget.CardView>
 
-                    <ImageButton
+                    <androidx.cardview.widget.CardView
                         android:id="@+id/btnChat"
                         android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:background="@android:color/transparent"
-                        android:contentDescription="@string/chat_with_user"
-                        android:src="@android:drawable/ic_menu_send"
+                        android:layout_height="wrap_content"
                         android:visibility="gone"
-                        app:tint="@color/sky_500" />
+                        android:layout_marginStart="5dp"
+                        app:cardCornerRadius="5dp">
 
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_sky_blue_gradient"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp"
+                            android:text="@string/chat"
+                            android:textAllCaps="false"
+                            android:textColor="@color/white" />
+                    </androidx.cardview.widget.CardView>
 
                     <androidx.cardview.widget.CardView
                         android:id="@+id/btnAccount"
@@ -127,7 +163,7 @@
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/bg_teal_cyan_gradient"
+                            android:background="@drawable/bg_sky_blue_gradient"
                             android:gravity="center_vertical"
                             android:orientation="horizontal"
                             android:paddingHorizontal="10dp"
@@ -159,7 +195,7 @@
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/bg_cyan_sky_gradient"
+                            android:background="@drawable/bg_sky_blue_gradient"
                             android:gravity="center_vertical"
                             android:orientation="horizontal"
                             android:paddingHorizontal="10dp"
@@ -180,13 +216,6 @@
                         </LinearLayout>
                     </androidx.cardview.widget.CardView>
 
-                    <ImageView
-                        android:id="@+id/btnShareProfile"
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:contentDescription="@string/share_icon"
-                        android:src="@drawable/share"
-                        app:tint="@color/sky_500" />
                 </LinearLayout>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
@@ -234,4 +263,6 @@
             android:textColor="@android:color/white"
             android:visibility="gone" />
     </LinearLayout>
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

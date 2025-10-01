@@ -54,6 +54,8 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val swipe = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipeRefreshProfile)
+        (activity as? club.gifters.giftersclub.MainActivity)?.setLoading(true)
         val imageAvatar = view.findViewById<ImageView>(R.id.imageAvatar)
         val textName    = view.findViewById<TextView>(R.id.textName)
         val textUser    = view.findViewById<TextView>(R.id.textUsername)
@@ -61,7 +63,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
         val textFollowing = view.findViewById<TextView>(R.id.textFollowing)
         val textBio     = view.findViewById<TextView>(R.id.textBio)
         val btnFollow   = view.findViewById<TextView>(R.id.btnFollow)
-        val btnShareProfile = view.findViewById<ImageView>(R.id.btnShareProfile)
+        val btnMore = view.findViewById<ImageView>(R.id.btnMore)
 
         // Toolbar title changes as header collapses
         val nestedScroll = view.findViewById<NestedScrollView>(R.id.nestedScrollView)
@@ -78,9 +80,25 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
                 // Log.d(TAG, "Fetched profile: $prof")
                 bindProfile(prof, imageAvatar, textName, textUser, textFollowers, textFollowing, textBio)
 
-//                    Share  Profile
-
-                    btnShareProfile.setOnClickListener { shareProfile() }
+                // Overflow menu (share, report, block)
+                btnMore.setOnClickListener { v ->
+                    val popup = androidx.appcompat.widget.PopupMenu(requireContext(), v)
+                    popup.menu.add(0, 1, 0, getString(R.string.share_profile))
+                    popup.menu.add(0, 2, 1, getString(R.string.report_user))
+                    val blockTitle = getString(R.string.block_user)
+                    popup.menu.add(0, 3, 2, blockTitle).apply {
+                        setTitle(blockTitle)
+                    }
+                    popup.setOnMenuItemClickListener { item ->
+                        when (item.itemId) {
+                            1 -> { shareProfile(); true }
+                            2 -> { android.widget.Toast.makeText(requireContext(), getString(R.string.reported), android.widget.Toast.LENGTH_SHORT).show(); true }
+                            3 -> { android.widget.Toast.makeText(requireContext(), getString(R.string.blocked), android.widget.Toast.LENGTH_SHORT).show(); true }
+                            else -> false
+                        }
+                    }
+                    popup.show()
+                }
 
                 // follow/friend button state
                 val currentUserId = AuthUtils.getCurrentUserId(requireContext())
@@ -106,7 +124,7 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
                     }
                     updateFollowButton(btnFollow)
                     // chat button for direct messaging
-                    val btnChat = view.findViewById<ImageButton>(R.id.btnChat)
+                    val btnChat = view.findViewById<CardView>(R.id.btnChat)
                     btnChat.isVisible = true
                     btnChat.setOnClickListener {
                         parentFragmentManager.beginTransaction()
@@ -149,13 +167,13 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
                 viewPager.adapter = object : FragmentStateAdapter(this@GifterFragment) {
                     override fun getItemCount() = 3
                     override fun createFragment(position: Int) = when (position) {
-                        0 -> GiftFragment.newInstance(prof.userId, prof.username)
-                        1 -> UserWishlistsFragment.newInstance(prof.userId)
-                        2 -> {
+                        0 -> {
                             userPostsFragment = UserPostsFragment.newInstance(prof.userId, prof.username)
                             userPostsFragment!!
                         }
-                        else -> GiftFragment.newInstance(prof.userId, prof.username)
+                        1 -> UserWishlistsFragment.newInstance(prof.userId)
+                        2 -> GiftFragment.newInstance(prof.userId, prof.username)
+                        else -> UserPostsFragment.newInstance(prof.userId, prof.username)
                     }
                 }
 
@@ -164,14 +182,37 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
                 }
                 TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
                     tab.text = when (pos) {
-                        0 -> "Gifts"
+                        0 -> "Posts"
                         1 -> "Wishlists"
-                        2 -> "Posts"
+                        2 -> "Gifts"
                         else -> ""
                     }
                 }.attach()
-                // default to Wishlists tab
-                viewPager.currentItem = 1
+                // default to Posts tab
+                viewPager.currentItem = 0
+            }
+            (activity as? club.gifters.giftersclub.MainActivity)?.setLoading(false)
+        }
+
+        // Pull-to-refresh: refresh header + all tabs
+        swipe.setOnRefreshListener {
+            lifecycleScope.launch {
+                try {
+                    username?.let { uname ->
+                        val profiles = profileApi.getProfileByUsername("*", "eq.$uname")
+                        val prof = profiles.firstOrNull()
+                        if (prof != null) bindProfile(prof, imageAvatar, textName, textUser, textFollowers, textFollowing, textBio)
+                    }
+                    // Refresh visible child fragments
+                    childFragmentManager.fragments.forEach { f ->
+                        when (f) {
+                            is UserPostsFragment -> f.refresh()
+                            is UserWishlistsFragment -> f.refresh()
+                            is GiftFragment -> f.refresh()
+                        }
+                    }
+                } catch (_: Exception) { }
+                swipe.isRefreshing = false
             }
         }
     }
@@ -205,16 +246,12 @@ class GifterFragment : Fragment(R.layout.fragment_gifter), UserPostsFragment.OnS
     }
 
     private fun updateFollowButton(btn: TextView) {
-        if (isFriend) {
-            btn.text = "Friends"
-            btn.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#22c55e"))
-        } else if (isFollowing) {
-            btn.text = "Following"
-            btn.setBackgroundResource(R.drawable.bg_pink_indigo_gradient)
-        } else {
-            btn.text = "Follow"
-            btn.setBackgroundResource(R.drawable.bg_yellow_orange_gradient)
+        btn.text = when {
+            isFriend    -> "Friends"
+            isFollowing -> "Following"
+            else        -> "Follow"
         }
+        btn.setBackgroundResource(R.drawable.bg_sky_blue_gradient)
         btn.setTextColor(Color.WHITE)
     }
 

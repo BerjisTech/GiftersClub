@@ -25,7 +25,7 @@ interface PostApi {
     suspend fun getPosts(
         @Query("select", encoded = true)
         select: String =
-            "*,profile:profiles(id,user_id,username,image)," +
+            "*,is_explicit,profile:profiles(id,user_id,username,image)," +
             "media:post_media(id,media_type,url,order,created_at)"
         ,
         @Query("order") order: String,
@@ -39,7 +39,7 @@ interface PostApi {
     @Headers("Prefer: return=representation")
     @POST("posts")
     suspend fun createPost(
-        @Query("select", encoded = true) select: String = "*",
+        @Query("select", encoded = true) select: String = "*,is_explicit",
         @Body createPost: CreatePostRequest
     ): Response<List<Post>>
 
@@ -77,7 +77,7 @@ interface PostApi {
     @GET("posts")
     suspend fun getUserPosts(
         @Query("select", encoded = true) select: String =
-            "*,profile:profiles(id,user_id,username,image)," +
+            "*,is_explicit,profile:profiles(id,user_id,username,image)," +
             "media:post_media(id,media_type,url,order,created_at)",
         @Query("order") order: String,
         @Query("limit") limit: Int,
@@ -91,7 +91,7 @@ interface PostApi {
     @GET("posts")
     suspend fun searchPosts(
         @Query("select", encoded = true) select: String =
-            "*,profile:profiles(id,user_id,username,image)," +
+            "*,is_explicit,profile:profiles(id,user_id,username,image)," +
             "media:post_media(id,media_type,url,order,created_at)",
         @Query("or", encoded = true) orFilter: String,
         @Query("media.media_type", encoded = true) mediaTypeFilter: String? = null,
@@ -120,7 +120,7 @@ interface PostApi {
         @Query("id", encoded = true) id: String,
         @Query("select", encoded = true)
         select: String =
-            "*,profile:profiles(id,user_id,username,image)," +
+            "*,is_explicit,profile:profiles(id,user_id,username,image)," +
             "media:post_media(id,media_type,url,order,created_at)"
     ): List<Post>
 

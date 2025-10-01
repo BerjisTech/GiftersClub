@@ -100,6 +100,7 @@ class ExplorePostAdapter(
             mediaIndicatorLayout.visibility = View.GONE
             itemView.findViewById<View>(R.id.postDetails).visibility = View.GONE
             val overlay = itemView.findViewById<FrameLayout>(R.id.lockOverlay)
+            val btn = itemView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnLockCta)
             overlay.visibility = View.GONE
             scope.launch {
                 val currentUser = AuthUtils.getCurrentUserId(itemView.context)
@@ -110,12 +111,48 @@ class ExplorePostAdapter(
                 }
                 if (!hasAccess) {
                     overlay.visibility = View.VISIBLE
-                    overlay.setOnClickListener { onLocked(post) }
+                    // Show media/details so the frosted overlay reveals blurred content behind
+                    mediaPager.visibility = View.VISIBLE
+                    itemView.findViewById<View>(R.id.postDetails).visibility = View.VISIBLE
+                    val lockAction = itemView.findViewById<TextView>(R.id.tvLockAction)
+                    // Set base action text based on access type
+                    val isSub = post.accessType == "subscription"
+                    lockAction.text = if (isSub) itemView.context.getString(R.string.subscribe_to_creator) else itemView.context.getString(R.string.purchase_access)
+                    itemView.findViewById<TextView>(R.id.tvCreatorName)?.text = "@" + (post.profile?.username ?: "")
+                    // Load creator avatar into overlay if available (non-blocking, safe default)
+                    itemView.findViewById<ImageView>(R.id.ivCreatorAvatar)?.let { iv ->
+                        val img = post.profile?.image.orEmpty()
+                        if (img.isNotBlank()) {
+                            iv.load(img)
+                        } else {
+                            iv.setImageResource(android.R.color.darker_gray)
+                        }
+                    }
+                    btn.text = if (isSub) itemView.context.getString(R.string.subscribe) else itemView.context.getString(R.string.unlock)
+                    btn.isEnabled = true
+                    btn.setOnClickListener {
+                        btn.isEnabled = false
+                        lockAction.text = if (isSub) itemView.context.getString(R.string.subscribing_ellipsis) else itemView.context.getString(R.string.purchasing_ellipsis)
+                        onLocked(post)
+                    }
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= 31) {
+                            val blur = android.graphics.RenderEffect.createBlurEffect(36f, 36f, android.graphics.Shader.TileMode.CLAMP)
+                            itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(blur)
+                            itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(blur)
+                        }
+                    } catch (_: Exception) {}
                 } else {
                     mediaPager.visibility = View.VISIBLE
                     mediaIndicatorLayout.visibility = if (mediaPager.adapter?.itemCount ?: 0 > 1) View.VISIBLE else View.GONE
                     itemView.findViewById<View>(R.id.postDetails).visibility = View.VISIBLE
                     overlay.visibility = View.GONE
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= 31) {
+                            itemView.findViewById<View>(R.id.mediaPager)?.setRenderEffect(null)
+                            itemView.findViewById<View>(R.id.postDetails)?.setRenderEffect(null)
+                        }
+                    } catch (_: Exception) {}
                 }
             }
             // Navigate to full-post pager when tapping on details overlay

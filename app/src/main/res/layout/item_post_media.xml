@@ -1,25 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <ImageView
         android:id="@+id/mediaImageView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:adjustViewBounds="true"
-        android:scaleType="centerInside"
+        android:layout_height="match_parent"
+        android:adjustViewBounds="false"
+        android:scaleType="fitCenter"
         android:layout_gravity="center"
+        android:background="@color/black"
         android:contentDescription="@string/post_image" />
 
-    <VideoView
-        android:id="@+id/mediaVideoView"
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/mediaPlayerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="center"
-        android:scaleType="centerInside"
         android:visibility="gone"
-        android:contentDescription="@string/post_video" />
+        android:contentDescription="@string/post_video"
+        android:keepScreenOn="true"
+        app:use_controller="false" />
 
     <ProgressBar
         android:id="@+id/mediaLoadingSpinner"
@@ -27,5 +30,40 @@
         android:layout_height="48dp"
         android:layout_gravity="center"
         android:indeterminate="true" />
+
+    <!-- Minimal controls overlay: seek bar + speed toggle -->
+    <LinearLayout
+        android:id="@+id/mediaControls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#66000000"
+        android:visibility="gone">
+
+        <androidx.media3.ui.DefaultTimeBar
+            android:id="@+id/timeBar"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            app:bar_height="2dp"
+            app:played_color="@android:color/white"
+            app:buffered_color="@android:color/darker_gray"
+            app:unplayed_color="#66FFFFFF"
+            app:ad_marker_color="@android:color/holo_red_light"
+            app:played_ad_marker_color="@android:color/holo_red_dark" />
+
+        <TextView
+            android:id="@+id/speedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text="x1"
+            android:textColor="@android:color/white"
+            android:background="@drawable/bg_round_button" />
+    </LinearLayout>
 
 </FrameLayout>

@@ -35,6 +35,14 @@ interface FunctionsApi {
     ): Response<Unit>
 
     /**
+     * Process Google Play purchase of tokens via Edge Function (server verification).
+     */
+    @POST("google-purchase-tokens")
+    suspend fun processGooglePurchaseTokensRpc(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /**
      * Subscribe to a creator by purchasing a subscription via Edge Function.
      */
     @POST("subscribe-creator")
@@ -91,6 +99,12 @@ interface FunctionsApi {
         @Query("id") id: String
     ): Response<LiveStream>
 
+    /** Obtain a LiveKit token via action body (e.g., {action:'token', type:'guest'}). */
+    @POST("live-session")
+    suspend fun liveSessionAction(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Map<String, @JvmSuppressWildcards Any>>
+
     /**
      * Update a live stream session via Edge Function.
      */
@@ -123,4 +137,38 @@ interface FunctionsApi {
     suspend fun uploadMedia(
         @Body request: PresignRequest
     ): Response<PresignResponse>
+
+    /**
+     * Notify followers of a scheduled live stream.
+     */
+    @POST("notify-scheduled-live")
+    suspend fun notifyScheduledLive(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /** Live guest invites (request/list/accept/reject via action param). */
+    @POST("live-invite")
+    suspend fun liveInvite(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /** Raw version returning response body for list action parsing. */
+    @POST("live-invite")
+    suspend fun liveInviteRaw(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): retrofit2.Response<okhttp3.ResponseBody>
+
+    /**
+     * Flip live stream mode/comment scope (and optional match settings) in one call.
+     */
+    @POST("live-mode")
+    suspend fun setLiveMode(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Unit>
+
+    /** Generate meme suggestions (top/bottom text, optional stickers) from an image. */
+    @POST("ai-meme")
+    suspend fun generateMeme(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): Response<club.gifters.giftersclub.model.AiMemeResponse>
 }

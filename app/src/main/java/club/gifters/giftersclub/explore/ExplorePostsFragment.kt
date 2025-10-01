@@ -173,8 +173,10 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
                 commentPosts.filter { seen.add(it.id) }.let { merged += it }
                 userPosts.filter { seen.add(it.id) }.let { merged += it }
                 // Log.d(TAG, "Merged total=${merged.size} posts")
+                // Remove explicit posts as a safety net
+                val nonExplicit = merged.filter { it.isExplicit != true }
                 // filter out posts the user cannot access
-                val accessibleMerged = filterAccessible(merged)
+                val accessibleMerged = filterAccessible(nonExplicit)
                 if (accessibleMerged.isEmpty()) {
                     // Log.d(TAG, "Merged empty or inaccessible, falling back to direct content search")
                     val fallbackFilter = "(content.ilike.*${query}*)"
@@ -185,7 +187,7 @@ class ExplorePostsFragment : Fragment(R.layout.fragment_explore_posts) {
                         limit = 50,
                         offset = 0
                     )
-                    val accessibleFallback = filterAccessible(fallback)
+                    val accessibleFallback = filterAccessible(fallback.filter { it.isExplicit != true })
                     adapter.submitList(accessibleFallback)
                 } else {
                     adapter.submitList(accessibleMerged)

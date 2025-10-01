@@ -13,10 +13,18 @@ import androidx.recyclerview.widget.RecyclerView
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Message
 import coil.load
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import coil.size.Size
+import club.gifters.giftersclub.media.MediaCache
 import java.time.OffsetDateTime
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
+
+// Heuristic to detect ciphertext blobs that failed to decrypt
+private fun looksEncrypted(s: String?): Boolean =
+    !s.isNullOrBlank() && s.trim().startsWith("{") && s.contains("\"ct\"")
 
 private fun relativeTimeAgo(isoTime: String): String {
     val timeMillis = try {
@@ -48,7 +56,8 @@ private fun relativeTimeAgo(isoTime: String): String {
  * Adapter for displaying chat messages and date headers in a RecyclerView.
  */
 class MessageAdapter(
-    private val currentUserId: String
+    private val currentUserId: String,
+    private var partnerLabel: String = "User"
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private sealed class ChatItem {
@@ -75,6 +84,11 @@ class MessageAdapter(
     fun addMessage(msg: Message) {
         val currentMsgs = items.filterIsInstance<ChatItem.Msg>().map { it.message } + msg
         submitList(currentMsgs)
+    }
+
+    fun setPartnerLabel(label: String) {
+        partnerLabel = label
+        notifyDataSetChanged()
     }
 
     override fun getItemViewType(position: Int): Int = when (items[position]) {
@@ -104,6 +118,8 @@ class MessageAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        // Propagate partner label for system notice rendering
+        holder.itemView.tag = partnerLabel
         when (val item = items[position]) {
             is ChatItem.DateHeader -> (holder as DateHeaderViewHolder).bind(item.label)
             is ChatItem.Msg -> if (holder is SentViewHolder) holder.bind(item.message)
@@ -139,11 +155,35 @@ class MessageAdapter(
         protected val tvContent: TextView = view.findViewById(R.id.tvContent)
         protected val llAttachments: LinearLayout = view.findViewById(R.id.llAttachments)
         protected val tvTimestamp: TextView = view.findViewById(R.id.tvTimestamp)
+        private val defaultColor: Int = tvContent.currentTextColor
+        private val defaultTypeface = tvContent.typeface
 
         init {
             val metrics = itemView.context.resources.displayMetrics
             val maxBubbleWidth = (metrics.widthPixels * 0.6f).toInt()
             tvContent.maxWidth = maxBubbleWidth
+        }
+
+        private fun applyKeyChangeStyle() {
+            tvContent.setTypeface(defaultTypeface, android.graphics.Typeface.ITALIC)
+            try {
+                tvContent.setTextColor(androidx.core.content.ContextCompat.getColor(itemView.context, R.color.gray_500))
+            } catch (_: Exception) { /* ignore */ }
+        }
+
+        private fun resetStyle() {
+            tvContent.typeface = defaultTypeface
+            tvContent.setTextColor(defaultColor)
+        }
+
+        fun displayMessageText(msg: Message, partnerLabel: String, isEncrypted: Boolean) {
+            if (isEncrypted) {
+                tvContent.text = "${partnerLabel}'s security keys changed"
+                applyKeyChangeStyle()
+            } else {
+                resetStyle()
+                tvContent.text = msg.content
+            }
         }
 
         fun displayAttachments(msg: Message) {
@@ -153,6 +193,16 @@ class MessageAdapter(
             val maxHeight = (300 * metrics.density).toInt()
             msg.attachments?.forEach { attach ->
                 if (attach.type == "image") {
+                    // Prefetch image into cache
+                    try {
+                        val req = ImageRequest.Builder(itemView.context)
+                            .data(attach.url)
+                            .size(Size.ORIGINAL)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .build()
+                        coil.Coil.imageLoader(itemView.context).enqueue(req)
+                    } catch (_: Exception) {}
                     val iv = ImageView(itemView.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             maxBubbleWidth,
@@ -173,6 +223,8 @@ class MessageAdapter(
                     iv.load(attach.url) { placeholder(android.R.color.darker_gray) }
                     llAttachments.addView(iv)
                 } else {
+                    // Prefetch first chunk of video into cache to speed up fullscreen playback
+                    try { MediaCache.prefetch(itemView.context, attach.url, 1_500_000L) } catch (_: Exception) {}
                     val vv = VideoView(itemView.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             maxBubbleWidth,
@@ -198,7 +250,7 @@ class MessageAdapter(
 
     private class SentViewHolder(view: View) : BaseViewHolder(view) {
         fun bind(msg: Message) {
-            tvContent.text = msg.content
+            displayMessageText(msg, partnerLabel = (itemView.tag as? String) ?: "User", isEncrypted = looksEncrypted(msg.content))
             displayAttachments(msg)
             tvTimestamp.text = relativeTimeAgo(msg.createdAt)
         }
@@ -206,7 +258,7 @@ class MessageAdapter(
 
     private class ReceivedViewHolder(view: View) : BaseViewHolder(view) {
         fun bind(msg: Message) {
-            tvContent.text = msg.content
+            displayMessageText(msg, partnerLabel = (itemView.tag as? String) ?: "User", isEncrypted = looksEncrypted(msg.content))
             displayAttachments(msg)
             tvTimestamp.text = relativeTimeAgo(msg.createdAt)
         }

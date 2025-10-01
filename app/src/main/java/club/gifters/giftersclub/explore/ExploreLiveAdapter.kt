@@ -51,13 +51,18 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {
         private val tvTitle: TextView = view.findViewById(R.id.tvTitle)
         private val tvViewerCount: TextView = view.findViewById(R.id.tvViewerCount)
+        private val tvHostName: TextView = view.findViewById(R.id.tvHostName)
         private val preview: FrameLayout = view.findViewById(R.id.previewLive)
         private var renderer: SurfaceViewRenderer? = null
         private var room: Room? = null
         private var job: Job? = null
+        private var eventsJob: Job? = null
         init {
             view.setOnClickListener {
                 (getItem(bindingAdapterPosition))?.let { ls ->
+                    // Stop preview before navigating to avoid double audio
+                    // and release EGL/resources so the live room can start cleanly.
+                    stopPreview()
                     val ctx = itemView.context
                     val uri = Uri.parse("https://gifters.club/live/${ls.id}")
                     val intent = Intent(Intent.ACTION_VIEW, uri)
@@ -69,6 +74,14 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
         fun bind(item: LiveStream) {
             tvTitle.text = item.title
             tvViewerCount.text = "${item.viewerCount} watching"
+            tvHostName.text = ""
+            // Load host username
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val prof = RetrofitClient.profileApi.getProfileByUserId("*", "eq.${item.hostId}").firstOrNull()
+                    withContext(Dispatchers.Main) { tvHostName.text = prof?.username ?: prof?.name ?: "" }
+                } catch (_: Exception) { }
+            }
             startPreview(item)
         }
 
@@ -95,14 +108,19 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
                     val rm = LiveKit.create(itemView.context, opts, LiveKitOverrides())
                     rm.initVideoRenderer(r)
                     room = rm
+                    // Connect with default autoSubscribe=true, then explicitly mute audio tracks.
                     withContext(Dispatchers.IO) { rm.connect(LiveKitConfig.WS_URL, token, io.livekit.android.ConnectOptions()) }
+                    // Attach already-subscribed video tracks for the preview surface.
                     rm.remoteParticipants.values.forEach { p ->
                         p.videoTrackPublications.forEach { pair -> (pair.second as? RemoteVideoTrack)?.addRenderer(r) }
                     }
-                    scope.launch {
+                    eventsJob = scope.launch {
                         rm.events.collect { e ->
-                            if (e is RoomEvent.TrackSubscribed && e.track is RemoteVideoTrack) {
-                                (e.track as RemoteVideoTrack).addRenderer(r)
+                            when (e) {
+                                is RoomEvent.TrackSubscribed -> {
+                                    (e.track as? RemoteVideoTrack)?.addRenderer(r)
+                                }
+                                else -> Unit
                             }
                         }
                     }
@@ -112,6 +130,7 @@ class ExploreLiveAdapter : ListAdapter<LiveStream, ExploreLiveAdapter.VH>(Diff) 
 
         fun stopPreview() {
             job?.cancel(); job = null
+            eventsJob?.cancel(); eventsJob = null
             try { room?.disconnect() } catch (_: Exception) {}
             room = null
             renderer?.release(); renderer = null

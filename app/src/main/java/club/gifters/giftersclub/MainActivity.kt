@@ -1,53 +1,44 @@
 package club.gifters.giftersclub
 
-import club.gifters.giftersclub.network.RetrofitClient
+import android.Manifest
+import android.animation.Animator
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import club.gifters.giftersclub.BaseActivity
-import androidx.appcompat.app.AppCompatActivity
+import android.util.TypedValue
 import android.view.View
-import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import android.view.ViewGroup
+import android.widget.Button
 import android.widget.FrameLayout
-import androidx.viewpager2.widget.ViewPager2
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.cardview.widget.CardView
+import androidx.core.app.ActivityCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import com.google.android.material.tabs.TabLayoutMediator
+import androidx.viewpager2.widget.ViewPager2
+import club.gifters.giftersclub.chat.ChatFragment
+import club.gifters.giftersclub.explore.ExploreFragment
+import club.gifters.giftersclub.gifts.CreatePostFragment
 import club.gifters.giftersclub.gifts.GiftFragment
+import club.gifters.giftersclub.gifts.GifterFragment
 import club.gifters.giftersclub.gifts.LeaderboardFragment
 import club.gifters.giftersclub.gifts.PostsFragment
-import club.gifters.giftersclub.gifts.CreatePostFragment
-import club.gifters.giftersclub.gifts.AccountFragment
 import club.gifters.giftersclub.gifts.WishlistsFragment
-import club.gifters.giftersclub.chat.ChatFragment
-import club.gifters.giftersclub.chat.NotificationListFragment
-import android.content.Intent
-import club.gifters.giftersclub.live.LiveStreamActivity
-import club.gifters.giftersclub.CreateOrGoLiveBottomSheetFragment
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import club.gifters.giftersclub.AuthUtils
-import club.gifters.giftersclub.AuthActivity
-import com.google.firebase.messaging.FirebaseMessaging
-import club.gifters.giftersclub.gifts.GifterFragment
-import club.gifters.giftersclub.social.FriendsFragment
-import club.gifters.giftersclub.explore.ExploreFragment
-import android.widget.ImageView
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.app.ActivityCompat
-import androidx.cardview.widget.CardView
-import android.widget.Button
-import android.widget.TextView
-import android.net.Uri
+import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.util.NetworkUtils
-import kotlinx.coroutines.withContext
-import java.io.IOException
-import retrofit2.HttpException
 import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieCompositionFactory
-import android.animation.Animator
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import retrofit2.HttpException
+import java.io.IOException
 
 class MainActivity : BaseActivity() {
     companion object {
@@ -56,6 +47,38 @@ class MainActivity : BaseActivity() {
         const val EXTRA_SHOW_CREATE_SHEET = "EXTRA_SHOW_CREATE_SHEET"
         /** Intent extra to open Settings at a particular tab index */
         const val EXTRA_OPEN_SETTINGS_TAB = "EXTRA_OPEN_SETTINGS_TAB"
+        /** Intent extra to immediately open the current user's profile */
+        const val EXTRA_OPEN_PROFILE = "EXTRA_OPEN_PROFILE"
+    }
+
+    private fun enlargeCreateItem(bottomNav: BottomNavigationView) {
+        // Ensure clicking the menu item opens create
+        bottomNav.menu.findItem(R.id.nav_create)?.setOnMenuItemClickListener {
+            CreateOrGoLiveBottomSheetFragment().show(supportFragmentManager, CreateOrGoLiveBottomSheetFragment.TAG)
+            true
+        }
+        bottomNav.post {
+            val menu = bottomNav.menu
+            val menuView = bottomNav.getChildAt(0) as? ViewGroup ?: return@post
+            var createIndex = -1
+            for (i in 0 until menu.size()) {
+                if (menu.getItem(i).itemId == R.id.nav_create) { createIndex = i; break }
+            }
+            if (createIndex < 0 || createIndex >= menuView.childCount) return@post
+            val itemView = menuView.getChildAt(createIndex) as? ViewGroup ?: return@post
+            val iconId = com.google.android.material.R.id.icon
+            val iconView = itemView.findViewById<ImageView>(iconId) ?: return@post
+            val sizePx = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, 60f, resources.displayMetrics
+            ).toInt()
+            val lp = iconView.layoutParams
+            lp.width = sizePx
+            lp.height = sizePx
+            iconView.layoutParams = lp
+            iconView.scaleType = ImageView.ScaleType.CENTER_CROP
+            // Optionally hide label text for the center item to avoid overlap
+            menu.getItem(createIndex).title = ""
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +100,19 @@ class MainActivity : BaseActivity() {
             return
         }
         setContentView(R.layout.activity_main)
+        // Handle explore deep link: giftersclub://explore?query=%23tag (also accept gifterclub:// for back-compat)
+        intent.data?.let { data ->
+            if ((data.scheme == "giftersclub" || data.scheme == "gifterclub") && data.host == "explore") {
+                val q = data.getQueryParameter("query") ?: ""
+                val frag = ExploreFragment().apply {
+                    arguments = Bundle().apply { putString("initial_query", q) }
+                }
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.mainContentContainer, frag)
+                    .addToBackStack(null)
+                    .commit()
+            }
+        }
         // If returning here after canceling live-stream setup, re-open create/go-live sheet
         if (intent.getBooleanExtra(EXTRA_SHOW_CREATE_SHEET, false)) {
             CreateOrGoLiveBottomSheetFragment()
@@ -89,6 +125,25 @@ class MainActivity : BaseActivity() {
                 .replace(R.id.mainContentContainer, club.gifters.giftersclub.settings.SettingsFragment.newInstance(tabIndex))
                 .addToBackStack(null)
                 .commit()
+        }
+        // If requested, open current user's profile
+        if (intent.getBooleanExtra(EXTRA_OPEN_PROFILE, false)) {
+            AuthUtils.getCurrentUserId(this)?.let { uid ->
+                lifecycleScope.launch {
+                    try {
+                        RetrofitClient.profileApi.getProfileByUserId("*", "eq.$uid")
+                            .firstOrNull()?.let { prof ->
+                                supportFragmentManager.beginTransaction()
+                                    .replace(
+                                        R.id.mainContentContainer,
+                                        club.gifters.giftersclub.gifts.GifterFragment.newInstance(prof.username)
+                                    )
+                                    .addToBackStack(null)
+                                    .commit()
+                            }
+                    } catch (_: Exception) { }
+                }
+            }
         }
         RetrofitClient.init(this)
         // Resume-live banner action
@@ -226,7 +281,7 @@ class MainActivity : BaseActivity() {
                 )
             }
         }
-        // Retrieve current FCM token and store it in profiles via Supabase
+        // Retrieve current FCM token and upsert into user_device_tokens via Supabase
         com.google.firebase.messaging.FirebaseMessaging.getInstance().token
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -234,14 +289,16 @@ class MainActivity : BaseActivity() {
                     AuthUtils.getCurrentUserId(this)?.let { userId ->
                         lifecycleScope.launch(Dispatchers.IO) {
                             try {
-                                RetrofitClient.profileApi.updateProfile(
-                                    select = "*",
-                                    userIdFilter = "eq.$userId",
-                                    updates = mapOf("fcm_token" to fcmToken)
+                                RetrofitClient.deviceTokensApi.upsert(
+                                    mapOf(
+                                        "user_id" to userId,
+                                        "platform" to "android",
+                                        "provider" to "fcm",
+                                        "token" to fcmToken,
+                                        "app_version" to try { packageManager.getPackageInfo(packageName, 0).versionName ?: "" } catch (e: Exception) { "" }
+                                    )
                                 )
-                            } catch (ioe: IOException) {
-                            } catch (e: HttpException) {
-                            }
+                            } catch (_: Exception) { }
                         }
                     }
                 }
@@ -302,11 +359,9 @@ class MainActivity : BaseActivity() {
                     finish()
                     true
                 }
-                R.id.nav_friends -> {
+                R.id.nav_explore -> {
                     supportFragmentManager.beginTransaction()
-                        .replace(R.id.mainContentContainer,
-                            FriendsFragment.newInstance(0)
-                        )
+                        .replace(R.id.mainContentContainer, ExploreFragment())
                         .addToBackStack(null)
                         .commit()
                     true
@@ -367,6 +422,9 @@ class MainActivity : BaseActivity() {
         updateBars()
         // Initial check for active host livestream (show resume banner)
         lifecycleScope.launch(Dispatchers.IO) { checkActiveHostLive() }
+
+        // Enlarge only the nav_create icon to ~60dp and attach action
+        enlargeCreateItem(bottomNav)
     }
 
     override fun onResume() {
@@ -409,6 +467,11 @@ class MainActivity : BaseActivity() {
             }
             override fun onAnimationRepeat(animation: Animator) {}
         })
+    }
+
+    fun setLoading(show: Boolean) {
+        val overlay = findViewById<FrameLayout>(R.id.loadingOverlay)
+        overlay?.visibility = if (show) View.VISIBLE else View.GONE
     }
 
     private suspend fun checkActiveHostLive() {

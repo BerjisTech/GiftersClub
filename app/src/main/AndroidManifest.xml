@@ -10,6 +10,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- Camera and audio for live photo/video capture -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Play Billing permission (also provided by billing-ktx library manifest) -->
+    <uses-permission android:name="com.android.vending.BILLING" />
+    <!-- Foreground service for background uploads via WorkManager -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Remove screen-capture permission inherited from LiveKit -->
     <uses-permission
@@ -33,6 +38,11 @@
             android:exported="false" />
         <activity
             android:name=".gifts.CreatePostActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GiftersClub"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
+        <activity
+            android:name=".gifts.FullscreenPostPreviewActivity"
             android:exported="false"
             android:theme="@style/Theme.GiftersClub" />
         <!-- Screen displayed when there is no network connectivity -->
@@ -146,6 +156,29 @@
                     android:host="g"
                     android:scheme="giftersclub" />
             </intent-filter>
+
+            <!-- Custom URI scheme for Explore deep link: giftersclub://explore?query=%23hashtag -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="explore"
+                    android:scheme="giftersclub" />
+            </intent-filter>
+            <!-- Back-compat: accept older gifterclub://explore scheme -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="explore"
+                    android:scheme="gifterclub" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".PostsActivity"
@@ -191,6 +224,23 @@
 
         <service
             android:name=".notifications.MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Declare WorkManager's foreground service with dataSync type for API 34+ -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge"
+            tools:replace="android:foregroundServiceType" />
+
+
+        <service
+            android:name="club.gifters.giftersclub.push.FirebasePushService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />

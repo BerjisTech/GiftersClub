@@ -40,8 +40,10 @@
     <string name="notifications">Notifications</string>
     <string name="home">Home</string>
     <string name="friends">Friends</string>
+    <string name="explore">Explore</string>
     <string name="create">Create</string>
     <string name="inbox">Inbox</string>
+    <string name="chats">Chats</string>
     <string name="profile">Profile</string>
 
     <!-- Chat header items -->
@@ -68,6 +70,7 @@
     <string name="wishlist">Wishlist</string>
     <string name="send">Send</string>
     <string name="chat_with_user">Chat</string>
+    <string name="chat">Chat</string>
     <string name="type_a_message" tools:ignore="TypographyEllipsis">Type a message...</string>
     <string name="attach">Attach</string>
     <string name="notification_message">Notification message</string>
@@ -77,6 +80,7 @@
     <string name="filter_gray">Gray</string>
     <string name="filter_sepia">Sepia</string>
     <string name="apply_filter">Apply filter</string>
+    <string name="preview">Preview</string>
     <string name="enter_token_amount">Enter token amount</string>
     <string name="invalid_amount">Please enter a valid amount</string>
     <string name="failed_to_initiate_purchase">Failed to initiate token purchase</string>
@@ -101,9 +105,12 @@
     <string name="purchase_successful">Purchase successful!</string>
     <string name="purchase_failed">Purchase failed</string>
     <string name="subscribe_to_creator">Subscribe to creator</string>
+    <string name="subscribing_ellipsis">Subscribing...</string>
+    <string name="unlock">Unlock</string>
     <string name="subscription_type_hint">Subscription type (one_time, monthly, annual)</string>
     <string name="subscribe">Subscribe</string>
     <string name="purchase_access">Purchase access</string>
+    <string name="purchasing_ellipsis">Purchasing...</string>
     <string name="purchase_for_tokens">Purchase access for %1$d tokens?</string>
     <string name="balance">Balance</string>
     <string name="gift_icon">Gift Icon</string>
@@ -143,6 +150,10 @@
     <string name="streamer_name">Streamer Name</string>
     <string name="gift_sent_success">Gift sent successfully</string>
     <string name="failed_to_send_gift">Failed to send gift</string>
+    <string name="viewers">Viewers</string>
+    <string name="no_viewers">No viewers yet</string>
+    <string name="scheduled_success">Scheduled!</string>
+    <string name="failed_to_schedule">Failed to schedule</string>
     <string name="choose_amount">Choose an amount</string>
     <string name="custom_tokens">Custom tokens</string>
     <string name="tokens_amount">%1$d tokens</string>
@@ -152,11 +163,19 @@
     <string name="permission_denied">Camera &amp; audio permissions are required</string>
     <string name="stream_title_required">Please enter a stream title</string>
     <string name="failed_start_stream">Unable to start stream</string>
-    <string name="stream_title">Stream Title</string>
+    <string name="stream_title">Welcome to my live</string>
     <string name="stream_description_optional">Description (optional)</string>
     <!-- Error messages for deep-link loading -->
     <string name="stream_not_found">Live stream not found.</string>
     <string name="error_loading_stream">Failed to load the live stream.</string>
+    <string name="failed_to_start_live_stream_generic">Failed to start live stream.</string>
+    <string name="live_paywall_paid_message">Unlock this live stream for %1$d tokens.</string>
+    <string name="live_paywall_subscription_message">This live stream requires the %1$s plan.</string>
+    <string name="live_paywall_paid_hint">Unlock this live stream to watch and listen.</string>
+    <string name="live_paywall_sub_hint">Subscribe to join and support the creator.</string>
+    <string name="live_paywall_feed_paid">Unlock with tokens to watch this live stream.</string>
+    <string name="live_paywall_feed_sub">Subscribe to watch this live stream.</string>
+    <string name="failed_to_unlock_live">Unable to unlock the live stream.</string>
     <string name="live_host_banner_text">You are live – tap to return to your stream</string>
 
     <!-- Live stream controls -->
@@ -185,7 +204,8 @@
     <string name="share_joy_spread_love">Share joy, spread love</string>
     <string name="connect_with_friends_and_celebrate_together">Connect with friends and celebrate together</string>
     <string name="by_continuing_you_agree_to_our_terms_of_service_and_privacy_policy">By continuing, you agree to our Terms of Service and Privacy Policy</string>
-    <string name="_like_emoji">👍</string>
+    <string name="_like_emoji">🤍</string>
+    <string name="_like_emoji_filled">❤️</string>
     <string name="contribute_tokens">Contribute Tokens</string>
     <string name="enter_amount">Enter amount</string>
     <string name="contribute">Contribute</string>
@@ -244,4 +264,23 @@
     <string name="no_plans_available"><![CDATA[You haven\'t created any subscriptions plans. Head over to profile -> settings -> subscriptions to add subscription plans]]></string>
     <string name="live_requires_plan_and_above">This live stream is for a higher subscription plan</string>
     <string name="please_retry_after_topup">Top up your tokens and try again</string>
+    <string name="reposted"> reposted</string>
+    <string name="report_user">Report user</string>
+    <string name="block_user">Block user</string>
+    <string name="reported">Reported</string>
+    <string name="blocked">Blocked</string>
+    <string name="more">More</string>
+    <string name="follow_user_directly">Follow user directly</string>
+    <string name="caption">Caption</string>
+    <string name="aa">Aa</string>
+    <string name="ai_meme">Ai Meme</string>
+    <string name="stickers">Stickers</string>
+    <string name="please_wait_sticker_loading">Please wait, loading sticker…</string>
+    <string name="effects">Effects</string>
+    <string name="save">Save</string>
+    <string name="applied">Filters Applied</string>
+    <string name="top_text">Top text</string>
+    <string name="bottom_text">Bottom text</string>
+    <string name="add">Add</string>
+    <string name="creator">Creator</string>
 </resources>

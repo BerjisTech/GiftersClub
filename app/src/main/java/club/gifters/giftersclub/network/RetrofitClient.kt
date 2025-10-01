@@ -161,10 +161,15 @@ object RetrofitClient {
      */
     val subscriptionPlanApi: SubscriptionPlanApi = retrofit.create(SubscriptionPlanApi::class.java)
     val liveStreamApi: LiveStreamApi = retrofit.create(LiveStreamApi::class.java)
+    val battleApi: BattleApi = retrofit.create(BattleApi::class.java)
     val systemCategoryApi: SystemCategoryApi = retrofit.create(SystemCategoryApi::class.java)
     val withdrawalApi: WithdrawalApi = retrofit.create(WithdrawalApi::class.java)
     val tokenApi: TokenApi = retrofit.create(TokenApi::class.java)
     val followsApi: FollowsApi = retrofit.create(FollowsApi::class.java)
+    /**
+     * API for remote stickers gallery (public.stickers)
+     */
+    val stickersApi: StickersApi = retrofit.create(StickersApi::class.java)
 
     /**
      * API for querying the recent_gifts view (gifts received by user).
@@ -187,9 +192,9 @@ object RetrofitClient {
 
     // AWS S3 presigned URL API for media uploads (requires Supabase JWT auth)
     val awsClient = client.newBuilder()
-        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .connectTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
         // Do not swallow IOExceptions here either
         .addInterceptor { chain ->
             val original = chain.request()
@@ -234,4 +239,8 @@ object RetrofitClient {
      * API for tracking user app install/version history.
      */
     val userAppsApi: UserAppsApi = retrofit.create(UserAppsApi::class.java)
+    /** E2EE user public keys table */
+    val userKeysApi: UserKeysApi = retrofit.create(UserKeysApi::class.java)
+    /** Device tokens upsert API */
+    val deviceTokensApi: DeviceTokensApi = retrofit.create(DeviceTokensApi::class.java)
 }

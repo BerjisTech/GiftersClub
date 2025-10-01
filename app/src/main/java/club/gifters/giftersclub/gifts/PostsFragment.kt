@@ -11,6 +11,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -20,7 +21,7 @@ import club.gifters.giftersclub.NoNetworkActivity
 import club.gifters.giftersclub.R
 import club.gifters.giftersclub.model.Post
 import club.gifters.giftersclub.network.RetrofitClient
-import club.gifters.giftersclub.payments.PaymentWebViewActivity
+import club.gifters.giftersclub.payments.BillingManager
 import club.gifters.giftersclub.social.SubscriptionApiHolder
 import club.gifters.giftersclub.social.PostViewApiHolder
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -37,6 +38,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     private lateinit var pager: ViewPager2
     private var lastViewedPostId: String? = null
     private var lastViewStart: Long = 0L
+    private var lastSelectedPosition: Int = 0
     companion object {
         private const val TAG = "PostsFragment"
         private const val ARG_POST_ID = "post_id"
@@ -93,7 +95,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
     private lateinit var swipeRefresh: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
     private lateinit var adapter: FeedAdapter
     private var page = 0
-    private val limit = 10
+    private val limit = 50
     private val perAuthorLimit = 3
     private var isLoading = false
     private var hasRetry401 = false
@@ -101,6 +103,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        (activity as? MainActivity)?.setLoading(true)
         // If no internet redirect to NoNetworkActivity
         if (!NetworkUtils.isOnline(requireContext())) {
             startActivity(Intent(requireContext(), NoNetworkActivity::class.java))
@@ -113,26 +116,64 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             onLike = { post ->
                 lifecycleScope.launch {
                     val userId = AuthUtils.getCurrentUserId(requireContext()) ?: return@launch
-                    val likedBefore = CommentApiHolder.isPostLikedByUser(post.id)
-                    // show like/unlike Lottie animation
+                    // Determine current liked state and visible holder to update in-place
+                    val likedBefore = try { CommentApiHolder.isPostLikedByUser(post.id) } catch (_: Exception) { false }
+                    // show like/unlike Lottie animation immediately
                     (activity as? MainActivity)?.showLottieAnimation(
                         if (!likedBefore) LIKE_LOTTIE_URL else UNLIKE_LOTTIE_URL
                     )
-                    val body = mapOf(
-                        "post_id" to post.id,
-                        "user_id" to userId,
-                        "type" to "like"
-                    )
-                    if (!likedBefore) CommentApiHolder.reactToPost(body)
-                    else CommentApiHolder.unreactToPost(
-                        postIdFilter = "eq.${post.id}",
-                        userIdFilter = "eq.$userId",
-                        typeFilter = "eq.like"
-                    )
-                    adapter.currentList
+
+                    // Find the visible ViewHolder for this post and optimistically update UI
+                    val idx = adapter.currentList
                         .indexOfFirst { it is FeedItem.PostItem && it.post.id == post.id }
-                        .takeIf { it >= 0 }
-                        ?.let { idx -> adapter.notifyItemChanged(idx) }
+                    if (idx >= 0) {
+                        val rv = (pager.getChildAt(0) as? RecyclerView)
+                        val vh = rv?.findViewHolderForAdapterPosition(idx)
+                        val itemView = vh?.itemView
+                        val btnLike = itemView?.findViewById<TextView>(R.id.btnLike)
+                        val tvLikeCount = itemView?.findViewById<TextView>(R.id.tvLikeCount)
+
+                        // Snapshot UI state
+                        val prevIcon = btnLike?.text?.toString()
+                        val prevCount = tvLikeCount?.text?.toString()?.toIntOrNull() ?: 0
+                        val newCount = if (!likedBefore) prevCount + 1 else (prevCount - 1).coerceAtLeast(0)
+
+                        // Optimistic UI update
+                        btnLike?.text = getString(if (!likedBefore) R.string._like_emoji_filled else R.string._like_emoji)
+                        tvLikeCount?.text = newCount.toString()
+
+                        try {
+                            val body = mapOf(
+                                "post_id" to post.id,
+                                "user_id" to userId,
+                                "type" to "like"
+                            )
+                            if (!likedBefore) CommentApiHolder.reactToPost(body)
+                            else CommentApiHolder.unreactToPost(
+                                postIdFilter = "eq.${post.id}",
+                                userIdFilter = "eq.$userId",
+                                typeFilter = "eq.like"
+                            )
+                        } catch (_: Exception) {
+                            // Revert UI on failure
+                            btnLike?.text = prevIcon
+                            tvLikeCount?.text = prevCount.toString()
+                        }
+                    } else {
+                        // If VH not found, just perform network without forcing a rebind
+                        try {
+                            val body = mapOf(
+                                "post_id" to post.id,
+                                "user_id" to userId,
+                                "type" to "like"
+                            )
+                            if (!likedBefore) CommentApiHolder.reactToPost(body) else CommentApiHolder.unreactToPost(
+                                postIdFilter = "eq.${post.id}",
+                                userIdFilter = "eq.$userId",
+                                typeFilter = "eq.like"
+                            )
+                        } catch (_: Exception) { }
+                    }
                 }
             },
             onComment = { post ->
@@ -150,6 +191,26 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
 
                 val chooser = android.content.Intent.createChooser(intent, "Share Post")
                 startActivity(chooser)
+            },
+            onRepost = { post ->
+                lifecycleScope.launch {
+                    val userId = AuthUtils.getCurrentUserId(requireContext()) ?: return@launch
+                    val already = CommentApiHolder.isPostReactedByUser(post.id, "repost")
+                    if (!already) {
+                        val body = mapOf(
+                            "post_id" to post.id,
+                            "user_id" to userId,
+                            "type" to "repost"
+                        )
+                        try { CommentApiHolder.reactToPost(body) } catch (_: Exception) {}
+                    }
+                    // Refresh the single item count displays
+                    adapter.currentList
+                        .indexOfFirst { it is FeedItem.PostItem && it.post.id == post.id }
+                        .takeIf { it >= 0 }
+                        ?.let { idx -> adapter.notifyItemChanged(idx) }
+                    android.widget.Toast.makeText(requireContext(), if (already) "Already reposted" else "Reposted", android.widget.Toast.LENGTH_SHORT).show()
+                }
             },
             onProfileClick = { uname ->
                 parentFragmentManager.beginTransaction()
@@ -169,6 +230,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             val pos = arguments?.getInt(ARG_START_POSITION) ?: 0
             pager.setCurrentItem(pos, false)
             swipeRefresh.isEnabled = false
+            pager.post { playFirstVideoInItem(pager.currentItem) }
             return
         }
 
@@ -193,6 +255,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
         lastViewStart = System.currentTimeMillis()
 
         // Listen for scroll to end to load more
+        lastSelectedPosition = pager.currentItem
         pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 // log duration for previous post view
@@ -203,6 +266,11 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                         PostViewApiHolder.logPostView(prevId, durationSec)
                     }
                 }
+                // Pause any playing videos in the previously visible post
+                pauseVideosInItem(lastSelectedPosition)
+                lastSelectedPosition = position
+                // Start playback for first video in the newly visible item (if any)
+                playFirstVideoInItem(position)
                 // start timing new post view
                 lastViewedPostId = (adapter.currentList.getOrNull(position) as? FeedItem.PostItem)
                     ?.post
@@ -215,8 +283,71 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             }
 
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
-            override fun onPageScrollStateChanged(state: Int) {}
+            override fun onPageScrollStateChanged(state: Int) {
+                when (state) {
+                    ViewPager2.SCROLL_STATE_DRAGGING -> pauseVideosInItem(pager.currentItem)
+                    ViewPager2.SCROLL_STATE_IDLE -> playFirstVideoInItem(pager.currentItem)
+                }
+            }
         })
+    }
+
+    override fun onResume() {
+        super.onResume()
+        pager.post { playFirstVideoInItem(pager.currentItem) }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Pause videos in the current and adjacent items to prevent audio bleed
+        pauseVideosInItem(pager.currentItem)
+        pauseVideosInItem(pager.currentItem - 1)
+        pauseVideosInItem(pager.currentItem + 1)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Ensure all visible players are paused when fragment is not in foreground
+        pauseVideosInItem(pager.currentItem)
+    }
+
+    private fun pauseVideosInItem(position: Int) {
+        if (position < 0) return
+        val rv = (pager.getChildAt(0) as? RecyclerView) ?: return
+        val vh = rv.findViewHolderForAdapterPosition(position) ?: return
+        val innerPager = vh.itemView.findViewById<ViewPager2>(R.id.mediaPager) ?: return
+        val innerRv = innerPager.getChildAt(0) as? RecyclerView ?: return
+        for (i in 0 until innerRv.childCount) {
+            val child = innerRv.getChildAt(i)
+            val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
+            pv?.player?.playWhenReady = false
+            pv?.player?.pause()
+        }
+    }
+
+    private fun playFirstVideoInItem(position: Int) {
+        if (position < 0) return
+        if (pager.scrollState != ViewPager2.SCROLL_STATE_IDLE) return
+        val rv = (pager.getChildAt(0) as? RecyclerView) ?: return
+        val vh = rv.findViewHolderForAdapterPosition(position) ?: return
+        val overlay = vh.itemView.findViewById<View>(R.id.lockOverlay)
+        if (overlay?.visibility == View.VISIBLE) return
+        val innerPager = vh.itemView.findViewById<ViewPager2>(R.id.mediaPager) ?: return
+        val targetIndex = innerPager.currentItem
+        val innerRv = innerPager.getChildAt(0) as? RecyclerView ?: return
+        val holder = innerRv.findViewHolderForAdapterPosition(targetIndex) as? PostMediaAdapter.MediaViewHolder
+        if (holder != null) {
+            holder.startPlayback()
+            return
+        }
+        if (innerRv.childCount == 0) {
+            innerRv.post { playFirstVideoInItem(position) }
+            return
+        }
+        val child = innerRv.getChildAt(0)
+        val pv = child.findViewById<androidx.media3.ui.PlayerView>(R.id.mediaPlayerView)
+        pv?.player?.playWhenReady = true
+        pv?.player?.play()
     }
 
     private fun onLocked(post: Post) {
@@ -258,19 +389,24 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             val view = layoutInflater.inflate(R.layout.dialog_purchase_post_access, null)
             val tvMsg = view.findViewById<TextView>(R.id.tvPurchaseMessage)
             tvMsg.text = getString(R.string.purchase_for_tokens, post.price ?: 0)
-            view.findViewById<Button>(R.id.btnPurchaseConfirm).setOnClickListener {
+            val btnConfirm = view.findViewById<Button>(R.id.btnPurchaseConfirm)
+            val btnCancel = view.findViewById<Button>(R.id.btnPurchaseCancel)
+            btnConfirm.setOnClickListener {
                 sheet.dismiss()
                 lifecycleScope.launch {
+                    // UX: reflect that we are processing the purchase in any visible UI
+                    try {
+                        btnConfirm.isEnabled = false
+                        btnCancel.isEnabled = false
+                        btnConfirm.text = getString(R.string.purchasing_ellipsis)
+                    } catch (_: Exception) {}
                     val profList = RetrofitClient.profileApi.getProfileByUserId("*", "eq.$userId")
                     val prof = profList.firstOrNull()
                     val balance = prof?.tokenBalance ?: 0
                     val price = post.price ?: 0
                     if (balance < price) {
                         val needed = price - balance
-                        val topupRef = "topup_${userId}_${System.currentTimeMillis()}"
-                        PaymentWebViewActivity.start(
-                            requireContext(), userId, prof?.email.orEmpty(), needed, topupRef, ""
-                        )
+                        BillingManager.launchPurchase(requireActivity(), needed)
                         return@launch
                     }
                     val txRef = "post_${userId}_${post.id}_${System.currentTimeMillis()}"
@@ -288,7 +424,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                     }
                 }
             }
-            view.findViewById<Button>(R.id.btnPurchaseCancel).setOnClickListener { sheet.dismiss() }
+            btnCancel.setOnClickListener { sheet.dismiss() }
             sheet.setContentView(view)
             sheet.show()
         }
@@ -337,6 +473,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 }
                 if (clear) {
                     adapter.submitList(interleaveWithLives(items))
+                    pager.post { playFirstVideoInItem(pager.currentItem) }
                 } else {
                     val merged = (adapter.currentList.mapNotNull { (it as? FeedItem.PostItem)?.post } + items)
                     adapter.submitList(interleaveWithLives(merged))
@@ -362,6 +499,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
             } finally {
                 isLoading = false
                 swipeRefresh.isRefreshing = false
+                (activity as? MainActivity)?.setLoading(false)
             }
         }
     }
@@ -413,6 +551,7 @@ class PostsFragment : Fragment(R.layout.fragment_posts) {
                 val list = api.getPostById("eq.$postId")
                 val post = list.firstOrNull() ?: return@launch
                 adapter.submitList(listOf(FeedItem.PostItem(post)))
+                pager.post { playFirstVideoInItem(pager.currentItem) }
                 // Now load the rest of the posts
                 page = 0
                 isLastPage = false

@@ -1,0 +1,517 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="center"
+    android:background="@color/black"
+    android:orientation="vertical">
+
+    <!-- Crop & Scale controls moved here from Details -->
+    <LinearLayout
+        android:id="@+id/layoutCropScaleToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:gravity="end"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/proceedToDetails"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/save"
+            android:textColor="@color/white"
+            android:textSize="25sp" />
+
+    </LinearLayout>
+
+    <club.gifters.giftersclub.gifts.SafeGPUImageView
+        android:id="@+id/imageEditView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toTopOf="@id/editOptionPanes"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layoutCropScaleToolbar" />
+
+    <!-- Overlay canvas for draggable captions/stickers -->
+    <FrameLayout
+        android:id="@+id/editOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toBottomOf="@+id/imageEditView"
+        app:layout_constraintEnd_toEndOf="@+id/imageEditView"
+        app:layout_constraintStart_toStartOf="@+id/imageEditView"
+        app:layout_constraintTop_toTopOf="@+id/imageEditView" />
+
+    <!-- Edit Options -->
+    <LinearLayout
+        android:id="@+id/editOptions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:gravity="end"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layoutCropScaleToolbar">
+
+
+        <ImageView
+            android:id="@+id/btnCrop"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/crop"
+            android:src="@android:drawable/ic_menu_crop" />
+
+        <ImageView
+            android:id="@+id/btnScale"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/scale"
+            android:src="@android:drawable/ic_menu_zoom" />
+
+        <LinearLayout
+            android:id="@+id/captionOptions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/captionOptionsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:text="@string/caption"
+                android:textColor="@color/white"
+                android:textSize="25sp"
+                android:visibility="visible" />
+
+            <TextView
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/aa"
+                android:textColor="@color/white"
+                android:textSize="30sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/stickerOptions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/stickerOptionsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:text="@string/stickers"
+                android:textColor="@color/white"
+                android:textSize="25sp"
+                android:visibility="visible" />
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/stickers" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/effectsOptions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/effectsOptionsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:text="@string/effects"
+                android:textColor="@color/white"
+                android:textSize="25sp"
+                android:visibility="visible" />
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/effects" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/aiMemeOptions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/aiMemeOptionsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:text="@string/ai_meme"
+                android:textColor="@color/white"
+                android:textSize="25sp"
+                android:visibility="visible" />
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/memes" />
+        </LinearLayout>
+
+
+        <ImageView
+            android:id="@+id/toggleOptionsText"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:rotation="90"
+            android:scaleType="fitCenter"
+            android:src="@drawable/baseline_chevron_right_24" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/editOptionPanes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="bottom"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:id="@+id/effectsPane"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <!-- Filter picker -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvFilters"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:clipToPadding="false"
+                android:orientation="horizontal"
+                android:overScrollMode="never" />
+
+            <SeekBar
+                android:id="@+id/sbFilterLevel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="50" />
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/btnApplyFilterCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp">
+
+                <Button
+                    android:id="@+id/btnApplyFilter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_cyan_sky_gradient"
+                    android:text="@string/apply_filter"
+                    android:textColor="@color/white" />
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/postCaptionLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="bottom"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/black"
+            android:gravity="center"
+            android:paddingVertical="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/captionFont"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:text="Aa"
+                    android:textColor="@color/white"
+                    android:textSize="25sp" />
+
+                <ImageView
+                    android:id="@+id/captionColor"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:src="@drawable/color_picker" />
+
+                <TextView
+                    android:id="@+id/captionOutlineMode"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/bg_border_gray_300"
+                    android:gravity="center"
+                    android:text="A"
+                    android:textColor="@color/white"
+                    android:textSize="25sp" />
+
+                <LinearLayout
+                    android:id="@+id/captionAlignment"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:gravity="end|center_vertical"
+                    android:orientation="vertical">
+
+                    <View
+                        android:layout_width="27dp"
+                        android:layout_height="2dp"
+                        android:layout_marginVertical="3dp"
+                        android:background="@color/slate_300" />
+
+                    <View
+                        android:layout_width="17dp"
+                        android:layout_height="2dp"
+                        android:layout_marginVertical="3dp"
+                        android:background="@color/slate_300" />
+
+                    <View
+                        android:layout_width="27dp"
+                        android:layout_height="2dp"
+                        android:layout_marginVertical="3dp"
+                        android:background="@color/slate_300" />
+
+                    <View
+                        android:layout_width="17dp"
+                        android:layout_height="2dp"
+                        android:layout_marginVertical="3dp"
+                        android:background="@color/slate_300" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/doneCaption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Done"
+                android:textColor="@color/white"
+                android:textSize="20sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center">
+
+            <EditText
+                android:id="@+id/captionText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:padding="8dp"
+                android:textColor="@color/white" />
+        </LinearLayout>
+
+
+        <HorizontalScrollView
+            android:id="@+id/captionColorsScroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/captionColors"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/bg_message_received"
+                    android:padding="2dp"
+                    android:src="@drawable/bg_message_received"
+                    app:tint="@color/yellow_500" />
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/bg_message_received"
+                    android:padding="2dp"
+                    android:src="@drawable/bg_message_received"
+                    app:tint="@color/red_500" />
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/bg_message_received"
+                    android:padding="2dp"
+                    android:src="@drawable/bg_message_received"
+                    app:tint="@color/blue_500" />
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/bg_message_received"
+                    android:padding="2dp"
+                    android:src="@drawable/bg_message_received"
+                    app:tint="@color/green_500" />
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/bg_message_received"
+                    android:padding="2dp"
+                    android:src="@drawable/bg_message_received"
+                    app:tint="@color/pink_500" />
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/bg_message_received"
+                    android:padding="2dp"
+                    android:src="@drawable/bg_message_received"
+                    app:tint="@color/fuchsia_500" />
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/bg_message_received"
+                    android:padding="2dp"
+                    android:src="@drawable/bg_message_received"
+                    app:tint="@color/rose_500" />
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/bg_message_received"
+                    android:padding="2dp"
+                    android:src="@drawable/bg_message_received"
+                    app:tint="@color/slate_500" />
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/bg_message_received"
+                    android:padding="2dp"
+                    android:src="@drawable/bg_message_received"
+                    app:tint="@color/purple_500" />
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/bg_message_received"
+                    android:padding="2dp"
+                    android:src="@drawable/bg_message_received"
+                    app:tint="@color/indigo_500" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <HorizontalScrollView
+            android:id="@+id/captionFontsScroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/captionFonts"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:background="@drawable/bg_border_gray_300"
+                    android:fontFamily="sans-serif"
+                    android:paddingHorizontal="8dp"
+                    android:text="Sans Serif"
+                    android:textColor="@color/white"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:background="@drawable/bg_border_gray_300"
+                    android:fontFamily="sans-serif-light"
+                    android:paddingHorizontal="8dp"
+                    android:text="Light"
+                    android:textColor="@color/white"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:background="@drawable/bg_border_gray_300"
+                    android:fontFamily="sans-serif-medium"
+                    android:paddingHorizontal="8dp"
+                    android:text="Medium"
+                    android:textColor="@color/white"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:background="@drawable/bg_border_gray_300"
+                    android:fontFamily="sans-serif-black"
+                    android:paddingHorizontal="8dp"
+                    android:text="Black"
+                    android:textColor="@color/white"
+                    android:textSize="20sp" />
+
+            </LinearLayout>
+        </HorizontalScrollView>
+
+    </LinearLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -87,6 +87,14 @@
    • Implement SecuritySettingsFragment to block/unblock users, report users, and show user’s reports.
    • Implement ModerationSettingsFragment to add/remove filtered words with spinners and toasts.
    • Implement InteractionSettingsFragment to select who_can_interact (anyone, followers, friends) with persistence.
+8. Create Posts Enhancements
+   - In post edit screen, make "save" disabled and only enable when post is ready to be saved
+   - Prevent usage of .octeat-stream and just pass real data for better caching. Accept known types like png, jpg, svg for images and mp4, .mov etc for video
+   - Make the payment overlay semi transparent and display poster username
 
+9. Livestream enhancements
+    - Users above gifter level 10 get custom "userx joined" notifications displayed to all users right above the comments section.
+    - I added a app\src\main\res\layout\include_livestream_tiles.xml file for custom multi host views since the pragramatic way breaks in some devices and is not very reliable. Adjust how streams work and use the new layout.
+    - Add an admin only or at least debug only button to trigger animations that I can trigger to test gift notifications
 
 

@@ -3,24 +3,25 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:background="@drawable/bg_rounded_top"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:orientation="vertical">
 
     <TextView
         android:id="@+id/tvStreamSheetTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="12dp"
-        android:text="@string/start_live_stream"
-        android:textSize="20sp"
+        android:text="Go Live"
+        android:textSize="50sp"
         android:textStyle="bold" />
 
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
         app:cardCornerRadius="10dp">
 
         <EditText
@@ -30,155 +31,53 @@
             android:background="@drawable/bg_half_transparent_white"
             android:hint="@string/stream_title"
             android:inputType="textCapSentences"
-            android:padding="10dp" />
+            android:padding="10dp"
+            android:text="@string/stream_title" />
     </androidx.cardview.widget.CardView>
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginTop="8dp"
         app:cardCornerRadius="10dp">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@drawable/bg_half_transparent_white"
             android:orientation="vertical"
-            android:padding="10dp"
-            android:background="@drawable/bg_half_transparent_white">
+            android:padding="10dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Category (required)"
-                android:textStyle="bold"
-                android:textColor="@android:color/black" />
+                android:textStyle="bold" />
+
             <AutoCompleteTextView
                 android:id="@+id/actvCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Search categories…"
+                android:background="@android:color/transparent"
+                android:hint="gifts, entertainment, just chatting..."
                 android:inputType="text"
                 android:paddingVertical="8dp" />
+
+            <com.google.android.flexbox.FlexboxLayout
+                android:id="@+id/layoutCategoryPills"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="6dp"
+                app:flexWrap="wrap"
+                app:justifyContent="flex_start" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        app:cardCornerRadius="10dp">
-        <EditText
-            android:id="@+id/etStreamTags"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_half_transparent_white"
-            android:hint="Tags (optional, comma-separated)"
-            android:inputType="text"
-            android:padding="10dp" />
-    </androidx.cardview.widget.CardView>
-
-
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        app:cardCornerRadius="10dp">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="10dp"
-            android:background="@drawable/bg_half_transparent_white">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Live access"
-                android:textStyle="bold"
-                android:textColor="@android:color/black" />
-            <RadioGroup
-                android:id="@+id/rgLiveAccessType"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingTop="6dp">
-                <RadioButton
-                    android:id="@+id/rbLiveFree"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true"
-                    android:text="@string/free" />
-                <RadioButton
-                    android:id="@+id/rbLiveSubscriberOnly"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/subscriber_only" />
-                <RadioButton
-                    android:id="@+id/rbLivePaid"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:text="@string/paid" />
-            </RadioGroup>
-
-            <EditText
-                android:id="@+id/etLivePrice"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/price_tokens"
-                android:inputType="number"
-                android:visibility="gone"
-                android:paddingVertical="8dp" />
-
-            <LinearLayout
-                android:id="@+id/layoutPlanPicker"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Select required plan"
-                    android:textStyle="bold"
-                    android:textColor="@android:color/black" />
-                <AutoCompleteTextView
-                    android:id="@+id/actvPlan"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Choose a plan"
-                    android:paddingVertical="8dp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/layoutNoPlans"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone"
-                android:paddingTop="8dp">
-                <TextView
-                    android:id="@+id/tvNoPlansMsg"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="You haven't created any subscription plans yet. Create at least one to use Subscriber Only."
-                    android:textColor="@android:color/black" />
-                <androidx.cardview.widget.CardView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    app:cardCornerRadius="8dp">
-                    <Button
-                        android:id="@+id/btnOpenSubscriptionSettingsFromLive"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Create a Subscription Plan" />
-                </androidx.cardview.widget.CardView>
-            </LinearLayout>
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginTop="8dp"
         app:cardCornerRadius="10dp">
 
@@ -193,40 +92,186 @@
             android:padding="10dp" />
     </androidx.cardview.widget.CardView>
 
-    <LinearLayout
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:gravity="end"
-        android:orientation="horizontal">
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="10dp">
 
-        <androidx.cardview.widget.CardView
-            android:layout_width="wrap_content"
+        <EditText
+            android:id="@+id/etStreamTags"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="10dp">
+            android:background="@drawable/bg_half_transparent_white"
+            android:hint="Tags (optional, comma-separated)"
+            android:inputType="text"
+            android:padding="10dp" />
+    </androidx.cardview.widget.CardView>
+
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="10dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_half_transparent_white"
+            android:orientation="vertical"
+            android:padding="10dp">
+
+            <CheckBox
+                android:id="@+id/cbThisIsMatch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="This is a match"
+                android:visibility="gone" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Live stream access"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/rgLiveAccessType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="6dp">
+
+                <RadioButton
+                    android:id="@+id/rbLiveFree"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/free" />
+
+                <RadioButton
+                    android:id="@+id/rbLiveSubscriberOnly"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/subscriber_only" />
+
+                <RadioButton
+                    android:id="@+id/rbLivePaid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/paid" />
+            </RadioGroup>
+
+            <EditText
+                android:id="@+id/etLivePrice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/price_tokens"
+                android:inputType="number"
+                android:paddingVertical="8dp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/layoutPlanPicker"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Select required plan"
+                    android:textStyle="bold" />
+
+                <AutoCompleteTextView
+                    android:id="@+id/actvPlan"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Choose a plan"
+                    android:paddingVertical="8dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutNoPlans"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="8dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvNoPlansMsg"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="You haven't created any subscription plans yet. Create at least one to use Subscriber Only." />
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:cardCornerRadius="8dp">
+
+                    <Button
+                        android:id="@+id/btnOpenSubscriptionSettingsFromLive"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_green_emerald_gradient"
+                        android:paddingHorizontal="8dp"
+                        android:text="Create a Subscription Plan"
+                        android:textColor="@color/white" />
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="fill_horizontal|center_vertical"
+            android:orientation="horizontal">
 
             <Button
                 android:id="@+id/btnCancelLive"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_red_orange_gradient"
-                android:textColor="@color/white"
-                android:text="@android:string/cancel" />
-        </androidx.cardview.widget.CardView>
+                android:layout_weight="1"
+                android:background="@drawable/bg_blue_gray_gradient"
+                android:text="@android:string/cancel"
+                android:textColor="@color/white" />
 
-        <androidx.cardview.widget.CardView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            app:cardCornerRadius="10dp">
-        <Button
-            android:id="@+id/btnStartLive"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_sky_blue_gradient"
-            android:textColor="@color/white"
-            android:text="@string/start" />
-        </androidx.cardview.widget.CardView>
-    </LinearLayout>
+            <Button
+                android:id="@+id/btnScheduleLive"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_gray_indigo_gradient"
+                android:text="Schedule"
+                android:textColor="@color/white" />
+
+            <Button
+                android:id="@+id/btnStartLive"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_indigo_zinc_gradient"
+                android:text="@string/start"
+                android:textColor="@color/white" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
 </LinearLayout>

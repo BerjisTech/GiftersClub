@@ -31,7 +31,7 @@ import club.gifters.giftersclub.model.WishlistContribution
 import club.gifters.giftersclub.network.ProfileApi
 import club.gifters.giftersclub.network.RetrofitClient
 import club.gifters.giftersclub.network.WishlistApi
-import club.gifters.giftersclub.payments.PaymentWebViewActivity
+import club.gifters.giftersclub.payments.BillingManager
 import coil.load
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
@@ -401,8 +401,7 @@ class WishlistDetailFragment : Fragment(R.layout.fragment_wishlist_detail) {
             .setTitle("Insufficient tokens")
             .setMessage("You have insufficient tokens. You need $needed more to contribute. Top up now?")
             .setPositiveButton("Buy Tokens") { _, _ ->
-                val txRef = "topup_${userId}_${System.currentTimeMillis()}"
-                PaymentWebViewActivity.start(requireContext(), userId, email, needed, txRef, "")
+                BillingManager.launchPurchase(requireActivity(), needed)
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
