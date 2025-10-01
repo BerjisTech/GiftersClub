@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Matrix
 import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -140,6 +141,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
     private var editedBitmap: Bitmap? = null
     private val selectedUris = mutableListOf<Uri>()
     private var isVideoSelected = false
+    private var selectedVideoRotation = 0
+    private var selectedVideoWidth = 0
+    private var selectedVideoHeight = 0
     private val REQUEST_PICK_MEDIA = 1001
     private val REQUEST_CAMERA_PERM = 2001
 
@@ -1835,10 +1839,23 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                 val retriever = android.media.MediaMetadataRetriever()
                 try {
                     retriever.setDataSource(requireContext(), uri)
-                    val vw = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 720
-                    val vh = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 1280
                     val overlay = layoutEdit.findViewById<FrameLayout>(R.id.editOverlay)
-                    val bmp = VideoOverlayExporter.renderOverlayBitmap(overlay, vw, vh)
+                    var rotation = selectedVideoRotation
+                    var targetWidth = selectedVideoWidth
+                    var targetHeight = selectedVideoHeight
+                    if (targetWidth <= 0 || targetHeight <= 0) {
+                        if (rotation == 0) {
+                            rotation = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+                        }
+                        val rawWidth = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
+                        val rawHeight = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
+                        val needsSwap = rotation == 90 || rotation == 270
+                        targetWidth = if (needsSwap) rawHeight else rawWidth
+                        targetHeight = if (needsSwap) rawWidth else rawHeight
+                    }
+                    if (targetWidth <= 0) targetWidth = 720
+                    if (targetHeight <= 0) targetHeight = 1280
+                    val bmp = VideoOverlayExporter.renderOverlayBitmap(overlay, targetWidth, targetHeight)
                     progressBar.isVisible = true
                     VideoOverlayExporter.export(requireContext(), uri, bmp, onProgress = null) { res ->
                         viewLifecycleOwner.lifecycleScope.launch {
@@ -2229,6 +2246,9 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         if (!isAdded) return
         val ctx = context ?: return
         selectedUris.clear()
+        selectedVideoRotation = 0
+        selectedVideoWidth = 0
+        selectedVideoHeight = 0
         isVideoSelected = uris.any { uri ->
             val mime = ctx.contentResolver.getType(uri)
             (mime?.startsWith("video/") == true) || (uri.path?.endsWith(".mp4") == true)
@@ -2269,12 +2289,12 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
                     val ctx = requireContext()
                     val player = previewPlayer ?: club.gifters.giftersclub.media.Exo.newPlayer(ctx).also {
                         previewPlayer = it
-                        pvPostPreview.player = it
                     }
+                    pvPostPreview.player = player
                     player.setMediaItem(MediaItem.fromUri(uri))
                     player.repeatMode = Player.REPEAT_MODE_ONE
                     player.prepare()
-                    player.playWhenReady = true
+                    player.play()
                 }
 
                 editedBitmap != null -> {
@@ -2430,16 +2450,24 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
         }
     }
 
+    private fun bindBitmapToEditor(bitmap: Bitmap) {
+        originalBitmap = bitmap
+        editedBitmap = bitmap
+        gpuImageView.setScaleType(GPUImage.ScaleType.CENTER_INSIDE)
+        val ratio = if (bitmap.height != 0) bitmap.width.toFloat() / bitmap.height.toFloat() else 1f
+        gpuImageView.setRatio(ratio)
+        gpuImageView.setImage(bitmap)
+    }
+
     private fun loadImageForEditing() {
         val uri = selectedUris.firstOrNull() ?: return
         requireContext().contentResolver.openInputStream(uri)?.use { stream: InputStream ->
-            originalBitmap = BitmapFactory.decodeStream(stream)
-            editedBitmap = originalBitmap
-            editedBitmap?.let { bitmap ->
-                gpuImageView.setScaleType(GPUImage.ScaleType.CENTER_INSIDE)
-                gpuImageView.setImage(bitmap)
-            }
+            val bmp = BitmapFactory.decodeStream(stream)
+            if (bmp != null) bindBitmapToEditor(bmp)
         }
+        selectedVideoRotation = 0
+        selectedVideoWidth = 0
+        selectedVideoHeight = 0
         initialCameraFilter?.let { baseFilter = it }
         applyFilters()
     }
@@ -2455,18 +2483,48 @@ class CreatePostFragment : Fragment(R.layout.fragment_create_post) {
 
     private fun loadVideoFrameForEditing() {
         val uri = selectedUris.firstOrNull() ?: return
+        val retriever = android.media.MediaMetadataRetriever()
+        var frame: Bitmap? = null
+        var rotation = 0
+        var rawWidth = 0
+        var rawHeight = 0
         try {
-            val retriever = android.media.MediaMetadataRetriever()
             retriever.setDataSource(requireContext(), uri)
-            val bmp = retriever.getFrameAtTime(0)
-            retriever.release()
-            if (bmp != null) {
-                originalBitmap = bmp
-                editedBitmap = bmp
-                gpuImageView.setScaleType(GPUImage.ScaleType.CENTER_INSIDE)
-                gpuImageView.setImage(bmp)
+            rotation = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+            rawWidth = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
+            rawHeight = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
+            frame = retriever.getFrameAtTime(0)
+        } catch (_: Exception) {
+            frame = null
+            rotation = 0
+            rawWidth = 0
+            rawHeight = 0
+        } finally {
+            try { retriever.release() } catch (_: Exception) {}
+        }
+
+        val needsSwap = rotation == 90 || rotation == 270
+        selectedVideoRotation = rotation
+        selectedVideoWidth = if (needsSwap) rawHeight else rawWidth
+        selectedVideoHeight = if (needsSwap) rawWidth else rawHeight
+
+        frame?.let { original ->
+            var display = original
+            if (rotation != 0) {
+                try {
+                    val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
+                    display = Bitmap.createBitmap(original, 0, 0, original.width, original.height, matrix, true)
+                    if (display !== original) original.recycle()
+                } catch (_: Exception) {
+                    display = original
+                }
             }
-        } catch (_: Exception) { }
+            if (selectedVideoWidth <= 0 || selectedVideoHeight <= 0) {
+                selectedVideoWidth = display.width
+                selectedVideoHeight = display.height
+            }
+            bindBitmapToEditor(display)
+        }
         initialCameraFilter?.let { baseFilter = it }
         applyFilters()
     }

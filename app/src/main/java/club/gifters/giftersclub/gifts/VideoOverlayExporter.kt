@@ -22,6 +22,8 @@ import androidx.media3.transformer.Composition
 import java.io.File
 import android.media.MediaFormat
 import java.nio.ByteBuffer
+import kotlin.math.abs
+import kotlin.math.min
 
 /**
  * Exports a video with a static bitmap overlay (captured from the editor overlay view).
@@ -83,9 +85,21 @@ object VideoOverlayExporter {
         val h = if (videoHeight % 2 == 1) videoHeight + 1 else videoHeight
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
-        val sx = w / (overlayRoot.width.takeIf { it > 0 }?.toFloat() ?: 1f)
-        val sy = h / (overlayRoot.height.takeIf { it > 0 }?.toFloat() ?: 1f)
-        canvas.scale(sx, sy)
+        val viewWidth = overlayRoot.width.takeIf { it > 0 }?.toFloat() ?: 1f
+        val viewHeight = overlayRoot.height.takeIf { it > 0 }?.toFloat() ?: 1f
+        val scaleX = w / viewWidth
+        val scaleY = h / viewHeight
+        if (abs(scaleX - scaleY) <= 0.01f) {
+            canvas.scale(scaleX, scaleY)
+        } else {
+            val scale = min(scaleX, scaleY)
+            val translatedWidth = viewWidth * scale
+            val translatedHeight = viewHeight * scale
+            val dx = (w.toFloat() - translatedWidth) / 2f
+            val dy = (h.toFloat() - translatedHeight) / 2f
+            canvas.translate(dx, dy)
+            canvas.scale(scale, scale)
+        }
         overlayRoot.draw(canvas)
         return bmp
     }
